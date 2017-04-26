@@ -7,19 +7,23 @@ import scala.collection.immutable.ListMap
  */
 sealed trait Node {
 
+  /** The cached hash of this node. */
+  @volatile private var _hash: Option[Hash] = None
+
   /** Returns a 160-bit hash code for this node. */
-  final lazy val hash: Hash = {
-    val builder = Hash.Builder()
-    hashWith(builder)
-    builder.complete()
-  }
+  final def hash(builder: Hash.Builder = Hash.Builder()): Hash =
+    _hash getOrElse {
+      val hash = hashWith(builder)
+      _hash = Some(hash)
+      hash
+    }
 
   /**
    * Appends this node to the specified hash builder.
    *
    * @param builder The hash builder to append to.
    */
-  def hashWith(builder: Hash.Builder): Unit
+  protected def hashWith(builder: Hash.Builder): Hash
 
 }
 
@@ -39,11 +43,10 @@ object Value {
    * @param value The underlying value.
    */
   case class Boolean(value: scala.Boolean) extends Value {
-    import Boolean._
 
-    /* Append this value to the specified hash builder. */
-    override def hashWith(builder: Hash.Builder) =
-      builder.appendBoolean(value)
+    /* Hash this value with the specified hash builder. */
+    override protected def hashWith(builder: Hash.Builder) =
+      builder.hashBoolean(value)
 
     /* Return the string version of this value. */
     override def toString() = value.toString
@@ -57,9 +60,9 @@ object Value {
    */
   case class Number(value: Double) extends Value {
 
-    /* Append this value to the specified hash builder. */
-    override def hashWith(builder: Hash.Builder) =
-      builder.appendDouble(value)
+    /* Hash this value with the specified hash builder. */
+    override protected def hashWith(builder: Hash.Builder) =
+      builder.hashDouble(value)
 
     /* Return the string version of this value. */
     override def toString() = value.toString
@@ -73,12 +76,12 @@ object Value {
    */
   case class String(value: java.lang.String) extends Value {
 
-    /* Append this value to the specified hash builder. */
-    override def hashWith(builder: Hash.Builder) =
-      builder.appendString(value)
+    /* Hash this value with the specified hash builder. */
+    override protected def hashWith(builder: Hash.Builder) =
+      builder.hashString(value)
 
     /* Return the string version of this value. */
-    override def toString() = value.toString
+    override def toString() = s""""${value.toString.replace(""""""", """\"""")}""""
 
   }
 
@@ -86,17 +89,13 @@ object Value {
 
 /**
  * Represents tables of nodes.
+ *
+ * @param value The entries in the underlying table.
  */
 case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
 
-  /* Append this table to the specified hash builder. */
+  /* Hash this table with the specified hash builder. */
   override def hashWith(builder: Hash.Builder) =
-    builder.appendTable {
-      entries foreach {
-        case (key, value) =>
-          key.hashWith(builder)
-          value.hashWith(builder)
-      }
-    }
+    builder.hashTable(entries flatMap { case (k, v) => Seq(k.hash(builder), v.hash(builder)) })
 
 }

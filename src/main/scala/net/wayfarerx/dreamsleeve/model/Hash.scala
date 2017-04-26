@@ -4,9 +4,9 @@ import java.util.Arrays
 import java.security.MessageDigest
 
 /**
- * Represents an opaque 160-bit SHA-1 hash.
+ * Represents an opaque 256-bit SHA-256 hash.
  *
- * @param bytes The 20 bytes that define the hash.
+ * @param bytes The 32 bytes that define the hash.
  */
 final class Hash private (private val bytes: Array[Byte]) {
 
@@ -32,7 +32,7 @@ final class Hash private (private val bytes: Array[Byte]) {
 object Hash {
 
   /**
-   * A mutable builder for hashes.
+   * A builder for hashes.
    *
    * @param digest The message digest to use.
    */
@@ -40,23 +40,26 @@ object Hash {
     import Builder._
 
     /**
-     * Appends a boolean value.
+     * Hashes a boolean value.
      *
-     * @param value The value to append.
+     * @param value The value to hash.
      */
-    def appendBoolean(value: Boolean): Unit = {
+    def hashBoolean(value: Boolean): Hash = {
+      digest.reset()
       digest.update(BooleanHeader)
       digest.update(if (value) 0xFF.toByte else 0x00.toByte)
+      new Hash(digest.digest())
     }
 
     /**
-     * Appends a double value.
+     * Hashes a double value.
      *
-     * @param value The value to append.
+     * @param value The value to hash.
      */
-    def appendDouble(value: Double): Unit = {
-      digest.update(DoubleHeader)
+    def hashDouble(value: Double): Hash = {
       val bits = java.lang.Double.doubleToRawLongBits(value)
+      digest.reset()
+      digest.update(DoubleHeader)
       digest.update((bits >>> 56 & 0x00000000000000FF).toByte)
       digest.update((bits >>> 48 & 0x00000000000000FF).toByte)
       digest.update((bits >>> 40 & 0x00000000000000FF).toByte)
@@ -65,6 +68,7 @@ object Hash {
       digest.update((bits >>> 16 & 0x00000000000000FF).toByte)
       digest.update((bits >>> 8 & 0x00000000000000FF).toByte)
       digest.update((bits & 0x00000000000000FF).toByte)
+      new Hash(digest.digest())
     }
 
     /**
@@ -72,10 +76,14 @@ object Hash {
      *
      * @param value The value to append.
      */
-    def appendString(value: String): Unit = {
+    def hashString(value: String): Hash = {
+      digest.reset()
       digest.update(StringHeader)
-      digest.update(value.getBytes("UTF-8"))
-      digest.update(StringFooter)
+      value foreach { c =>
+        digest.update((c >>> 8 & 0x00FF).toByte)
+        digest.update((c & 0x00FF).toByte)
+      }
+      new Hash(digest.digest())
     }
 
     /**
@@ -83,24 +91,17 @@ object Hash {
      *
      * @param value The value to append.
      */
-    def appendTable(next: => Unit): Unit = {
+    def hashTable(hashes: Iterable[Hash]): Hash = {
+      digest.reset()
       digest.update(TableHeader)
-      next
-      digest.update(TableFooter)
-    }
-
-    /**
-     * Generates the ultimate hash.
-     *
-     * @return The hash of all appended data.
-     */
-    def complete(): Hash =
+      hashes foreach { hash => digest.update(hash.bytes) }
       new Hash(digest.digest())
+    }
 
   }
 
   /**
-   * Globals variables and functions related to hashers.
+   * Factory for creating builders.
    */
   object Builder {
 
@@ -110,12 +111,8 @@ object Hash {
     private val DoubleHeader = 0x2E.toByte
     /** The header for string hashes. */
     private val StringHeader = 0x3D.toByte
-    /** The footer for string hashes. */
-    private val StringFooter = 0x4C.toByte
     /** The header for table hashes. */
-    private val TableHeader = 0x5B.toByte
-    /** The footer for table hashes. */
-    private val TableFooter = 0x6A.toByte
+    private val TableHeader = 0x4C.toByte
 
     /**
      * Creates a new hash builder.
@@ -123,7 +120,7 @@ object Hash {
      * @return A new hash builder.
      */
     def apply(): Builder =
-      new Builder(MessageDigest.getInstance("SHA-1"))
+      new Builder(MessageDigest.getInstance("SHA-256"))
 
   }
 
