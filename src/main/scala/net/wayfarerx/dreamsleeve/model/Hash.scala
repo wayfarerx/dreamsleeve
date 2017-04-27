@@ -4,7 +4,7 @@ import java.util.Arrays
 import java.security.MessageDigest
 
 /**
- * Represents an opaque 256-bit SHA-256 hash.
+ * Represents an opaque SHA-256 hash.
  *
  * @param bytes The 32 bytes that define the hash.
  */
@@ -33,11 +33,12 @@ object Hash {
 
   /**
    * A builder for hashes.
-   *
-   * @param digest The message digest to use.
    */
-  final class Builder private (private val digest: MessageDigest) {
+  final class Builder {
     import Builder._
+
+    /** The message digest to use. */
+    private val digest = MessageDigest.getInstance("SHA-256")
 
     /**
      * Hashes a boolean value.
@@ -72,7 +73,7 @@ object Hash {
     }
 
     /**
-     * Appends a string value.
+     * Hashes a string value.
      *
      * @param value The value to append.
      */
@@ -87,7 +88,7 @@ object Hash {
     }
 
     /**
-     * Appends a table.
+     * Hashes a table.
      *
      * @param value The value to append.
      */
@@ -106,21 +107,20 @@ object Hash {
   object Builder {
 
     /** The header for boolean hashes. */
-    private val BooleanHeader = 0x1F.toByte
+    private val BooleanHeader = 0x1E.toByte
     /** The header for double hashes. */
-    private val DoubleHeader = 0x2E.toByte
+    private val DoubleHeader = 0x5A.toByte
     /** The header for string hashes. */
-    private val StringHeader = 0x3D.toByte
+    private val StringHeader = 0xA5.toByte
     /** The header for table hashes. */
-    private val TableHeader = 0x4C.toByte
+    private val TableHeader = 0xE1.toByte
 
     /**
      * Creates a new hash builder.
      *
      * @return A new hash builder.
      */
-    def apply(): Builder =
-      new Builder(MessageDigest.getInstance("SHA-256"))
+    def apply(): Builder = new Builder
 
   }
 
