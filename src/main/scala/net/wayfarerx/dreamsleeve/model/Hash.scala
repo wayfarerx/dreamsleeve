@@ -8,7 +8,7 @@ import java.security.MessageDigest
  *
  * @param bytes The 32 bytes that define the hash.
  */
-final class Hash private (private val bytes: Array[Byte]) {
+final class Hash private(private val bytes: Array[Byte]) {
 
   /* Compare to other hashes. */
   override def equals(that: Any) = that match {
@@ -22,7 +22,9 @@ final class Hash private (private val bytes: Array[Byte]) {
 
   /* Encode in base-16. */
   override def toString(): String =
-    bytes map { _.toHexString } mkString ""
+    bytes map {
+      _.toHexString
+    } mkString ""
 
 }
 
@@ -35,6 +37,7 @@ object Hash {
    * A builder for hashes.
    */
   final class Builder {
+
     import Builder._
 
     /** The message digest to use. */
@@ -75,7 +78,7 @@ object Hash {
     /**
      * Hashes a string value.
      *
-     * @param value The value to append.
+     * @param value The value to hash.
      */
     def hashString(value: String): Hash = {
       digest.reset()
@@ -90,12 +93,25 @@ object Hash {
     /**
      * Hashes a table.
      *
-     * @param value The value to append.
+     * @param hashes The entry hashes to hash.
      */
     def hashTable(hashes: Iterable[Hash]): Hash = {
       digest.reset()
       digest.update(TableHeader)
       hashes foreach { hash => digest.update(hash.bytes) }
+      new Hash(digest.digest())
+    }
+
+    /**
+     * Hashes a document.
+     *
+     * @param title The title of the document to hash.
+     * @param contentHash The hash of the document's content to hash.
+     */
+    def hashDocument(title: String, contentHash: Hash): Hash = {
+      digest.reset()
+      hashString(title)
+      digest.update(contentHash.bytes)
       new Hash(digest.digest())
     }
 

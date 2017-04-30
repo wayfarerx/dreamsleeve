@@ -70,9 +70,6 @@ object Value {
     override protected def hashWith(builder: Hash.Builder) =
       builder.hashBoolean(value)
 
-    /* Return the string version of this value. */
-    override def toString() = value.toString
-
   }
 
   /**
@@ -86,9 +83,6 @@ object Value {
     override protected def hashWith(builder: Hash.Builder) =
       builder.hashDouble(value)
 
-    /* Return the string version of this value. */
-    override def toString() = value.toString
-
   }
 
   /**
@@ -101,10 +95,6 @@ object Value {
     /* Hash this value with the specified hash builder. */
     override protected def hashWith(builder: Hash.Builder) =
       builder.hashString(value)
-
-    /* Return the string version of this value. */
-    override def toString() =
-      s""""${value.replace(""""""", """\"""")}""""
 
   }
 
@@ -120,5 +110,19 @@ case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
   /* Hash this table with the specified hash builder. */
   override def hashWith(builder: Hash.Builder) =
     builder.hashTable(entries flatMap { case (k, v) => Seq(k.hash(builder), v.hash(builder)) })
+
+}
+
+/**
+ * Represents document of nodes.
+ *
+ * @param title The title of the document.
+ * @param content The content of the document.
+ */
+case class Document(title: String, content: Node) extends Node {
+
+  /* Hash this table with the specified hash builder. */
+  override def hashWith(builder: Hash.Builder) =
+    builder.hashDocument(title, content.hash(builder))
 
 }
