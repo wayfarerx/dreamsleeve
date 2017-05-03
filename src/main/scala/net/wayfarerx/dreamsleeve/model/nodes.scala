@@ -5,49 +5,7 @@ import scala.collection.immutable.ListMap
 /**
  * The base type of all complete model objects.
  */
-sealed trait Node {
-
-  /** The cached hash of this node. */
-  @volatile private var _hash: Option[Hash] = None
-
-  /**
-   * Returns a hash for this node.
-   *
-   * @return A hash for this node.
-   */
-  final def hash(): Hash =
-    _hash getOrElse generateHash(Hash.Builder())
-
-  /**
-   * Returns a hash for this node.
-   *
-   * @param builder The hash builder to use.
-   * @return A hash for this node.
-   */
-  final def hash(builder: Hash.Builder): Hash =
-    _hash getOrElse generateHash(builder)
-
-  /**
-   * Generates and stores a hash for this node.
-   *
-   * @param builder The hash builder to use.
-   * @return A hash for this node.
-   */
-  private def generateHash(builder: Hash.Builder): Hash = {
-    val hash = hashWith(builder)
-    _hash = Some(hash)
-    hash
-  }
-
-  /**
-   * Generates a hash for this node.
-   *
-   * @param builder The hash builder to use.
-   * @return A hash for this node.
-   */
-  protected def hashWith(builder: Hash.Builder): Hash
-
-}
+sealed trait Node extends Hash.Support
 
 /**
  * The base type of all complete model objects that represent a single value.

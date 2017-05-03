@@ -34,6 +34,53 @@ final class Hash private(private val bytes: Array[Byte]) {
 object Hash {
 
   /**
+   * Mixin that supports common hashing operations.
+   */
+  trait Support {
+
+    /** The cached hash of this node. */
+    @volatile private var _hash: Option[Hash] = None
+
+    /**
+     * Returns a hash for this node.
+     *
+     * @return A hash for this node.
+     */
+    final def hash(): Hash =
+      _hash getOrElse generateHash(Hash.Builder())
+
+    /**
+     * Returns a hash for this node.
+     *
+     * @param builder The hash builder to use.
+     * @return A hash for this node.
+     */
+    final def hash(builder: Hash.Builder): Hash =
+      _hash getOrElse generateHash(builder)
+
+    /**
+     * Generates and stores a hash for this node.
+     *
+     * @param builder The hash builder to use.
+     * @return A hash for this node.
+     */
+    private def generateHash(builder: Hash.Builder): Hash = {
+      val hash = hashWith(builder)
+      _hash = Some(hash)
+      hash
+    }
+
+    /**
+     * Generates a hash for this node.
+     *
+     * @param builder The hash builder to use.
+     * @return A hash for this node.
+     */
+    protected def hashWith(builder: Hash.Builder): Hash
+
+  }
+
+  /**
    * A builder for hashes.
    */
   final class Builder {
@@ -110,7 +157,11 @@ object Hash {
      */
     def hashDocument(title: String, contentHash: Hash): Hash = {
       digest.reset()
-      hashString(title)
+      digest.update(DocumentHeader)
+      title foreach { c =>
+        digest.update((c >>> 8 & 0x00FF).toByte)
+        digest.update((c & 0x00FF).toByte)
+      }
       digest.update(contentHash.bytes)
       new Hash(digest.digest())
     }
@@ -122,14 +173,22 @@ object Hash {
    */
   object Builder {
 
-    /** The header for boolean hashes. */
-    private val BooleanHeader = 0x1E.toByte
-    /** The header for double hashes. */
-    private val DoubleHeader = 0x5A.toByte
-    /** The header for string hashes. */
-    private val StringHeader = 0xA5.toByte
+    /** The header for document hashes. */
+    private val DocumentHeader = 0xF1.toByte
     /** The header for table hashes. */
-    private val TableHeader = 0xE1.toByte
+    private val TableHeader = 0xD3.toByte
+    /** The header for string hashes. */
+    private val StringHeader = 0xB5.toByte
+    /** The header for double hashes. */
+    private val DoubleHeader = 0x97.toByte
+    /** The header for boolean hashes. */
+    private val BooleanHeader = 0x79.toByte
+    /** The header for edits hashes. */
+    private val EditsHeader = 0x5B.toByte
+    /** The header for edits hashes. */
+    private val InsertHeader = 0x3D.toByte
+    /** The header for edits hashes. */
+    private val DeleteHeader = 0x1F.toByte
 
     /**
      * Creates a new hash builder.
