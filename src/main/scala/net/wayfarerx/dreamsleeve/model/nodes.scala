@@ -66,7 +66,7 @@ object Value {
 case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
 
   /* Hash this table with the specified hash builder. */
-  override def hashWith(builder: Hash.Builder) =
+  override protected def hashWith(builder: Hash.Builder) =
     builder.hashTable(entries flatMap { case (k, v) => Seq(k.hash(builder), v.hash(builder)) })
 
 }
@@ -80,7 +80,7 @@ case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
 case class Document(title: String, content: Node) extends Node {
 
   /* Hash this table with the specified hash builder. */
-  override def hashWith(builder: Hash.Builder) =
+  override protected def hashWith(builder: Hash.Builder) =
     builder.hashDocument(title, content.hash(builder))
 
 }

@@ -9,14 +9,22 @@ import org.scalatest._
 class DocumentParserTest extends FlatSpec with Matchers {
 
   "DocumentParser" should "parse master merchant files" in {
-    val resource = getClass.getResource("MasterMerchant.lua")
+    parse("MasterMerchant.lua").Document.run().isSuccess should be (true)
+  }
+
+  /**
+   * Parses the specified document.
+   *
+   * @param document The relative path of the document to parse.
+   * @return The document parser.
+   */
+  private def parse(document: String): DocumentParser = {
+    val resource = getClass.getResource(document)
     val connection = resource.openConnection()
     val data = new Array[Byte](connection.getContentLength)
     val input = connection.getInputStream
     try input.read(data) finally input.close()
-    val parser = new DocumentParser(ParserInput(data))
-    val result = parser.Document.run()
-    result.isSuccess should be (true)
+    new DocumentParser(ParserInput(data))
   }
 
 }
