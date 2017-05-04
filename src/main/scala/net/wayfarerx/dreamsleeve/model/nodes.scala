@@ -39,7 +39,7 @@ object Value {
 
     /* Hash this value with the specified hash builder. */
     override protected def hashWith(builder: Hash.Builder) =
-      builder.hashDouble(value)
+      builder.hashNumber(value)
 
   }
 
@@ -77,7 +77,7 @@ case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
  * @param title The title of the document.
  * @param content The content of the document.
  */
-case class Document(title: String, content: Node) extends Node {
+case class Document(title: String, content: Node) extends Hash.Support {
 
   /* Hash this table with the specified hash builder. */
   override protected def hashWith(builder: Hash.Builder) =

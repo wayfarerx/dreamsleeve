@@ -47,7 +47,7 @@ object Hash {
      * @return A hash for this node.
      */
     final def hash(): Hash =
-      _hash getOrElse generateHash(Hash.Builder())
+      _hash getOrElse generateHash(Builder())
 
     /**
      * Returns a hash for this node.
@@ -96,30 +96,20 @@ object Hash {
      * @param value The value to hash.
      */
     def hashBoolean(value: Boolean): Hash = {
-      digest.reset()
-      digest.update(BooleanHeader)
-      digest.update(if (value) 0xFF.toByte else 0x00.toByte)
-      new Hash(digest.digest())
+      append(BooleanHeader)
+      append(value)
+      complete()
     }
 
     /**
-     * Hashes a double value.
+     * Hashes a number value.
      *
      * @param value The value to hash.
      */
-    def hashDouble(value: Double): Hash = {
-      val bits = java.lang.Double.doubleToRawLongBits(value)
-      digest.reset()
-      digest.update(DoubleHeader)
-      digest.update((bits >>> 56 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 48 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 40 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 32 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 24 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 16 & 0x00000000000000FF).toByte)
-      digest.update((bits >>> 8 & 0x00000000000000FF).toByte)
-      digest.update((bits & 0x00000000000000FF).toByte)
-      new Hash(digest.digest())
+    def hashNumber(value: Double): Hash = {
+      append(NumberHeader)
+      append(java.lang.Double.doubleToRawLongBits(value))
+      complete()
     }
 
     /**
@@ -128,13 +118,9 @@ object Hash {
      * @param value The value to hash.
      */
     def hashString(value: String): Hash = {
-      digest.reset()
-      digest.update(StringHeader)
-      value foreach { c =>
-        digest.update((c >>> 8 & 0x00FF).toByte)
-        digest.update((c & 0x00FF).toByte)
-      }
-      new Hash(digest.digest())
+      append(StringHeader)
+      append(value)
+      complete()
     }
 
     /**
@@ -143,10 +129,9 @@ object Hash {
      * @param hashes The entry hashes to hash.
      */
     def hashTable(hashes: Iterable[Hash]): Hash = {
-      digest.reset()
-      digest.update(TableHeader)
-      hashes foreach { hash => digest.update(hash.bytes) }
-      new Hash(digest.digest())
+      append(TableHeader)
+      hashes foreach append
+      complete()
     }
 
     /**
@@ -156,15 +141,188 @@ object Hash {
      * @param contentHash The hash of the document's content to hash.
      */
     def hashDocument(title: String, contentHash: Hash): Hash = {
-      digest.reset()
-      digest.update(DocumentHeader)
-      title foreach { c =>
-        digest.update((c >>> 8 & 0x00FF).toByte)
-        digest.update((c & 0x00FF).toByte)
-      }
-      digest.update(contentHash.bytes)
-      new Hash(digest.digest())
+      append(DocumentHeader)
+      append(title)
+      append(contentHash)
+      complete()
     }
+
+    /**
+     * Hashes a create operation.
+     *
+     * @param hash The hash of the resulting document being created.
+     */
+    def hashCreate(hash: Hash): Hash = {
+      append(CreateHeader)
+      append(hash)
+      complete()
+    }
+
+    /**
+     * Hashes a collection of changes.
+     *
+     * @param title The title of the resulting document.
+     * @param changeHash The hash of the change to apply to the original document.
+     * @param fromHash The hash of the original document's content.
+     */
+    def hashRevise(title: String, changeHash: Hash, fromHash: Hash): Hash = {
+      append(ReviseHeader)
+      append(title)
+      append(changeHash)
+      append(fromHash)
+      complete()
+    }
+
+    /**
+     * Hashes a delete operation.
+     *
+     * @param hash The hash of the original document being deleted.
+     */
+    def hashDelete(hash: Hash): Hash = {
+      append(DeleteHeader)
+      append(hash)
+      complete()
+    }
+
+    /**
+     * Hashes an add operation.
+     *
+     * @param hash The hash of the value being added.
+     */
+    def hashAdd(hash: Hash): Hash = {
+      append(AddHeader)
+      append(hash)
+      complete()
+    }
+
+    /**
+     * Hashes a replace operation.
+     *
+     * @param fromHash The hash of the value being replaced.
+     * @param toHash The hash of the value doing the replacing.
+     */
+    def hashReplace(fromHash: Hash, toHash: Hash): Hash = {
+      append(ReplaceHeader)
+      append(fromHash)
+      append(toHash)
+      complete()
+    }
+
+    /**
+     * Hashes a modify operation.
+     *
+     * @param editHashes The flattened list of edit hashes.
+     * @param changeHashes The flattened list of change hashes.
+     */
+    def hashModify(editHashes: Iterable[Hash], changeHashes: Iterable[Hash]): Hash = {
+      append(ModifyHeader)
+      editHashes foreach append
+      changeHashes foreach append
+      complete()
+    }
+
+    /**
+     * Hashes a table key list insert operation.
+     *
+     * @param index The index where the insert occurs.
+     * @param hashes The hashes of the nodes being inserted.
+     */
+    def hashInsert(index: Int, hashes: Iterable[Hash]): Hash = {
+      append(InsertHeader)
+      hashes foreach append
+      complete()
+    }
+
+    /**
+     * Hashes a table key list remove operation.
+     *
+     * @param index The index where the remove occurs.
+     * @param hashes The hashes of the nodes being removed.
+     */
+    def hashRemove(index: Int, hashes: Iterable[Hash]): Hash = {
+      append(RemoveHeader)
+      hashes foreach append
+      complete()
+    }
+
+    /**
+     * Appends a boolean value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: Boolean): Unit =
+      digest.update(if (value) 0xFF.toByte else 0x00.toByte)
+
+    /**
+     * Appends a byte value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: Byte): Unit =
+      digest.update(value)
+
+    /**
+     * Appends a character value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: Char): Unit = {
+      digest.update((value >>> 8 & 0x00FF).toByte)
+      digest.update((value & 0x00FF).toByte)
+    }
+
+    /**
+     * Appends an integer value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: Int): Unit = {
+      digest.update((value >>> 24 & 0x000000FF).toByte)
+      digest.update((value >>> 16 & 0x000000FF).toByte)
+      digest.update((value >>> 8 & 0x000000FF).toByte)
+      digest.update((value & 0x000000FF).toByte)
+    }
+
+    /**
+     * Appends a long value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: Long): Unit = {
+      digest.update((value >>> 56 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 48 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 40 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 32 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 24 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 16 & 0x00000000000000FF).toByte)
+      digest.update((value >>> 8 & 0x00000000000000FF).toByte)
+      digest.update((value & 0x00000000000000FF).toByte)
+    }
+
+    /**
+     * Appends a string value to the running digest.
+     *
+     * @param value The value to append.
+     */
+    private def append(value: String): Unit =
+      value foreach append
+
+    /**
+     * Appends a hash to the running digest.
+     *
+     * @param hash The hash to append.
+     */
+    private def append(hash: Hash): Unit =
+      digest.update(hash.bytes)
+
+    /**
+     * Completes the running digest and generates a hash.
+     *
+     * @return The resulting hash from the running digest.
+     */
+    private def complete(): Hash =
+      new Hash(digest.digest())
+
 
   }
 
@@ -174,21 +332,31 @@ object Hash {
   object Builder {
 
     /** The header for document hashes. */
-    private val DocumentHeader = 0xF1.toByte
+    private val DocumentHeader = 0xD2.toByte
     /** The header for table hashes. */
-    private val TableHeader = 0xD3.toByte
+    private val TableHeader = 0xC3.toByte
     /** The header for string hashes. */
-    private val StringHeader = 0xB5.toByte
-    /** The header for double hashes. */
-    private val DoubleHeader = 0x97.toByte
+    private val StringHeader = 0xB4.toByte
+    /** The header for number hashes. */
+    private val NumberHeader = 0xA5.toByte
     /** The header for boolean hashes. */
-    private val BooleanHeader = 0x79.toByte
-    /** The header for edits hashes. */
-    private val EditsHeader = 0x5B.toByte
-    /** The header for edits hashes. */
-    private val InsertHeader = 0x3D.toByte
-    /** The header for edits hashes. */
-    private val DeleteHeader = 0x1F.toByte
+    private val BooleanHeader = 0x96.toByte
+    /** The header for document creation. */
+    private val CreateHeader = 0x87.toByte
+    /** The header for change document revisions. */
+    private val ReviseHeader = 0x78.toByte
+    /** The header for document deletion. */
+    private val DeleteHeader = 0x69.toByte
+    /** The header for add operation hashes. */
+    private val AddHeader = 0x5A.toByte
+    /** The header for replace operation hashes. */
+    private val ReplaceHeader = 0x4B.toByte
+    /** The header for modify operation hashes. */
+    private val ModifyHeader = 0x3C.toByte
+    /** The header for insert operation hashes. */
+    private val InsertHeader = 0x2D.toByte
+    /** The header for remove operation hashes. */
+    private val RemoveHeader = 0x1E.toByte
 
     /**
      * Creates a new hash builder.
