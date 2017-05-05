@@ -137,7 +137,7 @@ object Hash {
     /**
      * Hashes a document.
      *
-     * @param title The title of the document to hash.
+     * @param title       The title of the document to hash.
      * @param contentHash The hash of the document's content to hash.
      */
     def hashDocument(title: String, contentHash: Hash): Hash = {
@@ -161,15 +161,15 @@ object Hash {
     /**
      * Hashes a collection of changes.
      *
-     * @param title The title of the resulting document.
+     * @param fromHash   The hash of the original document's content.
+     * @param title      The title of the resulting document.
      * @param changeHash The hash of the change to apply to the original document.
-     * @param fromHash The hash of the original document's content.
      */
-    def hashRevise(title: String, changeHash: Hash, fromHash: Hash): Hash = {
+    def hashRevise(fromHash: Hash, title: String, changeHash: Option[Hash]): Hash = {
       append(ReviseHeader)
-      append(title)
-      append(changeHash)
       append(fromHash)
+      append(title)
+      changeHash foreach append
       complete()
     }
 
@@ -199,7 +199,7 @@ object Hash {
      * Hashes a replace operation.
      *
      * @param fromHash The hash of the value being replaced.
-     * @param toHash The hash of the value doing the replacing.
+     * @param toHash   The hash of the value doing the replacing.
      */
     def hashReplace(fromHash: Hash, toHash: Hash): Hash = {
       append(ReplaceHeader)
@@ -211,7 +211,7 @@ object Hash {
     /**
      * Hashes a modify operation.
      *
-     * @param editHashes The flattened list of edit hashes.
+     * @param editHashes   The flattened list of edit hashes.
      * @param changeHashes The flattened list of change hashes.
      */
     def hashModify(editHashes: Iterable[Hash], changeHashes: Iterable[Hash]): Hash = {
@@ -224,7 +224,7 @@ object Hash {
     /**
      * Hashes a table key list insert operation.
      *
-     * @param index The index where the insert occurs.
+     * @param index  The index where the insert occurs.
      * @param hashes The hashes of the nodes being inserted.
      */
     def hashInsert(index: Int, hashes: Iterable[Hash]): Hash = {
@@ -236,7 +236,7 @@ object Hash {
     /**
      * Hashes a table key list remove operation.
      *
-     * @param index The index where the remove occurs.
+     * @param index  The index where the remove occurs.
      * @param hashes The hashes of the nodes being removed.
      */
     def hashRemove(index: Int, hashes: Iterable[Hash]): Hash = {

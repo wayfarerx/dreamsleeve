@@ -1,6 +1,6 @@
 package net.wayfarerx.dreamsleeve.model
 
-import collection.immutable.Map
+import collection.immutable.{ListMap, ListSet}
 
 /**
  * Base class for all diffs applied to a document.
@@ -28,15 +28,51 @@ object Diff {
   /**
    * Represents when an existing document is revised.
    *
-   * @param title The title of the resulting document.
-   * @param change The change to apply to the original document's content.
    * @param fromHash The hash of the original document.
+   * @param title    The title of the resulting document.
+   * @param change   The optional change to apply to the original document's content.
    */
-  case class Revise(title: String, change: Change.Update, fromHash: Hash) extends Diff {
+  case class Revise(fromHash: Hash, title: String, change: Option[Change.Update]) extends Diff {
 
     /* Return the hash for this revision. */
     override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashRevise(title, change.hash(), fromHash)
+      builder.hashRevise(fromHash, title, change.map(_.hash()))
+
+  }
+
+  /**
+   * Factory for revise operations.
+   */
+  object Revise {
+
+    /**
+     * Creates a revise operation for the specified documents.
+     *
+     * @param from The original document to create the revise operation for.
+     * @param to   The resulting document to create the revise operation for.
+     * @return A revise operation for the specified documents.
+     */
+    def apply(from: Document, to: Document): Revise = {
+      val builder = Hash.Builder()
+
+      def updateNode(fromNode: Node, toNode: Node): Option[Change.Update] =
+        (fromNode, toNode) match {
+          case (from, to) if from.hash(builder) == to.hash(builder) && from == to =>
+            None
+          case (from@Table(_), to@Table(_)) =>
+            Some(Change.Modify(edits(from.keys, to.keys), ListMap(to.keys.toSeq.flatMap {
+              case k if from.keys(k) => updateNode(from(k), to(k)).map(k -> _)
+              case k => Some(k -> Change.Add(to(k)))
+            }: _*)))
+          case (from, to) =>
+            Some(Change.Replace(from.hash(builder), to))
+        }
+
+      def edits(fromKeys: ListSet[Value], toKeys: ListSet[Value]): Vector[Edit] =
+        ??? // FIXME
+
+      Revise(from.hash(builder), to.title, updateNode(from.content, to.content))
+    }
 
   }
 
@@ -50,6 +86,22 @@ object Diff {
     /* Return the hash for this add operation. */
     override protected def hashWith(builder: Hash.Builder): Hash =
       builder.hashDelete(fromHash)
+
+  }
+
+  /**
+   * Factory for delete operations.
+   */
+  object Delete {
+
+    /**
+     * Creates a delete operation for the specified document.
+     *
+     * @param document The document to create the delete operation for.
+     * @return A delete operation for the specified document.
+     */
+    def apply(document: Document): Delete =
+      Delete(document.hash())
 
   }
 
@@ -87,7 +139,7 @@ object Change {
    * Replaces an existing node in a table or document.
    *
    * @param fromHash The hash of the original node.
-   * @param toValue The value to replace the original node with.
+   * @param toValue  The value to replace the original node with.
    */
   case class Replace(fromHash: Hash, toValue: Node) extends Update {
 
@@ -100,10 +152,10 @@ object Change {
   /**
    * Modifies an existing table inside a table or document.
    *
-   * @param edits The edits to the list of keys in the original table.
+   * @param edits   The edits to the list of keys in the original table.
    * @param changes The changes to the values in the original table.
    */
-  case class Modify(edits: Vector[Edit], changes: Map[Value, Change]) extends Update {
+  case class Modify(edits: Vector[Edit], changes: ListMap[Value, Change]) extends Update {
 
     /* Return the hash for this modification. */
     override protected def hashWith(builder: Hash.Builder): Hash =
@@ -128,7 +180,7 @@ object Edit {
    * Represents the insertion of keys into a table.
    *
    * @param index The index in the original table to insert at.
-   * @param keys The keys to be inserted.
+   * @param keys  The keys to be inserted.
    */
   case class Insert(index: Int, keys: Vector[Value]) extends Edit {
 
@@ -141,7 +193,7 @@ object Edit {
   /**
    * Represents the removal of keys from a table.
    *
-   * @param index The index in the original table to remove at.
+   * @param index  The index in the original table to remove at.
    * @param hashes The hashes of the keys to be removed.
    */
   case class Remove(index: Int, hashes: Vector[Hash]) extends Edit {
