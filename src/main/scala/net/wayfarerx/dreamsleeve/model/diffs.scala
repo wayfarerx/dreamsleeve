@@ -55,23 +55,26 @@ object Diff {
     def apply(from: Document, to: Document): Revise = {
       val builder = Hash.Builder()
 
-      def updateNode(fromNode: Node, toNode: Node): Option[Change.Update] =
+      /* Creates an update operation for the specified nodes if they differ. */
+      def update(fromNode: Node, toNode: Node): Option[Change.Update] =
         (fromNode, toNode) match {
           case (from, to) if from.hash(builder) == to.hash(builder) && from == to =>
             None
           case (from@Table(_), to@Table(_)) =>
-            Some(Change.Modify(edits(from.keys, to.keys), ListMap(to.keys.toSeq.flatMap {
-              case k if from.keys(k) => updateNode(from(k), to(k)).map(k -> _)
+            Some(Change.Modify(edits(from.keys.toVector, to.keys.toVector), ListMap(to.keys.toSeq.flatMap {
+              case k if from.keys(k) => update(from(k), to(k)).map(k -> _)
               case k => Some(k -> Change.Add(to(k)))
             }: _*)))
           case (from, to) =>
             Some(Change.Replace(from.hash(builder), to))
         }
 
-      def edits(fromKeys: ListSet[Value], toKeys: ListSet[Value]): Vector[Edit] =
+      /* Creates edit operations that transform one set of keys to another. */
+      def edits(fromKeys: Vector[Value], toKeys: Vector[Value]): Vector[Edit] = {
         ??? // FIXME
+      }
 
-      Revise(from.hash(builder), to.title, updateNode(from.content, to.content))
+      Revise(from.hash(builder), to.title, update(from.content, to.content))
     }
 
   }
@@ -177,30 +180,41 @@ sealed trait Edit extends Hash.Support
 object Edit {
 
   /**
+   * Represents the copying of keys between tables.
+   *
+   * @param hashes The hashes of the keys to be copied.
+   */
+  case class Copy(hashes: Vector[Hash]) extends Edit {
+
+    /* Return the hash for this copy operation. */
+    override protected def hashWith(builder: Hash.Builder) =
+      builder.hashCopy(hashes)
+
+  }
+
+  /**
    * Represents the insertion of keys into a table.
    *
-   * @param index The index in the original table to insert at.
-   * @param keys  The keys to be inserted.
+   * @param keys The keys to be inserted.
    */
-  case class Insert(index: Int, keys: Vector[Value]) extends Edit {
+  case class Insert(keys: Vector[Value]) extends Edit {
 
     /* Return the hash for this insert operation. */
     override protected def hashWith(builder: Hash.Builder) =
-      builder.hashInsert(index, keys map (_.hash(builder)))
+      builder.hashInsert(keys map (_.hash(builder)))
 
   }
 
   /**
    * Represents the removal of keys from a table.
    *
-   * @param index  The index in the original table to remove at.
    * @param hashes The hashes of the keys to be removed.
    */
-  case class Remove(index: Int, hashes: Vector[Hash]) extends Edit {
+  case class Remove(hashes: Vector[Hash]) extends Edit {
 
     /* Return the hash for this remove operation. */
     override protected def hashWith(builder: Hash.Builder) =
-      builder.hashRemove(index, hashes)
+      builder.hashRemove(hashes)
 
   }
 

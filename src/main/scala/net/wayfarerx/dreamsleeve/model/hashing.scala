@@ -222,12 +222,22 @@ object Hash {
     }
 
     /**
+     * Hashes a table key list copy operation.
+     *
+     * @param hashes The hashes of the nodes being copied.
+     */
+    def hashCopy(hashes: Iterable[Hash]): Hash = {
+      append(CopyHeader)
+      hashes foreach append
+      complete()
+    }
+
+    /**
      * Hashes a table key list insert operation.
      *
-     * @param index  The index where the insert occurs.
      * @param hashes The hashes of the nodes being inserted.
      */
-    def hashInsert(index: Int, hashes: Iterable[Hash]): Hash = {
+    def hashInsert(hashes: Iterable[Hash]): Hash = {
       append(InsertHeader)
       hashes foreach append
       complete()
@@ -236,10 +246,9 @@ object Hash {
     /**
      * Hashes a table key list remove operation.
      *
-     * @param index  The index where the remove occurs.
      * @param hashes The hashes of the nodes being removed.
      */
-    def hashRemove(index: Int, hashes: Iterable[Hash]): Hash = {
+    def hashRemove(hashes: Iterable[Hash]): Hash = {
       append(RemoveHeader)
       hashes foreach append
       complete()
@@ -269,18 +278,6 @@ object Hash {
     private def append(value: Char): Unit = {
       digest.update((value >>> 8 & 0x00FF).toByte)
       digest.update((value & 0x00FF).toByte)
-    }
-
-    /**
-     * Appends an integer value to the running digest.
-     *
-     * @param value The value to append.
-     */
-    private def append(value: Int): Unit = {
-      digest.update((value >>> 24 & 0x000000FF).toByte)
-      digest.update((value >>> 16 & 0x000000FF).toByte)
-      digest.update((value >>> 8 & 0x000000FF).toByte)
-      digest.update((value & 0x000000FF).toByte)
     }
 
     /**
@@ -332,27 +329,29 @@ object Hash {
   object Builder {
 
     /** The header for document hashes. */
-    private val DocumentHeader = 0xD2.toByte
+    private val DocumentHeader = 0xE1.toByte
     /** The header for table hashes. */
-    private val TableHeader = 0xC3.toByte
+    private val TableHeader = 0xD2.toByte
     /** The header for string hashes. */
-    private val StringHeader = 0xB4.toByte
+    private val StringHeader = 0xC3.toByte
     /** The header for number hashes. */
-    private val NumberHeader = 0xA5.toByte
+    private val NumberHeader = 0xB4.toByte
     /** The header for boolean hashes. */
-    private val BooleanHeader = 0x96.toByte
+    private val BooleanHeader = 0xA5.toByte
     /** The header for document creation. */
-    private val CreateHeader = 0x87.toByte
+    private val CreateHeader = 0x96.toByte
     /** The header for change document revisions. */
-    private val ReviseHeader = 0x78.toByte
+    private val ReviseHeader = 0x87.toByte
     /** The header for document deletion. */
-    private val DeleteHeader = 0x69.toByte
+    private val DeleteHeader = 0x78.toByte
     /** The header for add operation hashes. */
-    private val AddHeader = 0x5A.toByte
+    private val AddHeader = 0x69.toByte
     /** The header for replace operation hashes. */
-    private val ReplaceHeader = 0x4B.toByte
+    private val ReplaceHeader = 0x5A.toByte
     /** The header for modify operation hashes. */
-    private val ModifyHeader = 0x3C.toByte
+    private val ModifyHeader = 0x4B.toByte
+    /** The header for copy operation hashes. */
+    private val CopyHeader = 0x3C.toByte
     /** The header for insert operation hashes. */
     private val InsertHeader = 0x2D.toByte
     /** The header for remove operation hashes. */
