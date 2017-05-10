@@ -54,8 +54,8 @@ object LinearDiff {
    */
   @throws[Exception]
   def Compare[T <: AnyRef](aa: Array[T], ab: Array[T]): Vector[Snake[T]] = {
-    val VForward = new V(aa.length, ab.length, true, true)
-    val VReverse = new V(aa.length, ab.length, false, true)
+    val VForward = V(aa.length, ab.length, true, true)
+    val VReverse = V(aa.length, ab.length, false, true)
     val snakes = new util.ArrayList[Snake[T]]
     val forwardVs = new util.ArrayList[V]
     val reverseVs = new util.ArrayList[V]

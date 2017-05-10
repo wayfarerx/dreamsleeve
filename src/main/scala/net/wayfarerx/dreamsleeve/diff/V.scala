@@ -6,34 +6,23 @@ package net.wayfarerx.dreamsleeve.diff
  * It further provides a method to calculate the y-position for end-points based on the x-position and the k-line the
  * end point is lying on.
  *
+ * @param IsForward Comparison direction flag
+ * @param N         Length of the first input string
+ * @param M         Length of the second input string
+ * @param max       The maximum number of end points to store
+ * @param delta     As the length of A and B can be different, the k lines of the forward and reverse algorithms can be different. It
+ *                  is useful to isolate this as a variable
+ * @param array     Stores the actual x-position
  * @author Roman Vottner
  */
-class V private[diff]() {
-  /**
-   * Comparison direction flag
-   **/
-  private var IsForward = false
-  /**
-   * Length of the first input string
-   **/
-  private var N = 0
-  /**
-   * Length of the second input string
-   **/
-  private var M = 0
-  /**
-   * The maximum number of end points to store
-   **/
-  private var max = 0
-  /**
-   * As the length of A and B can be different, the k lines of the forward and reverse algorithms can be different. It
-   * is useful to isolate this as a variable
-   **/
-  private var delta = 0
-  /**
-   * Stores the actual x-position
-   **/
-  private var array: Array[Int] = null
+private[diff] class V private(
+                               private var IsForward: Boolean = false,
+                               private var N: Int = 0,
+                               private var M: Int = 0,
+                               private var max: Int = 0,
+                               private var delta: Int = 0,
+                               private var array: Array[Int] = null
+                             ) {
 
   /**
    * Stores the x-position of an end point for a given k-line.
@@ -58,33 +47,6 @@ class V private[diff]() {
    * @return The y-position of the end point
    */
   def Y(k: Int): Int = this.getK(k) - k
-
-  /**
-   * Initializes a new instance of this helper class.
-   *
-   * @param n       The length of the first object which gets compared to the second
-   * @param m       The length of the second object which gets compared to the first
-   * @param forward The comparison direction; True if forward, false otherwise
-   * @param linear  True if a linear comparison should be used for comparing two objects or the greedy method (false)
-   */
-  def this(n: Int, m: Int, forward: Boolean, linear: Boolean) {
-    this()
-    this.IsForward = forward
-    this.N = n
-    this.M = m
-    // calculate the maximum number of end points to store
-    this.max = if (linear) {
-      (n + m) / 2 + 1
-    }
-    else {
-      n + m
-    }
-    if (this.max <= 0) this.max = 1
-    // as each point on a k-line can either come from a down or right move
-    // there can only be two successor points for each end-point
-    this.array = new Array[Int](2 * this.max + 1)
-    InitStub(n, m)
-  }
 
   /**
    * Returns the comparison direction.
@@ -113,11 +75,12 @@ class V private[diff]() {
    * @param n The length of the first object to compare
    * @param m The length of the second object to compare
    */
-  def InitStub(n: Int, m: Int): Unit = if (this.IsForward) this.setK(1, 0) // stub for forward
-  else {
-    this.delta = n - m
-    this.setK(n - m - 1, n) // stub for backward
-  }
+  def InitStub(n: Int, m: Int): Unit =
+    if (this.IsForward) this.setK(1, 0) // stub for forward
+    else {
+      this.delta = n - m
+      this.setK(n - m - 1, n) // stub for backward
+    }
 
   /**
    * Creates a new deep copy of this object.
@@ -142,5 +105,23 @@ class V private[diff]() {
     o
   }
 
-  override def toString: String = "V " + this.array.length + " [ " + (this.delta - this.max) + " .. " + this.delta + " .. " + (this.delta + this.max) + " ]"
+}
+
+object V {
+
+  /**
+   * Initializes a new instance of this helper class.
+   *
+   * @param n       The length of the first object which gets compared to the second
+   * @param m       The length of the second object which gets compared to the first
+   * @param forward The comparison direction; True if forward, false otherwise
+   * @param linear  True if a linear comparison should be used for comparing two objects or the greedy method (false)
+   */
+  def apply(n: Int, m: Int, forward: Boolean, linear: Boolean): V = {
+    val max = Math.max(1, if (linear) (n + m) / 2 + 1 else n + m)
+    val v = new V(forward, n, m, max, array = new Array[Int](2 * max + 1))
+    v.InitStub(n, m)
+    v
+  }
+
 }
