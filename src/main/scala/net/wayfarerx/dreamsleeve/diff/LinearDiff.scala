@@ -3,6 +3,8 @@ package diff
 
 import java.util
 
+import scala.collection.JavaConverters._
+
 /**
  * Performs a linear time and space comparison of two objects by comparing both objects in both directions to find a
  * overlapping path which is called the middle snake.
@@ -23,52 +25,19 @@ object LinearDiff {
    * @return The shortest sequence of edits that will transform the first sequence into the second.
    */
   def edits[T](from: Vector[model.Value], to: Vector[model.Value]): Vector[model.Edit] = {
-    import scala.collection.JavaConverters._
-    Option(Compare(from.toArray, to.toArray).getSnakes).toVector.flatMap(_.asScala) flatMap { snake =>
+    Compare(from.toArray, to.toArray) flatMap { snake =>
+      var edits = Vector[model.Edit]()
       if (snake.IsForward) {
-        ???
+        if (snake.ADeleted > 0) edits :+= model.Edit.Remove(from.slice(snake.XStart, snake.getXMid).map(_.hash()))
+        if (snake.BInserted > 0) edits :+= model.Edit.Insert(to.slice(snake.YStart, snake.getYMid))
+        if (snake.DiagonalLength > 0) edits :+= model.Edit.Copy(from.slice(snake.getXMid, snake.getXEnd).map(_.hash()))
       } else {
-        ???
+        if (snake.DiagonalLength > 0) edits :+= model.Edit.Copy(from.slice(snake.getXEnd, snake.getXMid).map(_.hash()))
+        if (snake.BInserted > 0) edits :+= model.Edit.Insert(to.slice(snake.getYMid, snake.YStart))
+        if (snake.ADeleted > 0) edits :+= model.Edit.Remove(from.slice(snake.getXMid, snake.XStart).map(_.hash()))
       }
+      edits
     }
-  }
-
-  /**
-   * Compares two character sequences or strings with each other and calculates the shortest edit sequence (SES) as
-   * well as the longest common subsequence (LCS) to transfer input <em>a</em> to input <em>b</em>. The SES are the
-   * necessary actions required to perform the transformation.
-   *
-   * @param a
-   * The first character sequence; usually the oldest string
-   * @param b
-   * The second character sequence; usually the newest string
-   * @return The result containing the snake that lead from input string a to input string b
-   * @throws Exception
-   */
-  @throws[Exception]
-  def CompareStrings(a: String, b: String): Results[String] = {
-    val aa = StringToArray(a)
-    val ab = StringToArray(b)
-    Compare(aa, ab)
-  }
-
-  /**
-   * Transforms a string into an array of single string characters.
-   *
-   * @param s
-   * The string to turn into a string array
-   * @return The input string transformed into an array of string characters
-   */
-  private def StringToArray(s: String) = {
-    val as = new Array[String](s.length)
-    var i = 0
-    for (c <- s.toCharArray) {
-      as({
-        i += 1;
-        i - 1
-      }) = "" + c
-    }
-    as
   }
 
   /**
@@ -80,18 +49,18 @@ object LinearDiff {
    * Usually the older object which should be compared
    * @param ab
    * Usually the newest object to be compared with <em>aa</em>
-   * @return The result containing the snake that lead from input <em>aa</em> to input <em>ab</em>
+   * @return The snake that lead from input <em>aa</em> to input <em>ab</em>
    * @throws Exception
    */
   @throws[Exception]
-  def Compare[T <: AnyRef](aa: Array[T], ab: Array[T]): Results[T] = {
+  def Compare[T <: AnyRef](aa: Array[T], ab: Array[T]): Vector[Snake[T]] = {
     val VForward = new V(aa.length, ab.length, true, true)
     val VReverse = new V(aa.length, ab.length, false, true)
     val snakes = new util.ArrayList[Snake[T]]
     val forwardVs = new util.ArrayList[V]
     val reverseVs = new util.ArrayList[V]
     CompareSnakes(snakes, forwardVs, reverseVs, aa, aa.length, ab, ab.length, VForward, VReverse)
-    new Results[T](snakes, forwardVs, reverseVs)
+    snakes.asScala.toVector
   }
 
   /**

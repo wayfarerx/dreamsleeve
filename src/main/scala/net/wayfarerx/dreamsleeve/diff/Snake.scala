@@ -4,49 +4,29 @@ package net.wayfarerx.dreamsleeve.diff;
  * A snake is a segment along a path which converts an object A to object B by either eliminating elements from object A
  * or inserting elements from object B.
  *
- * @param <T> The type of the element the snake will hold
+ * @param XStart         The x-position of a starting point
+ * @param YStart         The y-position of a starting point
+ * @param ADeleted       Defines the number of deleted elements from the first object to match the second object
+ * @param BInserted      Defines the number of inserted elements from the second object to match the first object
+ * @param DiagonalLength Defines the number of equal elements in both objects
+ * @param IsForward      Defines the comparison direction of both objects
+ * @param DELTA          The difference in length between the first and second object to compare. This value is used as an offset between
+ *                       the forward k lines to the reverse ones
+ * @param IsMiddle       Defines if this snake is a middle segment
+ * @param D              A value of 0 or 1 indicate an edge, where 0 means both objects are equal while 1 means there is either one
+ *                       insertion or one deletion. A value of greater than needs to be checked in both directions
  * @author Roman Vottner
  */
-@SuppressWarnings("unused")
-public class Snake<T> {
-    /**
-     * The x-position of a starting point
-     **/
-    public int XStart;
-    /**
-     * The y-position of a starting point
-     **/
-    public int YStart;
-    /**
-     * Defines the number of deleted elements from the first object to match the second object
-     **/
-    public int ADeleted;
-    /**
-     * Defines the number of inserted elements from the second object to match the first object
-     **/
-    public int BInserted;
-    /**
-     * Defines the number of equal elements in both objects
-     **/
-    public int DiagonalLength;
-    /**
-     * Defines the comparison direction of both objects
-     **/
-    public boolean IsForward = true;
-    /**
-     * The difference in length between the first and second object to compare. This value is used as an offset between
-     * the forward k lines to the reverse ones
-     **/
-    public int DELTA = 0;
-    /**
-     * Defines if this snake is a middle segment
-     **/
-    private boolean IsMiddle = false;
-    /**
-     * A value of 0 or 1 indicate an edge, where 0 means both objects are equal while 1 means there is either one
-     * insertion or one deletion. A value of greater than needs to be checked in both directions
-     **/
-    private int D = -1;
+class Snake[T](
+                var XStart: Int = 0,
+                var YStart: Int = 0,
+                var ADeleted: Int = 0,
+                var BInserted: Int = 0,
+                var DiagonalLength: Int = 0,
+                var IsForward: Boolean = true,
+                var DELTA: Int = 0,
+                var IsMiddle: Boolean = false,
+                var D: Int = -1) {
 
     /**
      * Initializes a new snake. The comparison direction can be defined via the <em>isForward</em> parameter. If set to
@@ -58,13 +38,8 @@ public class Snake<T> {
      * @param isForward If set to true a forward comparison will be done; else a backward comparison
      * @param delta     The difference in length between the first and the second object to compare
      */
-    Snake(boolean isForward, int delta) {
-        this.IsForward = isForward;
-
-        if (!this.IsForward) {
-            this.DELTA = delta;
-        }
-    }
+    def this(isForward: Boolean, delta: Int) =
+        this(IsForward = isForward, DELTA = if (isForward) 0 else delta)
 
     /**
      * Initializes a new snake segment.
@@ -155,7 +130,7 @@ public class Snake<T> {
         if (this.IsForward) {
             return CalculateForward(V, k, d, pa, a0, N, pb, b0, M);
         }
-        return CalculateBackward(V, k, d, pa, a0, N, pb, b0, M);
+        else return CalculateBackward(V, k, d, pa, a0, N, pb, b0, M);
     }
 
     /**
@@ -350,9 +325,7 @@ public class Snake<T> {
      *
      * @return The number of differences in that trace
      */
-    public int getD() {
-        return this.D;
-    }
+    def getD() = D
 
     /**
      * Sets the d contours for this segment which correspond to the number of differences in that trace, irrespective of
@@ -360,19 +333,17 @@ public class Snake<T> {
      *
      * @param d The number of differences in that trace
      */
-    public void setD(int d) {
-        this.D = d;
+    def setD(d: Int) = {
+        D = d
     }
 
-    @Override
-    public String toString() {
+    override def toString() = {
         return "Snake " +
-                (IsForward ? "F" : "R") + ": " +
+          (if (IsForward) "F" else "R") + ": " +
                 "( " + XStart + ", " + YStart + " ) + " +
-                (ADeleted > 0 ? "D( " : (BInserted > 0 ? "I( " : "( ")) +
-                +ADeleted + ", " + BInserted +
-                " ) + " + DiagonalLength + " -> ( " + this.getXEnd() + ", " + this.getYEnd() + " )" +
-                " k=" + (this.getXMid() - this.getYMid());
+          (if (ADeleted > 0) "D( " else (if (BInserted > 0) "I( " else "( ")) + +ADeleted + ", " + BInserted + " ) + " +
+          DiagonalLength + " -> ( " + getXEnd() + ", " + getYEnd() + " )" +
+          " k=" + (getXMid() - getYMid())
     }
 
     /**
@@ -385,19 +356,18 @@ public class Snake<T> {
      * @param b0 The starting position in the array of elements from the second object to compare
      * @param M  The index of the last element from the second object to compare
      */
-    private void RemoveStubs(int a0, int N, int b0, int M) {
-        if (this.IsForward) {
-            if (this.XStart == a0 && this.YStart == b0 - 1 && this.BInserted == 1) {
-                this.YStart = b0;
-                this.BInserted = 0;
+    private def RemoveStubs(a0: Int, N: Int, b0: Int, M: Int): Unit =
+        if (IsForward) {
+            if (XStart == a0 && YStart == b0 - 1 && BInserted == 1) {
+                YStart = b0
+                BInserted = 0
             }
         } else {
-            if (this.XStart == a0 + N && this.YStart == b0 + M + 1 && this.BInserted == 1) {
-                this.YStart = b0 + M;
-                this.BInserted = 0;
+            if (XStart == a0 + N && YStart == b0 + M + 1 && BInserted == 1) {
+                YStart = b0 + M
+                BInserted = 0
             }
         }
-    }
 
     /**
      * Combines two snakes of the same kind to reduce the number of returned snakes.
@@ -410,23 +380,23 @@ public class Snake<T> {
      * @param snake The snake to append to the current snake
      * @return true if the snake could be appended to this snake; false otherwise
      */
-    boolean append(Snake<T> snake) {
-        if (((this.IsForward && this.DiagonalLength >= 0) || (!this.IsForward && snake.DiagonalLength >= 0)) &&
-                (this.ADeleted > 0 && snake.ADeleted > 0 || this.BInserted > 0 && snake.BInserted > 0)) {
-            this.ADeleted += snake.ADeleted;
-            this.BInserted += snake.BInserted;
+    def append(snake: Snake[T]): Boolean =
+        if (((IsForward && DiagonalLength >= 0) || (!IsForward && snake.DiagonalLength >= 0)) &&
+          (ADeleted > 0 && snake.ADeleted > 0 || BInserted > 0 && snake.BInserted > 0)) {
+            ADeleted += snake.ADeleted
+            BInserted += snake.BInserted
 
-            this.DiagonalLength += snake.DiagonalLength;
+            DiagonalLength += snake.DiagonalLength
 
-            if (this.IsForward) {
-                this.XStart = Math.min(this.XStart, snake.XStart);
-                this.YStart = Math.min(this.YStart, snake.YStart);
+            if (IsForward) {
+                XStart = Math.min(XStart, snake.XStart)
+                YStart = Math.min(YStart, snake.YStart)
             } else {
-                this.XStart = Math.max(this.XStart, snake.XStart);
-                this.YStart = Math.max(this.YStart, snake.YStart);
+                XStart = Math.max(XStart, snake.XStart)
+                YStart = Math.max(YStart, snake.YStart)
             }
-            return true;
+            true
         }
-        return false;
-    }
+        else false
+
 }
