@@ -29,90 +29,6 @@ class Snake[T](
                 var D: Int = -1) {
 
     /**
-     * Initializes a new snake. The comparison direction can be defined via the <em>isForward</em> parameter. If set to
-     * true, the comparison will be done from start till end, while a value of false will result in a backward
-     * comparison from end to start.
-     * <p>
-     * <em>delta</em> defines the difference in length between the first and the second object to compare.
-     *
-     * @param isForward If set to true a forward comparison will be done; else a backward comparison
-     * @param delta     The difference in length between the first and the second object to compare
-     */
-    def this(isForward: Boolean, delta: Int) =
-        this(IsForward = isForward, DELTA = if (isForward) 0 else delta)
-
-    /**
-     * Initializes a new snake segment.
-     *
-     * @param a0        The starting position in the array of elements from the first object to compare
-     * @param N         The index of the last element from the first object to compare
-     * @param b0        The starting position in the array of elements from the second object to compare
-     * @param M         The index of the last element from the second object to compare
-     * @param isForward The comparison direction; true for a forward comparison, false otherwise
-     * @param xStart    The x-position of the current node
-     * @param yStart    The y-position of the current node
-     * @param aDeleted  Defines the number of removed elements from the first object (right movements in the graph)
-     * @param bInserted Defines the number of inserted elements from the second object (down movement in the graph)
-     * @param diagonal  Defines the number of equal elements in both objects for a given segment
-     */
-    Snake(int a0, int N, int b0, int M, boolean isForward, int xStart, int yStart, int aDeleted, int bInserted,
-          int diagonal) {
-        this.XStart = xStart;
-        this.YStart = yStart;
-        this.ADeleted = aDeleted;
-        this.BInserted = bInserted;
-        this.DiagonalLength = diagonal;
-        this.IsForward = isForward;
-
-        RemoveStubs(a0, N, b0, M);
-    }
-
-    /**
-     * Initializes a new snake segment.
-     *
-     * @param a0        The starting position in the array of elements from the first object to compare
-     * @param N         The index of the last element from the first object to compare
-     * @param b0        The starting position in the array of elements from the second object to compare
-     * @param M         The index of the last element from the second object to compare
-     * @param isForward The comparison direction; true for a forward comparison, false otherwise
-     * @param xStart    The x-position of the current node
-     * @param yStart    The y-position of the current node
-     * @param down      Defines if insertion (down movement; true) or a deletion (right movement; false) should be done
-     * @param diagonal  Defines the number of equal elements in both objects for a given segment
-     */
-    Snake(int a0, int N, int b0, int M, boolean isForward, int xStart, int yStart, boolean down, int diagonal) {
-        this.XStart = xStart;
-        this.YStart = yStart;
-        this.ADeleted = down ? 0 : 1;
-        this.BInserted = down ? 1 : 0;
-        this.DiagonalLength = diagonal;
-        this.IsForward = isForward;
-
-        RemoveStubs(a0, N, b0, M);
-    }
-
-    /**
-     * Initializes a new instance and calculates the segment based on the provided data.
-     *
-     * @param a0      The starting position in the array of elements from the first object to compare
-     * @param N       The index of the last element from the first object to compare
-     * @param b0      The starting position in the array of elements from the second object to compare
-     * @param M       The index of the last element from the second object to compare
-     * @param forward The comparison direction; true for a forward comparison, false otherwise
-     * @param delta   The difference in length of both objects to compare
-     * @param V       An array of end points for a given k-line
-     * @param k       The k-line the snake should get calculated for
-     * @param d       Number of differences for the same trace
-     * @param pa      Elements of the first object. Usually the original object
-     * @param pb      Elements of the second object. Usually the current object
-     */
-    Snake(int a0, int N, int b0, int M, boolean forward, int delta, V V, int k, int d, T[] pa, T[] pb) {
-        this.IsForward = forward;
-        this.DELTA = delta;
-        Calculate(V, k, d, pa, a0, N, pb, b0, M);
-    }
-
-    /**
      * Calculates a new snake segment depending on the current comparison direction.
      *
      * @param V  An array of end points for a given k-line
@@ -126,11 +42,9 @@ class Snake[T](
      * @param M  The index of the last element from the second object to compare
      * @return The calculated snake segment
      */
-    Snake<T> Calculate(V V, int k, int d, T[] pa, int a0, int N, T[] pb, int b0, int M) {
-        if (this.IsForward) {
-            return CalculateForward(V, k, d, pa, a0, N, pb, b0, M);
-        }
-        else return CalculateBackward(V, k, d, pa, a0, N, pb, b0, M);
+    def Calculate(V: V, k: Int, d: Int, pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int) = {
+        if (IsForward) CalculateForward(V, k, d, pa, a0, N, pb, b0, M)
+        else CalculateBackward(V, k, d, pa, a0, N, pb, b0, M)
     }
 
     /**
@@ -147,37 +61,37 @@ class Snake[T](
      * @param M  The index of the last element from the second object to compare
      * @return The calculated snake segment
      */
-    private Snake<T> CalculateForward(V V, int k, int d, T[] pa, int a0, int N, T[] pb, int b0, int M) {
+    private def CalculateForward(V: V, k: Int, d: Int, pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int) = {
         // determine if a insertion (down) or a deletion (right) occurred
-        boolean down = (k == -d || (k != d && V.getK(k - 1) < V.getK(k + 1)));
+        val down = (k == -d || (k != d && V.getK(k - 1) < V.getK(k + 1)))
 
         // calculate the x and y position based on the movement direction
-        int xStart = down ? V.getK(k + 1) : V.getK(k - 1);
-        int yStart = xStart - (down ? k + 1 : k - 1);
+        val xStart = if (down) V.getK(k + 1) else V.getK(k - 1)
+        val yStart = xStart - (if(down) k + 1 else k - 1)
 
         // calculate the x and y position of the end point
-        int xEnd = down ? xStart : xStart + 1;
-        int yEnd = xEnd - k;
+        var xEnd = if (down) xStart else xStart + 1
+        var yEnd = xEnd - k
 
         // calculate the number of equal elements in both objects for this
         // segment
-        int snake = 0;
-        while (xEnd < N && yEnd < M && pa[xEnd + a0].equals(pb[yEnd + b0])) {
-            xEnd++;
-            yEnd++;
-            snake++;
+        var snake = 0
+        while (xEnd < N && yEnd < M && pa(xEnd + a0).equals(pb(yEnd + b0))) {
+            xEnd += 1
+            yEnd += 1
+            snake += 1
         }
 
         // assign the calculated values to the fields of this instance
-        this.XStart = xStart + a0;
-        this.YStart = yStart + b0;
-        this.ADeleted = down ? 0 : 1;
-        this.BInserted = down ? 1 : 0;
-        this.DiagonalLength = snake;
+        XStart = xStart + a0
+        YStart = yStart + b0
+        ADeleted = if (down) 0 else 1
+        BInserted = if (down) 1 else 0
+        DiagonalLength = snake
 
-        RemoveStubs(a0, N, b0, M);
+        RemoveStubs(a0, N, b0, M)
 
-        return this;
+        this
     }
 
     /**
@@ -194,37 +108,37 @@ class Snake[T](
      * @param M  The index of the last element from the second object to compare
      * @return The calculated snake segment
      */
-    private Snake<T> CalculateBackward(V V, int k, int d, T[] pa, int a0, int N, T[] pb, int b0, int M) {
+    private def CalculateBackward(V: V, k: Int, d: Int, pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int) = {
         // determine if a insertion (up) or a deletion (left) occurred
-        boolean up = (k == d + this.DELTA || (k != -d + this.DELTA && V.getK(k - 1) < V.getK(k + 1)));
+        val up = (k == d + DELTA || (k != -d + DELTA && V.getK(k - 1) < V.getK(k + 1)))
 
         // calculate the x and y position based on the movement direction
-        int xStart = up ? V.getK(k - 1) : V.getK(k + 1);
-        int yStart = xStart - (up ? k - 1 : k + 1);
+        val xStart = if(up) V.getK(k - 1) else V.getK(k + 1)
+        val yStart = xStart - (if(up) k - 1 else k + 1)
 
         // calculate the x and y position of the end point
-        int xEnd = up ? xStart : xStart - 1;
-        int yEnd = xEnd - k;
+        var xEnd = if(up) xStart else xStart - 1
+        var yEnd = xEnd - k
 
         // calculate the number of equal elements in both objects for this
         // segment by following diagonals
-        int snake = 0;
-        while (xEnd > 0 && yEnd > 0 && pa[xEnd - 1].equals(pb[yEnd - 1])) {
-            xEnd--;
-            yEnd--;
-            snake++;
+        var snake = 0
+        while (xEnd > 0 && yEnd > 0 && pa(xEnd - 1).equals(pb(yEnd - 1))) {
+            xEnd -= 1
+            yEnd -= 1
+            snake += 1
         }
 
         // assign the calculated values to the fields of this instance
-        this.XStart = xStart;
-        this.YStart = yStart;
-        this.ADeleted = up ? 0 : 1;
-        this.BInserted = up ? 1 : 0;
-        this.DiagonalLength = snake;
+        XStart = xStart
+        YStart = yStart
+        ADeleted = if (up) 0 else 1
+        BInserted = if(up) 1 else 0
+        DiagonalLength = snake
 
-        RemoveStubs(a0, N, b0, M);
+        RemoveStubs(a0, N, b0, M)
 
-        return this;
+        this
     }
 
     /**
@@ -232,8 +146,8 @@ class Snake[T](
      *
      * @return The start point of this snake segment
      */
-    public Pair<Integer> getStartPoint() {
-        return new Pair<>(this.XStart, this.YStart);
+    def getStartPoint(): (Integer, Integer) = {
+        (XStart, YStart)
     }
 
     /**
@@ -241,8 +155,8 @@ class Snake[T](
      *
      * @return The mid point of this snake segment
      */
-    public Pair<Integer> getMidPoint() {
-        return new Pair<>(this.getXMid(), this.getYMid());
+    def getMidPoint(): (Integer, Integer) = {
+        (getXMid(), getYMid())
     }
 
     /**
@@ -250,8 +164,8 @@ class Snake[T](
      *
      * @return The end point of this snake segment
      */
-    public Pair<Integer> getEndPoint() {
-        return new Pair<>(this.getXEnd(), this.getYEnd());
+    def getEndPoint(): (Integer, Integer) = {
+        (getXEnd(), getYEnd())
     }
 
     /**
@@ -259,11 +173,9 @@ class Snake[T](
      *
      * @return The x-position of the mid point
      */
-    public int getXMid() {
-        if (this.IsForward) {
-            return this.XStart + this.ADeleted;
-        }
-        return this.XStart - this.ADeleted;
+    def getXMid(): Int =  {
+        if (IsForward) XStart + ADeleted
+        else XStart - ADeleted
     }
 
     /**
@@ -271,11 +183,9 @@ class Snake[T](
      *
      * @return The y-position of the mid point
      */
-    public int getYMid() {
-        if (this.IsForward) {
-            return this.YStart + this.BInserted;
-        }
-        return this.YStart - this.BInserted;
+    def getYMid(): Int =  {
+        if (IsForward) YStart + BInserted
+        else YStart - BInserted
     }
 
     /**
@@ -283,11 +193,9 @@ class Snake[T](
      *
      * @return The x-position of the end point
      */
-    public int getXEnd() {
-        if (this.IsForward) {
-            return this.XStart + this.ADeleted + this.DiagonalLength;
-        }
-        return this.XStart - this.ADeleted - this.DiagonalLength;
+    def getXEnd(): Int =  {
+        if (IsForward) XStart + ADeleted + DiagonalLength
+        else XStart - ADeleted - DiagonalLength
     }
 
     /**
@@ -295,11 +203,9 @@ class Snake[T](
      *
      * @return The y-position of the end point
      */
-    public int getYEnd() {
-        if (this.IsForward) {
-            return this.YStart + this.BInserted + this.DiagonalLength;
-        }
-        return this.YStart - this.BInserted - this.DiagonalLength;
+    def getYEnd(): Int = {
+        if (IsForward) YStart + BInserted + DiagonalLength
+        else YStart - BInserted - DiagonalLength
     }
 
     /**
@@ -307,17 +213,15 @@ class Snake[T](
      *
      * @return true indicates that this segment is a middle point; false that it is not a middle point
      */
-    public boolean isMiddlePoint() {
-        return this.IsMiddle;
-    }
+    def isMiddlePoint(): Boolean = IsMiddle
 
     /**
      * Defines if this snake segment is a middle point.
      *
      * @param isMiddle true indicates that this segment is a middle point, false that it is not a middle point
      */
-    public void setMiddlePoint(boolean isMiddle) {
-        this.IsMiddle = isMiddle;
+    def setMiddlePoint(isMiddle: Boolean): Unit = {
+        IsMiddle = isMiddle
     }
 
     /**
@@ -338,7 +242,7 @@ class Snake[T](
     }
 
     override def toString() = {
-        return "Snake " +
+        "Snake " +
           (if (IsForward) "F" else "R") + ": " +
                 "( " + XStart + ", " + YStart + " ) + " +
           (if (ADeleted > 0) "D( " else (if (BInserted > 0) "I( " else "( ")) + +ADeleted + ", " + BInserted + " ) + " +
@@ -398,5 +302,95 @@ class Snake[T](
             true
         }
         else false
+
+}
+
+object Snake {
+
+    /**
+      * Initializes a new snake. The comparison direction can be defined via the <em>isForward</em> parameter. If set to
+      * true, the comparison will be done from start till end, while a value of false will result in a backward
+      * comparison from end to start.
+      * <p>
+      * <em>delta</em> defines the difference in length between the first and the second object to compare.
+      *
+      * @param isForward If set to true a forward comparison will be done; else a backward comparison
+      * @param delta     The difference in length between the first and the second object to compare
+      */
+    def apply[T](isForward: Boolean, delta: Int): Snake[T] =
+        new Snake[T](IsForward = isForward, DELTA = if (isForward) 0 else delta)
+
+    /**
+      * Initializes a new snake segment.
+      *
+      * @param a0        The starting position in the array of elements from the first object to compare
+      * @param N         The index of the last element from the first object to compare
+      * @param b0        The starting position in the array of elements from the second object to compare
+      * @param M         The index of the last element from the second object to compare
+      * @param isForward The comparison direction; true for a forward comparison, false otherwise
+      * @param xStart    The x-position of the current node
+      * @param yStart    The y-position of the current node
+      * @param aDeleted  Defines the number of removed elements from the first object (right movements in the graph)
+      * @param bInserted Defines the number of inserted elements from the second object (down movement in the graph)
+      * @param diagonal  Defines the number of equal elements in both objects for a given segment
+      */
+    def apply[T](a0: Int, N: Int, b0: Int, M: Int, isForward: Boolean, xStart: Int, yStart: Int, aDeleted: Int, bInserted: Int, diagonal: Int): Snake[T] = {
+        val snake = new Snake[T](
+        XStart = xStart,
+        YStart = yStart,
+        ADeleted = aDeleted,
+        BInserted = bInserted,
+        DiagonalLength = diagonal,
+        IsForward = isForward)
+        snake.RemoveStubs(a0, N, b0, M)
+        snake
+    }
+
+    /**
+      * Initializes a new snake segment.
+      *
+      * @param a0        The starting position in the array of elements from the first object to compare
+      * @param N         The index of the last element from the first object to compare
+      * @param b0        The starting position in the array of elements from the second object to compare
+      * @param M         The index of the last element from the second object to compare
+      * @param isForward The comparison direction; true for a forward comparison, false otherwise
+      * @param xStart    The x-position of the current node
+      * @param yStart    The y-position of the current node
+      * @param down      Defines if insertion (down movement; true) or a deletion (right movement; false) should be done
+      * @param diagonal  Defines the number of equal elements in both objects for a given segment
+      */
+    def apply[T](a0: Int, N: Int, b0: Int, M: Int, isForward: Boolean, xStart: Int, yStart: Int, down: Boolean, diagonal: Int): Snake[T] = {
+        val snake = new Snake[T](
+        XStart = xStart,
+        YStart = yStart,
+        ADeleted = if (down) 0 else 1,
+        BInserted = if (down) 1 else 0,
+        DiagonalLength = diagonal,
+        IsForward = isForward)
+        snake.RemoveStubs(a0, N, b0, M)
+        snake
+    }
+
+    /**
+      * Initializes a new instance and calculates the segment based on the provided data.
+      *
+      * @param a0      The starting position in the array of elements from the first object to compare
+      * @param N       The index of the last element from the first object to compare
+      * @param b0      The starting position in the array of elements from the second object to compare
+      * @param M       The index of the last element from the second object to compare
+      * @param forward The comparison direction; true for a forward comparison, false otherwise
+      * @param delta   The difference in length of both objects to compare
+      * @param V       An array of end points for a given k-line
+      * @param k       The k-line the snake should get calculated for
+      * @param d       Number of differences for the same trace
+      * @param pa      Elements of the first object. Usually the original object
+      * @param pb      Elements of the second object. Usually the current object
+      */
+    def apply[T](a0: Int, N: Int, b0: Int, M: Int, forward: Boolean, delta: Int, V: V, k: Int, d: Int, pa: Array[T], pb: Array[T]): Snake[T] = {
+        val snake = apply[T](forward, delta)
+        snake.Calculate(V, k, d, pa, a0, N, pb, b0, M)
+    }
+
+
 
 }

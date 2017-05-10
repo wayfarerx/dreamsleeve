@@ -48,7 +48,7 @@ private[diff] object LCS {
       V.setK(k, xEnd)
       // check for solution
       if (xEnd >= N && yEnd >= M) { // solution has been found
-        return new Snake[T](0, N, 0, M, true, xStart, yStart, down, snake)
+        return Snake[T](0, N, 0, M, true, xStart, yStart, down, snake)
       }
       k += 2
     }
@@ -90,7 +90,7 @@ private[diff] object LCS {
         snake += 1
       }
       V.setK(k, xEnd)
-      if (xEnd <= 0 && yEnd <= 0) return new Snake[T](0, N, 0, M, false, xStart, yStart, up, snake)
+      if (xEnd <= 0 && yEnd <= 0) return Snake[T](0, N, 0, M, false, xStart, yStart, up, snake)
       k += 2
     }
     null
@@ -160,7 +160,7 @@ private[diff] object LCS {
             // ( D - 1 )-path in diagonal k
             if (VForward.getK(k) >= VReverse.getK(k)) {
               // overlap :)
-              val forward = new Snake[T](a0, N, b0, M, true, xStart + a0, yStart + b0, down, snake)
+              val forward = Snake[T](a0, N, b0, M, true, xStart + a0, yStart + b0, down, snake)
               forward.setD(d)
               // we found a middle snake and the shortest edit script
               // (SES) of length 2D -1
@@ -198,7 +198,7 @@ private[diff] object LCS {
             // check if the path overlaps the farthest reaching forward
             // D-path in diagonal k + Δ
             if (VReverse.getK(k) <= VForward.getK(k)) {
-              val reverse = new Snake[T](a0, N, b0, M, false, xStart + a0, yStart + b0, up, snake)
+              val reverse = Snake[T](a0, N, b0, M, false, xStart + a0, yStart + b0, up, snake)
               reverse.setD(d)
               // (SES) of length 2D
               return new SnakePair[T](2 * d, null, reverse)

@@ -126,11 +126,11 @@ object LinearDiff {
   @throws[Exception]
   private[diff] def CompareImpl[T <: AnyRef](recursion: Int, snakes: util.List[Snake[T]], forwardVs: util.List[V], reverseVs: util.List[V], pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int, VForward: V, VReverse: V): Unit = {
     if (M == 0 && N > 0) { // add N deletions to SES
-      val right = new Snake[T](a0, N, b0, M, true, a0, b0, N, 0, 0)
+      val right = Snake[T](a0, N, b0, M, true, a0, b0, N, 0, 0)
       if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(right)) snakes.add(right)
     }
     if (N == 0 && M > 0) { // add M insertions to SES
-      val down = new Snake[T](a0, N, b0, M, true, a0, b0, 0, M, 0)
+      val down = Snake[T](a0, N, b0, M, true, a0, b0, 0, M, 0)
       if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(down)) snakes.add(down)
     }
     if (N <= 0 || M <= 0) return
@@ -150,7 +150,7 @@ object LinearDiff {
       else {
         m.getReverse.getEndPoint
       }
-      CompareImpl(recursion + 1, snakes, null, null, pa, a0, xy.X - a0, pb, b0, xy.Y - b0, VForward, VReverse)
+      CompareImpl(recursion + 1, snakes, null, null, pa, a0, xy._1 - a0, pb, b0, xy._2 - b0, VForward, VReverse)
       // add middle snake to results
       if (m.getForward != null) if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(m.getForward)) snakes.add(m.getForward)
       if (m.getReverse != null) if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(m.getReverse)) snakes.add(m.getReverse)
@@ -161,7 +161,7 @@ object LinearDiff {
       else {
         m.getForward.getEndPoint
       }
-      CompareImpl(recursion + 1, snakes, null, null, pa, uv.X, a0 + N - uv.X, pb, uv.Y, b0 + M - uv.Y, VForward, VReverse)
+      CompareImpl(recursion + 1, snakes, null, null, pa, uv._1, a0 + N - uv._1, pb, uv._2, b0 + M - uv._2, VForward, VReverse)
     }
     else { // we found an edge case. If d == 0 than both segments are identical
       // if d == 1 than there is exactly one insertion or deletion which
@@ -169,7 +169,7 @@ object LinearDiff {
       if (m.getForward != null) { // add d = 0 diagonal to results
         if (m.getForward.XStart > a0) {
           if (m.getForward.XStart - a0 != m.getForward.YStart - b0) throw new Exception("Missed D0 forward")
-          val snake = new Snake[T](a0, N, b0, M, true, a0, b0, 0, 0, m.getForward.XStart - a0)
+          val snake = Snake[T](a0, N, b0, M, true, a0, b0, 0, 0, m.getForward.XStart - a0)
           if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(snake)) snakes.add(snake)
         }
         if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(m.getForward)) snakes.add(m.getForward)
@@ -179,7 +179,7 @@ object LinearDiff {
         // D0
         if (m.getReverse.XStart < a0 + N) {
           if (a0 + N - m.getReverse.XStart != b0 + M - m.getReverse.YStart) throw new Exception("Missed D0 reverse")
-          val snake = new Snake[T](a0, N, b0, M, true, m.getReverse.XStart, m.getReverse.YStart, 0, 0, a0 + N - m.getReverse.XStart)
+          val snake = Snake[T](a0, N, b0, M, true, m.getReverse.XStart, m.getReverse.YStart, 0, 0, a0 + N - m.getReverse.XStart)
           if (snakes.size == 0 || !snakes.get(snakes.size - 1).append(snake)) snakes.add(snake)
         }
       }
