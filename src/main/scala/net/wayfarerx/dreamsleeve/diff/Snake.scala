@@ -1,182 +1,6 @@
 package net.wayfarerx.dreamsleeve.diff
 
 /**
- * A snake is a segment along a path which converts an object A to object B by either eliminating elements from object A
- * or inserting elements from object B.
- *
- * @param xStart   The x-position of a starting point
- * @param yStart   The y-position of a starting point
- * @param deleted  Defines the number of deleted elements from the first object to match the second object
- * @param inserted Defines the number of inserted elements from the second object to match the first object
- * @param diagonal Defines the number of equal elements in both objects
- * @param forward  Defines the comparison direction of both objects
- * @author Roman Vottner
- */
-private[diff] class AOldSnake private(
-  val xStart: Int,
-  val yStart: Int,
-  val deleted: Int,
-  val inserted: Int,
-  val diagonal: Int,
-  val forward: Boolean) {
-
-  /**
-   * Returns the x-position of the mid point for this snake segment.
-   *
-   * @return The x-position of the mid point
-   */
-  def xMid: Int = {
-    if (forward) xStart + deleted
-    else xStart - deleted
-  }
-
-  /**
-   * Returns the y-position of the mid point for this snake segment.
-   *
-   * @return The y-position of the mid point
-   */
-  def yMid: Int = {
-    if (forward) yStart + inserted
-    else yStart - inserted
-  }
-
-  /**
-   * Returns the x-position of the end point for this snake segment.
-   *
-   * @return The x-position of the end point
-   */
-  def xEnd: Int = {
-    if (forward) xStart + deleted + diagonal
-    else xStart - deleted - diagonal
-  }
-
-  /**
-   * Returns the y-position of the end point for this snake segment.
-   *
-   * @return The y-position of the end point
-   */
-  def yEnd: Int = {
-    if (forward) yStart + inserted + diagonal
-    else yStart - inserted - diagonal
-  }
-
-  /**
-   * Combines two snakes of the same kind to reduce the number of returned snakes.
-   * <p>
-   * A snake is of the same kind if both are in the same direction and if both have either a positive ADeleted field
-   * or a positive BInserted field, but not either a positive ADeleted and the other a positive BInserted field!
-   * Moreover, if the snake to append has a DiagonalLength > 0 it is not meant to be of the same kind and therefore
-   * should not be appended to this snake.
-   *
-   * @param snake The snake to append to the current snake
-   * @return The combined snake if the snake could be appended to this snake; None otherwise
-   */
-  def append(snake: AOldSnake): Option[AOldSnake] =
-    if (diagonal >= 0 && (deleted > 0 && snake.deleted > 0 || inserted > 0 && snake.inserted > 0)) Some {
-      if (forward) new AOldSnake(Math.min(xStart, snake.xStart), Math.min(yStart, snake.yStart), deleted + snake.deleted, inserted + snake.inserted, diagonal + snake.diagonal, forward)
-      else new AOldSnake(Math.max(xStart, snake.xStart), Math.max(yStart, snake.yStart), deleted + snake.deleted, inserted + snake.inserted, diagonal + snake.diagonal, forward)
-    } else None
-
-}
-
-private[diff] object AOldSnake {
-
-  /**
-   * Initializes a new snake segment.
-   *
-   * @param a0       The starting position in the array of elements from the first object to compare
-   * @param N        The index of the last element from the first object to compare
-   * @param b0       The starting position in the array of elements from the second object to compare
-   * @param M        The index of the last element from the second object to compare
-   * @param forward  The comparison direction; true for a forward comparison, false otherwise
-   * @param xStart   The x-position of the current node
-   * @param yStart   The y-position of the current node
-   * @param down     Defines if insertion (down movement; true) or a deletion (right movement; false) should be done
-   * @param diagonal Defines the number of equal elements in both objects for a given segment
-   */
-  def apply(a0: Int, N: Int, b0: Int, M: Int, forward: Boolean, xStart: Int, yStart: Int, down: Boolean, diagonal: Int): AOldSnake =
-    create(
-      xStart,
-      yStart,
-      if (down) 0 else 1,
-      if (down) 1 else 0,
-      diagonal,
-      forward,
-      a0,
-      N,
-      b0,
-      M)
-
-  /**
-   * Initializes a new snake segment.
-   *
-   * @param a0       The starting position in the array of elements from the first object to compare
-   * @param N        The index of the last element from the first object to compare
-   * @param b0       The starting position in the array of elements from the second object to compare
-   * @param M        The index of the last element from the second object to compare
-   * @param forward  The comparison direction; true for a forward comparison, false otherwise
-   * @param xStart   The x-position of the current node
-   * @param yStart   The y-position of the current node
-   * @param deleted  Defines the number of removed elements from the first object (right movements in the graph)
-   * @param inserted Defines the number of inserted elements from the second object (down movement in the graph)
-   * @param diagonal Defines the number of equal elements in both objects for a given segment
-   */
-  def apply(a0: Int, N: Int, b0: Int, M: Int, forward: Boolean, xStart: Int, yStart: Int, deleted: Int, inserted: Int, diagonal: Int): AOldSnake =
-    create(
-      xStart,
-      yStart,
-      deleted,
-      inserted,
-      diagonal,
-      forward,
-      a0,
-      N,
-      b0,
-      M)
-
-  private def create(
-    xStart: Int,
-    yStart: Int,
-    deleted: Int,
-    inserted: Int,
-    diagonal: Int,
-    forward: Boolean,
-    a0: Int,
-    N: Int,
-    b0: Int,
-    M: Int
-  ): AOldSnake = {
-    var _yStart = yStart
-    var _inserted = inserted
-    if (forward) {
-      if (xStart == a0 && _yStart == b0 - 1 && _inserted == 1) {
-        _yStart = b0
-        _inserted = 0
-      }
-    } else {
-      if (xStart == a0 + N && _yStart == b0 + M + 1 && _inserted == 1) {
-        _yStart = b0 + M
-        _inserted = 0
-      }
-    }
-    new AOldSnake(
-      xStart,
-      _yStart,
-      deleted,
-      _inserted,
-      diagonal,
-      forward)
-  }
-
-
-}
-
-//
-//
-//
-
-
-/**
  * Base class for all segments along a path which converts an object A to object B by either eliminating elements from
  * object A or inserting elements from object B.
  *
@@ -308,20 +132,7 @@ private[diff] object Snake {
     /* Set the concrete snake type. */
     override type SnakeType = Forward
 
-    /**
-     * Creates a forward snake with the specified parameters.
-     *
-     * @param xStart   The x-position of a starting point.
-     * @param yStart   The y-position of a starting point.
-     * @param deleted  The number of deleted elements from the first object to match the second object.
-     * @param inserted The number of inserted elements from the second object to match the first object.
-     * @param diagonal The number of equal elements in both objects.
-     * @param a0       The starting position in the array of elements from the first object to compare.
-     * @param N        The index of the last element from the first object to compare.
-     * @param b0       The starting position in the array of elements from the second object to compare.
-     * @param M        The index of the last element from the second object to compare.
-     * @return A forward snake with the specified parameters.
-     */
+    /* Create a forward snake with the specified parameters. */
     override protected def create(
       xStart: Int,
       yStart: Int,
@@ -353,7 +164,7 @@ private[diff] object Snake {
    * @param inserted The number of inserted elements from the second object to match the first object.
    * @param diagonal The number of equal elements in both objects.
    */
-  case class Backward private(
+  case class Reverse private(
     xStart: Int,
     yStart: Int,
     deleted: Int,
@@ -362,7 +173,7 @@ private[diff] object Snake {
   ) extends Snake {
 
     /* Set the concrete snake type. */
-    override type SnakeType = Backward
+    override type SnakeType = Reverse
 
     /* This is a reverse snake. */
     override def forward = false
@@ -381,7 +192,7 @@ private[diff] object Snake {
 
     /* Combine two snakes of the same kind to reduce the number of returned snakes. */
     override protected def appendSnake(snake: Snake) =
-      Backward(
+      Reverse(
         Math.min(xStart, snake.xStart),
         Math.min(yStart, snake.yStart),
         deleted + snake.deleted,
@@ -393,25 +204,12 @@ private[diff] object Snake {
   /**
    * A factory for reverse snakes.
    */
-  object Backward extends Factory {
+  object Reverse extends Factory {
 
     /* Set the concrete snake type. */
-    override type SnakeType = Backward
+    override type SnakeType = Reverse
 
-    /**
-     * Creates a reverse snake with the specified parameters.
-     *
-     * @param xStart   The x-position of a starting point.
-     * @param yStart   The y-position of a starting point.
-     * @param deleted  The number of deleted elements from the first object to match the second object.
-     * @param inserted The number of inserted elements from the second object to match the first object.
-     * @param diagonal The number of equal elements in both objects.
-     * @param a0       The starting position in the array of elements from the first object to compare.
-     * @param N        The index of the last element from the first object to compare.
-     * @param b0       The starting position in the array of elements from the second object to compare.
-     * @param M        The index of the last element from the second object to compare.
-     * @return A reverse snake with the specified parameters.
-     */
+    /* Create a reverse snake with the specified parameters. */
     override protected def create(
       xStart: Int,
       yStart: Int,
@@ -422,20 +220,24 @@ private[diff] object Snake {
       N: Int,
       b0: Int,
       M: Int
-    ): Backward = {
+    ): Reverse = {
       var _yStart = yStart
       var _inserted = inserted
       if (xStart == a0 + N && _yStart == b0 + M + 1 && _inserted == 1) {
         _yStart = b0 + M
         _inserted = 0
       }
-      Backward(xStart, _yStart, deleted, _inserted, diagonal)
+      Reverse(xStart, _yStart, deleted, _inserted, diagonal)
     }
 
   }
 
+  /**
+   * Base class for snake factories.
+   */
   sealed trait Factory {
 
+    /** The concrete type of snake produced by this factory. */
     type SnakeType <: Snake
 
     /**
@@ -450,17 +252,17 @@ private[diff] object Snake {
      * @param down     Defines if insertion (down movement; true) or a deletion (right movement; false) should be done
      * @param diagonal Defines the number of equal elements in both objects for a given segment
      */
-    def apply(a0: Int, N: Int, b0: Int, M: Int, xStart: Int, yStart: Int, down: Boolean, diagonal: Int): SnakeType =
-      create(
-        xStart,
-        yStart,
-        if (down) 0 else 1,
-        if (down) 1 else 0,
-        diagonal,
-        a0,
-        N,
-        b0,
-        M)
+    final def apply(
+      a0: Int,
+      N: Int,
+      b0: Int,
+      M: Int,
+      xStart: Int,
+      yStart: Int,
+      down: Boolean,
+      diagonal: Int
+    ): SnakeType =
+      create(xStart, yStart, if (down) 0 else 1, if (down) 1 else 0, diagonal, a0, N, b0, M)
 
     /**
      * Initializes a new snake segment.
@@ -475,18 +277,33 @@ private[diff] object Snake {
      * @param inserted Defines the number of inserted elements from the second object (down movement in the graph)
      * @param diagonal Defines the number of equal elements in both objects for a given segment
      */
-    def apply(a0: Int, N: Int, b0: Int, M: Int, xStart: Int, yStart: Int, deleted: Int, inserted: Int, diagonal: Int): SnakeType =
-      create(
-        xStart,
-        yStart,
-        deleted,
-        inserted,
-        diagonal,
-        a0,
-        N,
-        b0,
-        M)
+    final def apply(
+      a0: Int,
+      N: Int,
+      b0: Int,
+      M: Int,
+      xStart: Int,
+      yStart: Int,
+      deleted: Int,
+      inserted: Int,
+      diagonal: Int
+    ): SnakeType =
+      create(xStart, yStart, deleted, inserted, diagonal, a0, N, b0, M)
 
+    /**
+     * Creates a snake with the specified parameters.
+     *
+     * @param xStart   The x-position of a starting point.
+     * @param yStart   The y-position of a starting point.
+     * @param deleted  The number of deleted elements from the first object to match the second object.
+     * @param inserted The number of inserted elements from the second object to match the first object.
+     * @param diagonal The number of equal elements in both objects.
+     * @param a0       The starting position in the array of elements from the first object to compare.
+     * @param N        The index of the last element from the first object to compare.
+     * @param b0       The starting position in the array of elements from the second object to compare.
+     * @param M        The index of the last element from the second object to compare.
+     * @return A snake with the specified parameters.
+     */
     protected def create(
       xStart: Int,
       yStart: Int,

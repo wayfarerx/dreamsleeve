@@ -90,7 +90,7 @@ private[diff] object LCS {
         snake += 1
       }
       V.setK(k, xEnd)
-      if (xEnd <= 0 && yEnd <= 0) return Snake.Backward(0, N, 0, M, xStart, yStart, up, snake)
+      if (xEnd <= 0 && yEnd <= 0) return Snake.Reverse(0, N, 0, M, xStart, yStart, up, snake)
       k += 2
     }
     null
@@ -197,7 +197,7 @@ private[diff] object LCS {
             // check if the path overlaps the farthest reaching forward
             // D-path in diagonal k + Δ
             if (VReverse.getK(k) <= VForward.getK(k)) {
-              val reverse = Snake.Backward(a0, N, b0, M, xStart + a0, yStart + b0, up, snake)
+              val reverse = Snake.Reverse(a0, N, b0, M, xStart + a0, yStart + b0, up, snake)
               // (SES) of length 2D
               return SnakePair[T](2 * d, null, reverse)
             }
