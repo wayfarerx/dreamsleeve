@@ -21,7 +21,7 @@ private[diff] object LCS {
    * @param d  The number of differences for the same trace
    * @return The segment found by forward comparison
    */
-  private[diff] def Forward[T](pa: Array[T], N: Int, pb: Array[T], M: Int, V: V, d: Int): Snake[T] = {
+  private[diff] def Forward[T](pa: Array[T], N: Int, pb: Array[T], M: Int, V: V, d: Int): Snake = {
     // An important observation for the implementation is that end points
     // for even d are on even k-lines only and vice-versa. That's why k+=2
     var k = -d
@@ -48,7 +48,7 @@ private[diff] object LCS {
       V.setK(k, xEnd)
       // check for solution
       if (xEnd >= N && yEnd >= M) { // solution has been found
-        return Snake[T](0, N, 0, M, true, xStart, yStart, down, snake)
+        return Snake.Forward(0, N, 0, M, xStart, yStart, down, snake)
       }
       k += 2
     }
@@ -67,7 +67,7 @@ private[diff] object LCS {
    * @param d  The number of differences for the same trace
    * @return The segment found by reverse comparison
    */
-  private[diff] def Reverse[T](pa: Array[T], N: Int, pb: Array[T], M: Int, V: V, d: Int): Snake[T] = {
+  private[diff] def Reverse[T](pa: Array[T], N: Int, pb: Array[T], M: Int, V: V, d: Int): Snake = {
     // As the length of sequences pa and pb can be different, the k lines of
     // the forward and reverse algorithms can be different. It is useful to
     // isolate this difference as a variable.
@@ -90,7 +90,7 @@ private[diff] object LCS {
         snake += 1
       }
       V.setK(k, xEnd)
-      if (xEnd <= 0 && yEnd <= 0) return Snake[T](0, N, 0, M, false, xStart, yStart, up, snake)
+      if (xEnd <= 0 && yEnd <= 0) return Snake.Backward(0, N, 0, M, xStart, yStart, up, snake)
       k += 2
     }
     null
@@ -160,11 +160,10 @@ private[diff] object LCS {
             // ( D - 1 )-path in diagonal k
             if (VForward.getK(k) >= VReverse.getK(k)) {
               // overlap :)
-              val forward = Snake[T](a0, N, b0, M, true, xStart + a0, yStart + b0, down, snake)
-              forward.setD(d)
+              val forward = Snake.Forward(a0, N, b0, M, xStart + a0, yStart + b0, down, snake)
               // we found a middle snake and the shortest edit script
               // (SES) of length 2D -1
-              return new SnakePair[T]((2 * d) - 1, forward, null)
+              return SnakePair[T]((2 * d) - 1, forward, null)
             }
           }
           k += 2
@@ -198,10 +197,9 @@ private[diff] object LCS {
             // check if the path overlaps the farthest reaching forward
             // D-path in diagonal k + Δ
             if (VReverse.getK(k) <= VForward.getK(k)) {
-              val reverse = Snake[T](a0, N, b0, M, false, xStart + a0, yStart + b0, up, snake)
-              reverse.setD(d)
+              val reverse = Snake.Backward(a0, N, b0, M, xStart + a0, yStart + b0, up, snake)
               // (SES) of length 2D
-              return new SnakePair[T](2 * d, null, reverse)
+              return SnakePair[T](2 * d, null, reverse)
             }
           }
           k += 2

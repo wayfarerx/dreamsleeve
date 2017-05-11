@@ -9,13 +9,11 @@ package net.wayfarerx.dreamsleeve.diff
  * @tparam T The type of the element the snakes will hold
  * @author Roman Vottner
  */
-class SnakePair[T](var D: Int, var Forward: Snake[T], var Reverse: Snake[T]) {
-  /**
-   * Sets the number of differences for both calculation directions.
-   *
-   * @param d The number of differences for both calculation directions
-   */
-  def setD(d: Int): Unit = this.D = d
+case class SnakePair[T](
+  D: Int,
+  Forward: Snake,
+  Reverse: Snake
+) {
 
   /**
    * Returns the number of differences for both calculation directions.
@@ -27,33 +25,19 @@ class SnakePair[T](var D: Int, var Forward: Snake[T], var Reverse: Snake[T]) {
    *
    * @return The number of differences for both calculation directions
    */
-  def getD = this.D
-
-  /**
-   * Sets the new segment calculated in a forward direction.
-   *
-   * @param forward The segment calculated in forward direction
-   */
-  def setForward(forward: Snake[T]): Unit = this.Forward = forward
+  def getD = D
 
   /**
    * Returns the segment which was calculated in forward direction.
    *
    * @return The segment calculated in forward direction
    */
-  def getForward = this.Forward
-
-  /**
-   * Sets the new segment calculated in a backward direction.
-   *
-   * @param reverse The segment calculated in backward direction
-   */
-  def setReverse(reverse: Snake[T]): Unit = this.Reverse = reverse
+  def getForward = Forward
 
   /**
    * Returns the segment which was calculated in backward direction.
    *
    * @return The segment calculated in backward direction
    */
-  def getReverse = this.Reverse
+  def getReverse = Reverse
 }
