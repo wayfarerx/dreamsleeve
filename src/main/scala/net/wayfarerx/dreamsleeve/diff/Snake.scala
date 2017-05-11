@@ -52,7 +52,7 @@ private[diff] sealed trait Snake {
    * @param snake The snake to append to the current snake.
    * @return The combined snake if the snake could be appended to this snake; None otherwise.
    */
-  final def append(snake: Snake): Option[Snake] =
+  final def append(snake: Snake): Option[SnakeType] =
     if ((diagonal == 0 && snake.diagonal == 0) &&
       (deleted > 0 && snake.deleted > 0 || inserted > 0 && snake.inserted > 0) &&
       (deleted == 0 && snake.deleted == 0 || inserted == 0 && snake.inserted == 0)) {

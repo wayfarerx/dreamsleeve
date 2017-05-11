@@ -149,54 +149,32 @@ object LinearDiff {
     }
     if (N <= 0 || M <= 0) return
     //calculate middle snake
-    val m = LCS.MiddleSnake[T](pa, a0, N, pb, b0, M, VForward, VReverse, forwardVs, reverseVs)
+    val (mDiffs, mSnake) = LCS.MiddleSnake[T](pa, a0, N, pb, b0, M, VForward, VReverse, forwardVs, reverseVs)
     // check for edge (D = 0 or 1) or middle segment (D > 1)
-    if (m.getD > 1) { // solve the rectangles that remain to the top left and bottom right
+    if (mDiffs > 1) { // solve the rectangles that remain to the top left and bottom right
       // top left .. Compare(A[1..x], x, B[1..y], y)
-      val xy = if (m.getForward != null) {
-        (m.getForward.xStart, m.getForward.yStart)
-      }
-      else {
-        (m.getReverse.xEnd, m.getReverse.yEnd)
-      }
+      val xy = if (mSnake.forward) (mSnake.xStart, mSnake.yStart) else (mSnake.xEnd, mSnake.yEnd)
       CompareImpl(recursion + 1, snakes, null, null, pa, a0, xy._1 - a0, pb, b0, xy._2 - b0, VForward, VReverse)
       // add middle snake to results
-      if (m.getForward != null) {
-        if (snakes.size == 0) snakes.add(m.getForward)
-        else snakes.get(snakes.size - 1).append(m.getForward) match {
-          case Some(newSnake) =>
-            snakes.remove(snakes.size - 1)
-            snakes.add(newSnake)
-          case None =>
-            snakes.add(m.getForward)
-        }
-      }
-      if (m.getReverse != null) {
-        if (snakes.size == 0) snakes.add(m.getReverse)
-        else snakes.get(snakes.size - 1).append(m.getReverse) match {
-          case Some(newSnake) =>
-            snakes.remove(snakes.size - 1)
-            snakes.add(newSnake)
-          case None =>
-            snakes.add(m.getReverse)
-        }
+      if (snakes.size == 0) snakes.add(mSnake)
+      else snakes.get(snakes.size - 1).append(mSnake) match {
+        case Some(newSnake) =>
+          snakes.remove(snakes.size - 1)
+          snakes.add(newSnake)
+        case None =>
+          snakes.add(mSnake)
       }
       // bottom right .. Compare(A[u+1..N], N-u, B[v+1..M], M-v)
-      val uv = if (m.getReverse != null) {
-        (m.getReverse.xStart, m.getReverse.yStart)
-      }
-      else {
-        (m.getForward.xEnd, m.getForward.yEnd)
-      }
+      val uv = if (mSnake.forward) (mSnake.xEnd, mSnake.yEnd) else (mSnake.xStart, mSnake.yStart)
       CompareImpl(recursion + 1, snakes, null, null, pa, uv._1, a0 + N - uv._1, pb, uv._2, b0 + M - uv._2, VForward, VReverse)
     }
     else { // we found an edge case. If d == 0 than both segments are identical
       // if d == 1 than there is exactly one insertion or deletion which
       // results in a odd delta and therefore a forward snake
-      if (m.getForward != null) { // add d = 0 diagonal to results
-        if (m.getForward.xStart > a0) {
-          if (m.getForward.xStart - a0 != m.getForward.yStart - b0) throw new Exception("Missed D0 forward")
-          val snake = Snake.Forward(a0, N, b0, M, a0, b0, 0, 0, m.getForward.xStart - a0)
+      if (mSnake.forward) { // add d = 0 diagonal to results
+        if (mSnake.xStart > a0) {
+          if (mSnake.xStart - a0 != mSnake.yStart - b0) sys.error("Missed D0 forward")
+          val snake = Snake.Forward(a0, N, b0, M, a0, b0, 0, 0, mSnake.xStart - a0)
           if (snakes.size == 0) snakes.add(snake)
           else snakes.get(snakes.size - 1).append(snake) match {
             case Some(newSnake) =>
@@ -206,28 +184,27 @@ object LinearDiff {
               snakes.add(snake)
           }
         }
-        if (snakes.size == 0) snakes.add(m.getForward)
-        else snakes.get(snakes.size - 1).append(m.getForward) match {
+        if (snakes.size == 0) snakes.add(mSnake)
+        else snakes.get(snakes.size - 1).append(mSnake) match {
           case Some(newSnake) =>
             snakes.remove(snakes.size - 1)
             snakes.add(newSnake)
           case None =>
-            snakes.add(m.getForward)
+            snakes.add(mSnake)
         }
-      }
-      if (m.getReverse != null) {
-        if (snakes.size == 0) snakes.add(m.getReverse)
-        else snakes.get(snakes.size - 1).append(m.getReverse) match {
+      } else {
+        if (snakes.size == 0) snakes.add(mSnake)
+        else snakes.get(snakes.size - 1).append(mSnake) match {
           case Some(newSnake) =>
             snakes.remove(snakes.size - 1)
             snakes.add(newSnake)
           case None =>
-            snakes.add(m.getReverse)
+            snakes.add(mSnake)
         }
         // D0
-        if (m.getReverse.xStart < a0 + N) {
-          if (a0 + N - m.getReverse.xStart != b0 + M - m.getReverse.yStart) throw new Exception("Missed D0 reverse")
-          val snake = Snake.Forward(a0, N, b0, M, m.getReverse.xStart, m.getReverse.yStart, 0, 0, a0 + N - m.getReverse.xStart)
+        if (mSnake.xStart < a0 + N) {
+          if (a0 + N - mSnake.xStart != b0 + M - mSnake.yStart) throw new Exception("Missed D0 reverse")
+          val snake = Snake.Forward(a0, N, b0, M, mSnake.xStart, mSnake.yStart, 0, 0, a0 + N - mSnake.xStart)
           if (snakes.size == 0) snakes.add(snake)
           else snakes.get(snakes.size - 1).append(snake) match {
             case Some(newSnake) =>

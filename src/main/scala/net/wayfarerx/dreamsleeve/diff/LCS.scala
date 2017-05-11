@@ -115,7 +115,8 @@ private[diff] object LCS {
    * @throws Exception If no middle snake could be found
    */
   @throws[Exception]
-  private[diff] def MiddleSnake[T](pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int, VForward: V, VReverse: V, forwardVs: util.List[V], reverseVs: util.List[V]): SnakePair[T] = { // we only need to find a middle snake with a d which is half of the
+  private[diff] def MiddleSnake[T](pa: Array[T], a0: Int, N: Int, pb: Array[T], b0: Int, M: Int, VForward: V, VReverse: V, forwardVs: util.List[V], reverseVs: util.List[V]): (Int, Snake) = {
+    // we only need to find a middle snake with a d which is half of the
     // d of the forward and reverse algorithms.
     val MAX = (N + M + 1) / 2
     val DELTA = N - M
@@ -163,7 +164,7 @@ private[diff] object LCS {
               val forward = Snake.Forward(a0, N, b0, M, xStart + a0, yStart + b0, down, snake)
               // we found a middle snake and the shortest edit script
               // (SES) of length 2D -1
-              return SnakePair[T]((2 * d) - 1, forward, null)
+              return ((2 * d) - 1, forward)
             }
           }
           k += 2
@@ -199,7 +200,7 @@ private[diff] object LCS {
             if (VReverse.getK(k) <= VForward.getK(k)) {
               val reverse = Snake.Reverse(a0, N, b0, M, xStart + a0, yStart + b0, up, snake)
               // (SES) of length 2D
-              return SnakePair[T](2 * d, null, reverse)
+              return (2 * d, reverse)
             }
           }
           k += 2
