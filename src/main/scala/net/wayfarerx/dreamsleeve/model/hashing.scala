@@ -46,16 +46,7 @@ object Hash {
      *
      * @return A hash for this node.
      */
-    final def hash(): Hash =
-      _hash getOrElse generateHash(Builder())
-
-    /**
-     * Returns a hash for this node.
-     *
-     * @param builder The hash builder to use.
-     * @return A hash for this node.
-     */
-    final def hash(builder: Hash.Builder): Hash =
+    final def hash(implicit builder: Builder): Hash =
       _hash getOrElse generateHash(builder)
 
     /**
@@ -356,6 +347,13 @@ object Hash {
     private val InsertHeader = 0x2D.toByte
     /** The header for remove operation hashes. */
     private val RemoveHeader = 0x1E.toByte
+
+    /**
+     * Implicitly creates a new hash builder.
+     *
+     * @return A new hash builder.
+     */
+    implicit def newImplicitBuilder: Builder = apply()
 
     /**
      * Creates a new hash builder.

@@ -36,7 +36,7 @@ object Diff {
 
     /* Return the hash for this revision. */
     override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashRevise(fromHash, title, change.map(_.hash()))
+      builder.hashRevise(fromHash, title, change.map(_.hash))
 
   }
 
@@ -48,17 +48,17 @@ object Diff {
     /**
      * Creates a revise operation for the specified documents.
      *
-     * @param from The original document to create the revise operation for.
-     * @param to   The resulting document to create the revise operation for.
+     * @param from    The original document to create the revise operation for.
+     * @param to      The resulting document to create the revise operation for.
+     * @param builder The hash builder to use.
      * @return A revise operation for the specified documents.
      */
-    def apply(from: Document, to: Document): Revise = {
-      val builder = Hash.Builder()
+    def apply(from: Document, to: Document)(implicit builder: Hash.Builder): Revise = {
 
       /* Creates an update operation for the specified nodes if they differ. */
       def update(fromNode: Node, toNode: Node): Option[Change.Update] =
         (fromNode, toNode) match {
-          case (from, to) if from.hash(builder) == to.hash(builder) && from == to =>
+          case (from, to) if from.hash == to.hash && from == to =>
             None
           case (from@Table(_), to@Table(_)) =>
             Some(Change.Modify(edits(from.keys.toVector, to.keys.toVector), ListMap(to.keys.toSeq.flatMap {
@@ -66,7 +66,7 @@ object Diff {
               case k => Some(k -> Change.Add(to(k)))
             }: _*)))
           case (from, to) =>
-            Some(Change.Replace(from.hash(builder), to))
+            Some(Change.Replace(from.hash, to))
         }
 
       /* Creates edit operations that transform one set of keys to another. */
@@ -74,7 +74,7 @@ object Diff {
         ??? // FIXME
       }
 
-      Revise(from.hash(builder), to.title, update(from.content, to.content))
+      Revise(from.hash, to.title, update(from.content, to.content))
     }
 
   }
@@ -104,7 +104,7 @@ object Diff {
      * @return A delete operation for the specified document.
      */
     def apply(document: Document): Delete =
-      Delete(document.hash())
+      Delete(document.hash)
 
   }
 

@@ -1,6 +1,6 @@
 package net.wayfarerx.dreamsleeve.diff
 
-import net.wayfarerx.dreamsleeve.model.{Edit, Value}
+import net.wayfarerx.dreamsleeve.model.{Edit, Hash, Value}
 
 /**
  * Performs a linear time and space comparison of two objects by comparing both objects in both directions to find a
@@ -9,12 +9,13 @@ import net.wayfarerx.dreamsleeve.model.{Edit, Value}
  * Myers proved that the middle segment is already a part of the solution. Furthermore the middle segment divides the
  * comparison in two sub problems, which further can be compared using this technique.
  *
- * @param from Usually the older object which should be compared.
- * @param to   Usually the newest object which should be compared.
+ * @param from    Usually the older object which should be compared.
+ * @param to      Usually the newest object which should be compared.
+ * @param builder The hash builder to use for equality.
  * @author wayfarerx
  * @author Roman Vottner
  */
-class Differences private(from: Vector[Value], to: Vector[Value]) {
+class Differences private(from: Vector[Value], to: Vector[Value])(implicit builder: Hash.Builder) {
 
   import Differences._
   import Snake.{Forward, Reverse}
@@ -33,13 +34,13 @@ class Differences private(from: Vector[Value], to: Vector[Value]) {
     diff(0, 0, from.length, 0, to.length, Snakes()).snakes flatMap { snake =>
       var edits = Vector[Edit]()
       if (snake.forward) {
-        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xStart, snake.xMid).map(_.hash()))
+        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xStart, snake.xMid).map(_.hash))
         if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yStart, snake.yMid))
-        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xMid, snake.xEnd).map(_.hash()))
+        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xMid, snake.xEnd).map(_.hash))
       } else {
-        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xEnd, snake.xMid).map(_.hash()))
+        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xEnd, snake.xMid).map(_.hash))
         if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yMid, snake.yStart))
-        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xMid, snake.xStart).map(_.hash()))
+        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xMid, snake.xStart).map(_.hash))
       }
       edits
     }
@@ -154,7 +155,7 @@ class Differences private(from: Vector[Value], to: Vector[Value]) {
           var xEnd = if (down) xStart else xStart + 1
           var yEnd = xEnd - k
           var snake = 0
-          while (xEnd < fromCount && yEnd < toCount && from(xEnd + fromStart) == to(yEnd + toStart)) {
+          while (xEnd < fromCount && yEnd < toCount && equal(from(xEnd + fromStart), to(yEnd + toStart))) {
             xEnd += 1
             yEnd += 1
             snake += 1
@@ -183,7 +184,7 @@ class Differences private(from: Vector[Value], to: Vector[Value]) {
         var xEnd = if (up) xStart else xStart - 1
         var yEnd = xEnd - k
         var snake = 0
-        while (xEnd > 0 && yEnd > 0 && from(xEnd + fromStart - 1) == to(yEnd + toStart - 1)) {
+        while (xEnd > 0 && yEnd > 0 && equal(from(xEnd + fromStart - 1), to(yEnd + toStart - 1))) {
           xEnd -= 1
           yEnd -= 1
           snake += 1
@@ -205,6 +206,16 @@ class Differences private(from: Vector[Value], to: Vector[Value]) {
     sys.error("No middle snake")
   }
 
+  /**
+   * Compares two values for equality.
+   *
+   * @param from The original value to compare.
+   * @param to   The resulting value to compare.
+   * @return True if the specified values are equal.
+   */
+  private def equal(from: Value, to: Value) =
+    from.hash == to.hash && from == to
+
 }
 
 /**
@@ -222,11 +233,12 @@ object Differences {
   /**
    * Calculates the shortest sequence of edits that will transform the first sequence into the second.
    *
-   * @param from The original sequence.
-   * @param to   The resulting sequence.
+   * @param from    The original sequence.
+   * @param to      The resulting sequence.
+   * @param builder The hash builder to use for equality.
    * @return The shortest sequence of edits that will transform the first sequence into the second.
    */
-  def apply(from: Vector[Value], to: Vector[Value]): Vector[Edit] =
+  def apply(from: Vector[Value], to: Vector[Value])(implicit builder: Hash.Builder): Vector[Edit] =
     new Differences(from, to).edits()
 
   /**
