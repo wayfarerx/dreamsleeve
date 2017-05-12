@@ -80,31 +80,31 @@ object Diff {
   }
 
   /**
-   * Represents when a document is finally deleted.
+   * Represents when a document is finally removed.
    *
-   * @param fromHash The hash of the document to delete.
+   * @param fromHash The hash of the document to remove.
    */
-  case class Delete(fromHash: Hash) extends Diff {
+  case class Remove(fromHash: Hash) extends Diff {
 
-    /* Return the hash for this add operation. */
+    /* Return the hash for this remove operation. */
     override protected def hashWith(builder: Hash.Builder): Hash =
       builder.hashDelete(fromHash)
 
   }
 
   /**
-   * Factory for delete operations.
+   * Factory for remove operations.
    */
-  object Delete {
+  object Remove {
 
     /**
-     * Creates a delete operation for the specified document.
+     * Creates a remove operation for the specified document.
      *
-     * @param document The document to create the delete operation for.
-     * @return A delete operation for the specified document.
+     * @param document The document to create the remove operation for.
+     * @return A remove operation for the specified document.
      */
-    def apply(document: Document): Delete =
-      Delete(document.hash)
+    def apply(document: Document): Remove =
+      Remove(document.hash)
 
   }
 
@@ -180,19 +180,6 @@ sealed trait Edit extends Hash.Support
 object Edit {
 
   /**
-   * Represents the copying of keys between tables.
-   *
-   * @param hashes The hashes of the keys to be copied.
-   */
-  case class Copy(hashes: Vector[Hash]) extends Edit {
-
-    /* Return the hash for this copy operation. */
-    override protected def hashWith(builder: Hash.Builder) =
-      builder.hashCopy(hashes)
-
-  }
-
-  /**
    * Represents the insertion of keys into a table.
    *
    * @param keys The keys to be inserted.
@@ -206,11 +193,24 @@ object Edit {
   }
 
   /**
-   * Represents the removal of keys from a table.
+   * Represents the retaining of keys between tables.
    *
-   * @param hashes The hashes of the keys to be removed.
+   * @param hashes The hashes of the keys to be retained.
    */
-  case class Remove(hashes: Vector[Hash]) extends Edit {
+  case class Retain(hashes: Vector[Hash]) extends Edit {
+
+    /* Return the hash for this copy operation. */
+    override protected def hashWith(builder: Hash.Builder) =
+      builder.hashCopy(hashes)
+
+  }
+
+  /**
+   * Represents the deletion of keys from a table.
+   *
+   * @param hashes The hashes of the keys to be deleted.
+   */
+  case class Delete(hashes: Vector[Hash]) extends Edit {
 
     /* Return the hash for this remove operation. */
     override protected def hashWith(builder: Hash.Builder) =

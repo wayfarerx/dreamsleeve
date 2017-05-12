@@ -34,13 +34,13 @@ class Differences private(from: Vector[Value], to: Vector[Value])(implicit build
     diff(0, 0, from.length, 0, to.length, Snakes()).snakes flatMap { snake =>
       var edits = Vector[Edit]()
       if (snake.forward) {
-        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xStart, snake.xMid).map(_.hash))
+        if (snake.deleted > 0) edits :+= Edit.Delete(from.slice(snake.xStart, snake.xMid).map(_.hash))
         if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yStart, snake.yMid))
-        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xMid, snake.xEnd).map(_.hash))
+        if (snake.diagonals > 0) edits :+= Edit.Retain(from.slice(snake.xMid, snake.xEnd).map(_.hash))
       } else {
-        if (snake.diagonals > 0) edits :+= Edit.Copy(from.slice(snake.xEnd, snake.xMid).map(_.hash))
+        if (snake.diagonals > 0) edits :+= Edit.Retain(from.slice(snake.xEnd, snake.xMid).map(_.hash))
         if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yMid, snake.yStart))
-        if (snake.deleted > 0) edits :+= Edit.Remove(from.slice(snake.xMid, snake.xStart).map(_.hash))
+        if (snake.deleted > 0) edits :+= Edit.Delete(from.slice(snake.xMid, snake.xStart).map(_.hash))
       }
       edits
     }
