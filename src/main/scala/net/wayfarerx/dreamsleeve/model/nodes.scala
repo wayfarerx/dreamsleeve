@@ -25,7 +25,7 @@ object Value {
   case class Boolean(value: scala.Boolean = false) extends Value {
 
     /* Hash this value with the specified hash builder. */
-    override protected def hashWith(builder: Hash.Builder) =
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
       builder.hashBoolean(value)
 
   }
@@ -38,7 +38,7 @@ object Value {
   case class Number(value: Double = 0.0) extends Value {
 
     /* Hash this value with the specified hash builder. */
-    override protected def hashWith(builder: Hash.Builder) =
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
       builder.hashNumber(value)
 
   }
@@ -51,7 +51,7 @@ object Value {
   case class String(value: java.lang.String = "") extends Value {
 
     /* Hash this value with the specified hash builder. */
-    override protected def hashWith(builder: Hash.Builder) =
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
       builder.hashString(value)
 
   }
@@ -87,8 +87,8 @@ case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
     entries get key
 
   /* Hash this table with the specified hash builder. */
-  override protected def hashWith(builder: Hash.Builder) =
-    builder.hashTable(entries flatMap { case (k, v) => Seq(k.hash(builder), v.hash(builder)) })
+  override protected def generateHash(implicit builder: Hash.Builder): Hash =
+    builder.hashTable(entries flatMap { case (k, v) => Seq(k.hash, v.hash) })
 
 }
 
@@ -101,7 +101,7 @@ case class Table(entries: ListMap[Value, Node] = ListMap()) extends Node {
 case class Document(title: String, content: Node) extends Hash.Support {
 
   /* Hash this table with the specified hash builder. */
-  override protected def hashWith(builder: Hash.Builder) =
-    builder.hashDocument(title, content.hash(builder))
+  override protected def generateHash(implicit builder: Hash.Builder): Hash =
+    builder.hashDocument(title, content.hash)
 
 }

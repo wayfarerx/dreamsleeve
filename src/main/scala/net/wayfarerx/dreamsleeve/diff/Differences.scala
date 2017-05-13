@@ -1,6 +1,6 @@
 package net.wayfarerx.dreamsleeve.diff
 
-import net.wayfarerx.dreamsleeve.model.{Edit, Hash, Value}
+import net.wayfarerx.dreamsleeve.model.{Hash, Value}
 
 /**
  * Performs a linear time and space comparison of two objects by comparing both objects in both directions to find a
@@ -9,9 +9,9 @@ import net.wayfarerx.dreamsleeve.model.{Edit, Hash, Value}
  * Myers proved that the middle segment is already a part of the solution. Furthermore the middle segment divides the
  * comparison in two sub problems, which further can be compared using this technique.
  *
- * @param from    Usually the older object which should be compared.
- * @param to      Usually the newest object which should be compared.
- * @param builder The hash builder to use for equality.
+ * @param from    The older items which should be compared.
+ * @param to      The newest items and changes which should be compared.
+ * @param builder The hash builder to use for hashing.
  * @author wayfarerx
  * @author Roman Vottner
  */
@@ -30,19 +30,19 @@ class Differences private(from: Vector[Value], to: Vector[Value])(implicit build
    *
    * @return The shortest sequence of edits that will transform the first sequence into the second.
    */
-  private def edits(): Vector[Edit] = {
+  private def apply(): Vector[Action] = {
     diff(0, 0, from.length, 0, to.length, Snakes()).snakes flatMap { snake =>
-      var edits = Vector[Edit]()
+      var actions = Vector[Action]()
       if (snake.forward) {
-        if (snake.deleted > 0) edits :+= Edit.Delete(from.slice(snake.xStart, snake.xMid).map(_.hash))
-        if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yStart, snake.yMid))
-        if (snake.diagonals > 0) edits :+= Edit.Retain(from.slice(snake.xMid, snake.xEnd).map(_.hash))
+        if (snake.deleted > 0) actions :+= Delete(from.slice(snake.xStart, snake.xMid))
+        if (snake.inserted > 0) actions :+= Insert(to.slice(snake.yStart, snake.yMid))
+        if (snake.diagonals > 0) actions :+= Retain(from.slice(snake.xMid, snake.xEnd))
       } else {
-        if (snake.diagonals > 0) edits :+= Edit.Retain(from.slice(snake.xEnd, snake.xMid).map(_.hash))
-        if (snake.inserted > 0) edits :+= Edit.Insert(to.slice(snake.yMid, snake.yStart))
-        if (snake.deleted > 0) edits :+= Edit.Delete(from.slice(snake.xMid, snake.xStart).map(_.hash))
+        if (snake.diagonals > 0) actions :+= Retain(from.slice(snake.xEnd, snake.xMid))
+        if (snake.inserted > 0) actions :+= Insert(to.slice(snake.yMid, snake.yStart))
+        if (snake.deleted > 0) actions :+= Delete(from.slice(snake.xMid, snake.xStart))
       }
-      edits
+      actions
     }
   }
 
@@ -147,7 +147,7 @@ class Differences private(from: Vector[Value], to: Vector[Value])(implicit build
         // and vice-versa. That's why k+=2
         var k = -diffs
         while (k <= diffs) { // calculate the farthest reaching forward path on line k
-          val down = k == -(diffs) || (k != diffs && forwardPath.apply(k - 1) < forwardPath.apply(k + 1))
+          val down = k == -diffs || (k != diffs && forwardPath.apply(k - 1) < forwardPath.apply(k + 1))
           // to get to a line k, we either must move down (k+1) or right (k-1)
           val xStart = if (down) forwardPath.apply(k + 1) else forwardPath.apply(k - 1)
           // y can easily calculated by subtracting k from x --> y = x - k
@@ -177,7 +177,7 @@ class Differences private(from: Vector[Value], to: Vector[Value])(implicit build
       // reverse checks against forward diffs
       var k = -diffs + delta
       while (k <= diffs + delta) { // calculate the farthest reaching reverse path on line k
-        val up = k == diffs + delta || (k != -(diffs) + delta && reversePath.apply(k - 1) < reversePath.apply(k + 1))
+        val up = k == diffs + delta || (k != -diffs + delta && reversePath.apply(k - 1) < reversePath.apply(k + 1))
         // to get to a line k, we either must move up (k-1) or left (k+1)
         val xStart = if (up) reversePath.apply(k - 1) else reversePath.apply(k + 1)
         val yStart = xStart - (if (up) k - 1 else k + 1)
@@ -235,11 +235,37 @@ object Differences {
    *
    * @param from    The original sequence.
    * @param to      The resulting sequence.
-   * @param builder The hash builder to use for equality.
+   * @param builder The hash builder to use for hashing.
    * @return The shortest sequence of edits that will transform the first sequence into the second.
    */
-  def apply(from: Vector[Value], to: Vector[Value])(implicit builder: Hash.Builder): Vector[Edit] =
-    new Differences(from, to).edits()
+  def apply(from: Iterable[Value], to: Iterable[Value])(implicit builder: Hash.Builder): Vector[Action] =
+    new Differences(from.toVector, to.toVector).apply()
+
+  /**
+   * Base class for actions performed to transform lists.
+   */
+  sealed trait Action
+
+  /**
+   * Insert items into the resulting list.
+   *
+   * @param values The items to insert.
+   */
+  case class Insert(values: Vector[Value]) extends Action
+
+  /**
+   * Retain items from the original list.
+   *
+   * @param values The items to retain.
+   */
+  case class Retain(values: Vector[Value]) extends Action
+
+  /**
+   * Delete items from the original list.
+   *
+   * @param values The items to delete.
+   */
+  case class Delete(values: Vector[Value]) extends Action
 
   /**
    * A sequence of snakes that moves through the comparison graph.
@@ -257,7 +283,7 @@ object Differences {
     def :+(snake: Snake): Snakes =
       if (snakes.isEmpty) Snakes(snakes :+ snake)
       else snakes.last.append(snake) match {
-        case Some(snake) => Snakes(snakes.init :+ snake)
+        case Some(s) => Snakes(snakes.init :+ s)
         case None => Snakes(snakes :+ snake)
       }
 

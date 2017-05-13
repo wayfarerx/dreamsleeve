@@ -1,6 +1,5 @@
 package net.wayfarerx.dreamsleeve.model
 
-import java.util.Arrays
 import java.security.MessageDigest
 
 /**
@@ -11,17 +10,17 @@ import java.security.MessageDigest
 final class Hash private(private val bytes: Array[Byte]) {
 
   /* Compare to other hashes. */
-  override def equals(that: Any) = that match {
-    case hash: Hash => Arrays.equals(bytes, hash.bytes)
+  override def equals(that: Any): Boolean = that match {
+    case hash: Hash => java.util.Arrays.equals(bytes, hash.bytes)
     case _ => false
   }
 
   /* Hash the hash. */
-  override def hashCode() =
-    Arrays.hashCode(bytes)
+  override def hashCode(): Int =
+    java.util.Arrays.hashCode(bytes)
 
   /* Encode in base-16. */
-  override def toString(): String =
+  override def toString: String =
     bytes map {
       _.toHexString
     } mkString ""
@@ -47,7 +46,11 @@ object Hash {
      * @return A hash for this node.
      */
     final def hash(implicit builder: Builder): Hash =
-      _hash getOrElse generateHash(builder)
+      _hash getOrElse {
+        val hash = generateHash(builder)
+        _hash = Some(hash)
+        hash
+      }
 
     /**
      * Generates and stores a hash for this node.
@@ -55,19 +58,7 @@ object Hash {
      * @param builder The hash builder to use.
      * @return A hash for this node.
      */
-    private def generateHash(builder: Hash.Builder): Hash = {
-      val hash = hashWith(builder)
-      _hash = Some(hash)
-      hash
-    }
-
-    /**
-     * Generates a hash for this node.
-     *
-     * @param builder The hash builder to use.
-     * @return A hash for this node.
-     */
-    protected def hashWith(builder: Hash.Builder): Hash
+    protected def generateHash(implicit builder: Hash.Builder): Hash
 
   }
 
@@ -165,12 +156,12 @@ object Hash {
     }
 
     /**
-     * Hashes a delete operation.
+     * Hashes a remove operation.
      *
-     * @param hash The hash of the original document being deleted.
+     * @param hash The hash of the original document being removed.
      */
-    def hashDelete(hash: Hash): Hash = {
-      append(DeleteHeader)
+    def hashRemove(hash: Hash): Hash = {
+      append(RemoveHeader)
       append(hash)
       complete()
     }
@@ -202,46 +193,52 @@ object Hash {
     /**
      * Hashes a modify operation.
      *
-     * @param editHashes   The flattened list of edit hashes.
-     * @param changeHashes The flattened list of change hashes.
+     * @param editHashes The flattened list of edit hashes.
      */
-    def hashModify(editHashes: Iterable[Hash], changeHashes: Iterable[Hash]): Hash = {
+    def hashModify(editHashes: Iterable[Hash]): Hash = {
       append(ModifyHeader)
       editHashes foreach append
-      changeHashes foreach append
       complete()
     }
 
     /**
-     * Hashes a table key list copy operation.
+     * Hashes a table item list insert operation.
      *
-     * @param hashes The hashes of the nodes being copied.
+     * @param itemHashes The hashes of the keys with their associated value change hashes.
      */
-    def hashCopy(hashes: Iterable[Hash]): Hash = {
-      append(CopyHeader)
-      hashes foreach append
-      complete()
-    }
-
-    /**
-     * Hashes a table key list insert operation.
-     *
-     * @param hashes The hashes of the nodes being inserted.
-     */
-    def hashInsert(hashes: Iterable[Hash]): Hash = {
+    def hashInsert(itemHashes: Vector[(Hash, Option[Hash])]): Hash = {
       append(InsertHeader)
-      hashes foreach append
+      itemHashes foreach {
+        case (k, v) =>
+          append(k)
+          v foreach append
+      }
       complete()
     }
 
     /**
-     * Hashes a table key list remove operation.
+     * Hashes a table item list retain operation.
      *
-     * @param hashes The hashes of the nodes being removed.
+     * @param itemHashes The hashes of the keys with their associated value change hashes.
      */
-    def hashRemove(hashes: Iterable[Hash]): Hash = {
-      append(RemoveHeader)
-      hashes foreach append
+    def hashRetain(itemHashes: Vector[(Hash, Option[Hash])]): Hash = {
+      append(RetainHeader)
+      itemHashes foreach {
+        case (k, v) =>
+          append(k)
+          v foreach append
+      }
+      complete()
+    }
+
+    /**
+     * Hashes a table key list delete operation.
+     *
+     * @param keyHashes The hashes of the item keys being deleted.
+     */
+    def hashDelete(keyHashes: Vector[Hash]): Hash = {
+      append(DeleteHeader)
+      keyHashes foreach append
       complete()
     }
 
@@ -333,20 +330,20 @@ object Hash {
     private val CreateHeader = 0x96.toByte
     /** The header for change document revisions. */
     private val ReviseHeader = 0x87.toByte
-    /** The header for document deletion. */
-    private val DeleteHeader = 0x78.toByte
+    /** The header for document removal. */
+    private val RemoveHeader = 0x78.toByte
     /** The header for add operation hashes. */
     private val AddHeader = 0x69.toByte
     /** The header for replace operation hashes. */
     private val ReplaceHeader = 0x5A.toByte
     /** The header for modify operation hashes. */
     private val ModifyHeader = 0x4B.toByte
-    /** The header for copy operation hashes. */
-    private val CopyHeader = 0x3C.toByte
+    /** The header for retain operation hashes. */
+    private val RetainHeader = 0x3C.toByte
     /** The header for insert operation hashes. */
     private val InsertHeader = 0x2D.toByte
-    /** The header for remove operation hashes. */
-    private val RemoveHeader = 0x1E.toByte
+    /** The header for delete operation hashes. */
+    private val DeleteHeader = 0x1E.toByte
 
     /**
      * Implicitly creates a new hash builder.

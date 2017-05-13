@@ -99,22 +99,22 @@ private[diff] object Snake {
     override type SnakeType = Forward
 
     /* This is a forward snake. */
-    override def forward = true
+    override def forward: Boolean = true
 
     /* Calculate the x-position of a middle point. */
-    override def xMid = xStart + deleted
+    override def xMid: Int = xStart + deleted
 
     /* Calculate the y-position of a middle point. */
-    override def yMid = yStart + inserted
+    override def yMid: Int = yStart + inserted
 
     /* Calculate the x-position of a end point. */
-    override def xEnd = xMid + diagonals
+    override def xEnd: Int = xMid + diagonals
 
     /* Calculate the y-position of a end point. */
-    override def yEnd = yMid + diagonals
+    override def yEnd: Int = yMid + diagonals
 
     /* Combine two snakes of the same kind to reduce the number of returned snakes. */
-    override protected def appendSnake(snake: Snake) =
+    override protected def appendSnake(snake: Snake): SnakeType =
       Forward(
         Math.min(xStart, snake.xStart),
         Math.min(yStart, snake.yStart),
@@ -143,7 +143,7 @@ private[diff] object Snake {
       fromEnd: Int,
       toStart: Int,
       toEnd: Int
-    ) = {
+    ): SnakeType = {
       var _yStart = yStart
       var _inserted = inserted
       if (xStart == fromStart && _yStart == toStart - 1 && _inserted == 1) {
@@ -176,22 +176,22 @@ private[diff] object Snake {
     override type SnakeType = Reverse
 
     /* This is a reverse snake. */
-    override def forward = false
+    override def forward: Boolean = false
 
     /* Calculate the x-position of a middle point. */
-    override def xMid = xStart - deleted
+    override def xMid: Int = xStart - deleted
 
     /* Calculate the y-position of a middle point. */
-    override def yMid = yStart - inserted
+    override def yMid: Int = yStart - inserted
 
     /* Calculate the x-position of a end point. */
-    override def xEnd = xMid - diagonals
+    override def xEnd: Int = xMid - diagonals
 
     /* Calculate the y-position of a end point. */
-    override def yEnd = yMid - diagonals
+    override def yEnd: Int = yMid - diagonals
 
     /* Combine two snakes of the same kind to reduce the number of returned snakes. */
-    override protected def appendSnake(snake: Snake) =
+    override protected def appendSnake(snake: Snake): SnakeType =
       Reverse(
         Math.min(xStart, snake.xStart),
         Math.min(yStart, snake.yStart),
@@ -220,7 +220,7 @@ private[diff] object Snake {
       fromEnd: Int,
       toStart: Int,
       toEnd: Int
-    ) = {
+    ): SnakeType = {
       var _yStart = yStart
       var _inserted = inserted
       if (xStart == fromStart + fromEnd && _yStart == toStart + toEnd + 1 && _inserted == 1) {

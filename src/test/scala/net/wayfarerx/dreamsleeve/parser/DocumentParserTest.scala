@@ -4,7 +4,7 @@ import org.parboiled2.ParserInput
 import org.scalatest._
 
 /**
- * Created by wayfarerx on 4/28/17.
+ * Test case for the document parsing implementation.
  */
 class DocumentParserTest extends FlatSpec with Matchers {
 

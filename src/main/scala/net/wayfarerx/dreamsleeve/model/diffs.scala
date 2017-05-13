@@ -1,6 +1,6 @@
 package net.wayfarerx.dreamsleeve.model
 
-import collection.immutable.{ListMap, ListSet}
+import net.wayfarerx.dreamsleeve.diff.Differences
 
 /**
  * Base class for all diffs applied to a document.
@@ -20,8 +20,8 @@ object Diff {
   case class Create(document: Document) extends Diff {
 
     /* Return the hash for this add operation. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashCreate(document.hash(builder))
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashCreate(document.hash)
 
   }
 
@@ -35,7 +35,7 @@ object Diff {
   case class Revise(fromHash: Hash, title: String, change: Option[Change.Update]) extends Diff {
 
     /* Return the hash for this revision. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
       builder.hashRevise(fromHash, title, change.map(_.hash))
 
   }
@@ -55,24 +55,26 @@ object Diff {
      */
     def apply(from: Document, to: Document)(implicit builder: Hash.Builder): Revise = {
 
+      def change(fromNodeOpt: Option[Node], toNode: Node): Option[Change] =
+        fromNodeOpt match {
+          case Some(fromNode) => update(fromNode, toNode)
+          case None => Some(Change.Add(toNode))
+        }
+
       /* Creates an update operation for the specified nodes if they differ. */
       def update(fromNode: Node, toNode: Node): Option[Change.Update] =
         (fromNode, toNode) match {
-          case (from, to) if from.hash == to.hash && from == to =>
+          case (f, t) if f.hash == t.hash && f == t =>
             None
-          case (from@Table(_), to@Table(_)) =>
-            Some(Change.Modify(edits(from.keys.toVector, to.keys.toVector), ListMap(to.keys.toSeq.flatMap {
-              case k if from.keys(k) => update(from(k), to(k)).map(k -> _)
-              case k => Some(k -> Change.Add(to(k)))
-            }: _*)))
-          case (from, to) =>
-            Some(Change.Replace(from.hash, to))
+          case (f@Table(_), t@Table(_)) =>
+            Some(Change.Modify(Differences(f.keys, t.keys) map {
+              case Differences.Insert(v) => Edit.Insert(v map { k => k -> change(f.get(k), t(k)) })
+              case Differences.Retain(v) => Edit.Retain(v map { k => k.hash -> change(f.get(k), t(k)) })
+              case Differences.Delete(v) => Edit.Delete(v map (_.hash))
+            }))
+          case (f, t) =>
+            Some(Change.Replace(f.hash, t))
         }
-
-      /* Creates edit operations that transform one set of keys to another. */
-      def edits(fromKeys: Vector[Value], toKeys: Vector[Value]): Vector[Edit] = {
-        ??? // FIXME
-      }
 
       Revise(from.hash, to.title, update(from.content, to.content))
     }
@@ -87,8 +89,8 @@ object Diff {
   case class Remove(fromHash: Hash) extends Diff {
 
     /* Return the hash for this remove operation. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashDelete(fromHash)
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashRemove(fromHash)
 
   }
 
@@ -101,9 +103,10 @@ object Diff {
      * Creates a remove operation for the specified document.
      *
      * @param document The document to create the remove operation for.
+     * @param builder  The hash builder to use.
      * @return A remove operation for the specified document.
      */
-    def apply(document: Document): Remove =
+    def apply(document: Document)(implicit builder: Hash.Builder): Remove =
       Remove(document.hash)
 
   }
@@ -128,8 +131,8 @@ object Change {
   case class Add(value: Node) extends Change {
 
     /* Return the hash for this addition. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashAdd(value.hash(builder))
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashAdd(value.hash)
 
   }
 
@@ -147,30 +150,28 @@ object Change {
   case class Replace(fromHash: Hash, toValue: Node) extends Update {
 
     /* Return the hash for this update. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashReplace(fromHash, toValue.hash(builder))
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashReplace(fromHash, toValue.hash)
 
   }
 
   /**
    * Modifies an existing table inside a table or document.
    *
-   * @param edits   The edits to the list of keys in the original table.
-   * @param changes The changes to the values in the original table.
+   * @param edits The edits to the list of keys in the original table.
    */
-  case class Modify(edits: Vector[Edit], changes: ListMap[Value, Change]) extends Update {
+  case class Modify(edits: Vector[Edit]) extends Update {
 
     /* Return the hash for this modification. */
-    override protected def hashWith(builder: Hash.Builder): Hash =
-      builder.hashModify(edits map (_.hash(builder)),
-        changes flatMap { case (k, v) => Vector(k.hash(builder), v.hash(builder)) })
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashModify(edits map (_.hash))
 
   }
 
 }
 
 /**
- * Base class for edits that are applied to the list of keys in a table.
+ * Base class for edits that are applied to the list of items in a table.
  */
 sealed trait Edit extends Hash.Support
 
@@ -180,41 +181,41 @@ sealed trait Edit extends Hash.Support
 object Edit {
 
   /**
-   * Represents the insertion of keys into a table.
+   * Represents the insertion of items into a table.
    *
-   * @param keys The keys to be inserted.
+   * @param items The keys with their associated value changes to be inserted.
    */
-  case class Insert(keys: Vector[Value]) extends Edit {
+  case class Insert(items: Vector[(Value, Option[Change])]) extends Edit {
 
     /* Return the hash for this insert operation. */
-    override protected def hashWith(builder: Hash.Builder) =
-      builder.hashInsert(keys map (_.hash(builder)))
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashInsert(items map { case (k, v) => k.hash -> v.map(_.hash) })
 
   }
 
   /**
-   * Represents the retaining of keys between tables.
+   * Represents the retaining of items between tables.
    *
-   * @param hashes The hashes of the keys to be retained.
+   * @param items The hashes of the keys with their associated value changes to be retained.
    */
-  case class Retain(hashes: Vector[Hash]) extends Edit {
+  case class Retain(items: Vector[(Hash, Option[Change])]) extends Edit {
 
-    /* Return the hash for this copy operation. */
-    override protected def hashWith(builder: Hash.Builder) =
-      builder.hashCopy(hashes)
+    /* Return the hash for this retain operation. */
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashRetain(items map { case (k, v) => k -> v.map(_.hash) })
 
   }
 
   /**
-   * Represents the deletion of keys from a table.
+   * Represents the deletion of items from a table.
    *
-   * @param hashes The hashes of the keys to be deleted.
+   * @param keyHashes The hashes of the item keys to be deleted.
    */
-  case class Delete(hashes: Vector[Hash]) extends Edit {
+  case class Delete(keyHashes: Vector[Hash]) extends Edit {
 
-    /* Return the hash for this remove operation. */
-    override protected def hashWith(builder: Hash.Builder) =
-      builder.hashRemove(hashes)
+    /* Return the hash for this delete operation. */
+    override protected def generateHash(implicit builder: Hash.Builder): Hash =
+      builder.hashDelete(keyHashes)
 
   }
 
