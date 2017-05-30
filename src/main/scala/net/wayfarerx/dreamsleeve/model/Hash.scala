@@ -19,11 +19,20 @@ final class Hash private(private val bytes: Array[Byte]) {
   override def hashCode(): Int =
     java.util.Arrays.hashCode(bytes)
 
+  /** Encodes the first 5 bytes in base-16. */
+  def toShortString: String =
+    toString take 10
+
   /* Encode in base-16. */
-  override def toString: String =
-    bytes map {
-      _.toHexString
-    } mkString ""
+  override def toString: String = {
+    val hexChars = new Array[Char](bytes.length * 2)
+    for (i <- bytes.indices) {
+      val v: Int = bytes(i) & 0xFF
+      hexChars(i * 2) = Hash.HexArray(v >>> 4)
+      hexChars(i * 2 + 1) = Hash.HexArray(v & 0x0F)
+    }
+    new String(hexChars)
+  }
 
 }
 
@@ -31,6 +40,9 @@ final class Hash private(private val bytes: Array[Byte]) {
  * Utilities for creating hashes.
  */
 object Hash {
+
+  /** The characters to encode a byte array with. */
+  private val HexArray = "0123456789abcdef".toCharArray
 
   /**
    * Mixin that supports common hashing operations.
@@ -147,11 +159,11 @@ object Hash {
      * @param title      The title of the resulting document.
      * @param changeHash The hash of the change to apply to the original document.
      */
-    def hashRevise(fromHash: Hash, title: String, changeHash: Option[Hash]): Hash = {
+    def hashRevise(fromHash: Hash, title: String, changeHash: Hash): Hash = {
       append(ReviseHeader)
       append(fromHash)
       append(title)
-      changeHash foreach append
+      append(changeHash)
       complete()
     }
 
@@ -178,6 +190,17 @@ object Hash {
     }
 
     /**
+     * Hashes a copy operation.
+     *
+     * @param fromHash The hash of the value being copied.
+     */
+    def hashCopy(fromHash: Hash): Hash = {
+      append(CopyHeader)
+      append(fromHash)
+      complete()
+    }
+
+    /**
      * Hashes a replace operation.
      *
      * @param fromHash The hash of the value being replaced.
@@ -193,52 +216,13 @@ object Hash {
     /**
      * Hashes a modify operation.
      *
-     * @param editHashes The flattened list of edit hashes.
+     * @param fromHash The hash of the original node.
+     * @param hashes   The flat list of edit hashes.
      */
-    def hashModify(editHashes: Iterable[Hash]): Hash = {
+    def hashModify(fromHash: Hash, hashes: Iterable[Hash]): Hash = {
       append(ModifyHeader)
-      editHashes foreach append
-      complete()
-    }
-
-    /**
-     * Hashes a table item list insert operation.
-     *
-     * @param itemHashes The hashes of the keys with their associated value change hashes.
-     */
-    def hashInsert(itemHashes: Vector[(Hash, Option[Hash])]): Hash = {
-      append(InsertHeader)
-      itemHashes foreach {
-        case (k, v) =>
-          append(k)
-          v foreach append
-      }
-      complete()
-    }
-
-    /**
-     * Hashes a table item list retain operation.
-     *
-     * @param itemHashes The hashes of the keys with their associated value change hashes.
-     */
-    def hashRetain(itemHashes: Vector[(Hash, Option[Hash])]): Hash = {
-      append(RetainHeader)
-      itemHashes foreach {
-        case (k, v) =>
-          append(k)
-          v foreach append
-      }
-      complete()
-    }
-
-    /**
-     * Hashes a table key list delete operation.
-     *
-     * @param keyHashes The hashes of the item keys being deleted.
-     */
-    def hashDelete(keyHashes: Vector[Hash]): Hash = {
-      append(DeleteHeader)
-      keyHashes foreach append
+      append(fromHash)
+      hashes foreach append
       complete()
     }
 
@@ -334,16 +318,12 @@ object Hash {
     private val RemoveHeader = 0x78.toByte
     /** The header for add operation hashes. */
     private val AddHeader = 0x69.toByte
+    /** The header for copy operation hashes. */
+    private val CopyHeader = 0x5A.toByte
     /** The header for replace operation hashes. */
-    private val ReplaceHeader = 0x5A.toByte
+    private val ReplaceHeader = 0x4B.toByte
     /** The header for modify operation hashes. */
-    private val ModifyHeader = 0x4B.toByte
-    /** The header for retain operation hashes. */
-    private val RetainHeader = 0x3C.toByte
-    /** The header for insert operation hashes. */
-    private val InsertHeader = 0x2D.toByte
-    /** The header for delete operation hashes. */
-    private val DeleteHeader = 0x1E.toByte
+    private val ModifyHeader = 0x3C.toByte
 
     /**
      * Implicitly creates a new hash builder.

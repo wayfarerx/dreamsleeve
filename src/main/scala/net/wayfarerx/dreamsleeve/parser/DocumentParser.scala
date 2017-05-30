@@ -2,7 +2,7 @@ package net.wayfarerx.dreamsleeve
 package parser
 
 
-import scala.collection.immutable.ListMap
+import collection.immutable.SortedMap
 import org.parboiled2._
 import model._
 
@@ -13,13 +13,15 @@ import model._
  */
 class DocumentParser(val input: ParserInput) extends Parser {
 
+  import model.Node
+
   //
   // Entry point.
   //
 
-  def Document: Rule1[model.Document] = rule {
+  def Document: Rule1[Node.Document] = rule {
     Whitespace ~ Title ~ Equals ~ (Boolean | Number | String | Table) ~ EOI ~> { (t: String, n: Node) =>
-      model.Document(t, n)
+      Node.Document(t, n)
     }
   }
 
@@ -31,23 +33,23 @@ class DocumentParser(val input: ParserInput) extends Parser {
   //  ???
   //} ~ RightBracket
 
-  def Key: Rule1[Value] = rule {
+  def Key: Rule1[Node.Value] = rule {
     LeftBracket ~ (Boolean | Number | String) ~ RightBracket
   }
 
-  def Entry: Rule1[(Value, Node)] = rule {
-    (Key ~ Equals ~ (Boolean | Number | String | Table)) ~> { (k: Value, n: Node) => k -> n }
+  def Entry: Rule1[(Node.Value, Node)] = rule {
+    (Key ~ Equals ~ (Boolean | Number | String | Table)) ~> { (k: Node.Value, n: Node) => k -> n }
   }
 
-  def Entries: Rule1[Seq[(Value, Node)]] = rule {
-    Entry ~ zeroOrMore(Comma ~ Entry) ~ optional(Comma) ~> { (h: (Value, Node), t: Seq[(Value, Node)]) =>
+  def Entries: Rule1[Seq[(Node.Value, Node)]] = rule {
+    Entry ~ zeroOrMore(Comma ~ Entry) ~ optional(Comma) ~> { (h: (Node.Value, Node), t: Seq[(Node.Value, Node)]) =>
       h +: t
     }
   }
 
-  def Table: Rule1[model.Table] = rule {
-    LeftBrace ~ optional(Entries) ~ RightBrace ~> { t: Option[Seq[(Value, Node)]] =>
-      model.Table(ListMap((t getOrElse Seq.empty): _*))
+  def Table: Rule1[Node.Table] = rule {
+    LeftBrace ~ optional(Entries) ~ RightBrace ~> { t: Option[Seq[(Node.Value, Node)]] =>
+      Node.Table(SortedMap((t getOrElse Seq.empty): _*))
     }
   }
 
@@ -61,23 +63,23 @@ class DocumentParser(val input: ParserInput) extends Parser {
     }) ~ Whitespace
   }
 
-  def Boolean: Rule1[Value.Boolean] = rule {
+  def Boolean: Rule1[Node.Value.Boolean] = rule {
     capture(atomic("true" | "false")) ~> { (v: String) =>
-      Value.Boolean(v.toBoolean)
+      Node.Value.Boolean(v.toBoolean)
     } ~ Whitespace
   }
 
-  def Number: Rule1[Value.Number] = rule {
+  def Number: Rule1[Node.Value.Number] = rule {
     capture(atomic {
       optional('-') ~ oneOrMore(CharPredicate.Digit) ~ optional(ch('.') ~ oneOrMore(CharPredicate.Digit))
     }) ~> { (v: String) =>
-      Value.Number(java.lang.Double.parseDouble(v))
+      Node.Value.Number(java.lang.Double.parseDouble(v))
     } ~ Whitespace
   }
 
-  def String: Rule1[Value.String] = rule {
+  def String: Rule1[Node.Value.String] = rule {
     ch('"') ~ capture(zeroOrMore(noneOf("\"\\") | ("\\" ~ "\"") | ("\\" ~ "\\"))) ~ '"' ~> { (v: String) =>
-      Value.String(v.replaceAll("""\"""", """"""").replaceAll("""\\""", """\"""))
+      Node.Value.String(v.replaceAll("""\"""", """"""").replaceAll("""\\""", """\"""))
     } ~ Whitespace
   }
 

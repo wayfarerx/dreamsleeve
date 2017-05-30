@@ -8,6 +8,8 @@ import scala.collection.immutable.ListMap
  */
 class NodeHashingTest extends FlatSpec with Matchers {
 
+  import Node._
+
   "All nodes" should "produce consistent hashes" in {
     val b = Value.Boolean(true)
     Value.Boolean().hash shouldNot be(b.hash)
@@ -21,12 +23,12 @@ class NodeHashingTest extends FlatSpec with Matchers {
     s.hash shouldNot be(n.hash)
     Value.String("bye").hash shouldNot be(s.hash)
     Value.String("hi").hash should be(s.hash)
-    val t = Table(ListMap(b -> n))
+    val t = Table(b -> n)
     t.hash shouldNot be(b.hash)
     t.hash shouldNot be(n.hash)
     t.hash shouldNot be(s.hash)
-    Table(ListMap(n -> b)).hash shouldNot be(t.hash)
-    Table(ListMap(b -> n)).hash should be(t.hash)
+    Table(n -> b).hash shouldNot be(t.hash)
+    Table(b -> n).hash should be(t.hash)
   }
   
 }
