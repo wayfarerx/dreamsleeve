@@ -56,13 +56,13 @@ object Diff {
         if (expected != found) throw new DiffException.HashMismatch(path, expected, found)
 
       /* Applies an update operation to a original node. */
-      def updating(key: Value, fromNode: Node, update: Change.Update): Node = {
+      def updating(key: Value, fromNode: Data, update: Change.Update): Data = {
         path :+= key
         try {
           (fromNode, update) match {
             case (fromTable@Table(_), Change.Modify(fromTableHash, inserts, retains, deletes)) =>
               check(fromTable.hash, fromTableHash)
-              var toItems = Vector[(Value, Node)]()
+              var toItems = Vector[(Value, Data)]()
               for ((k, v) <- inserts) {
                 if (fromTable.get(k).isDefined) throw new DiffException.StructureMismatch.Unexpected(path, k)
                 toItems :+= k -> v.value
@@ -115,7 +115,7 @@ object Diff {
     def apply(from: Document, to: Document)(implicit builder: Hash.Builder): Revise = {
 
       /* Creates an update operation for the specified nodes if they differ. */
-      def update(fromNode: Node, toNode: Node): Change.Update =
+      def update(fromNode: Data, toNode: Data): Change.Update =
         (fromNode, toNode) match {
           case (f, t) if f.hash == t.hash && f == t =>
             Change.Copy(f.hash)
@@ -190,7 +190,7 @@ object Diff {
      *
      * @param value The value to add into a table or document.
      */
-    case class Add(value: Node) extends Change {
+    case class Add(value: Data) extends Change {
 
       /* Return the hash for this addition. */
       override protected def generateHash(implicit builder: Hash.Builder): Hash =
@@ -222,7 +222,7 @@ object Diff {
      * @param fromHash The hash of the original node.
      * @param toValue  The value to replace the original node with.
      */
-    case class Replace(fromHash: Hash, toValue: Node) extends Update {
+    case class Replace(fromHash: Hash, toValue: Data) extends Update {
 
       /* Return the hash for this update. */
       override protected def generateHash(implicit builder: Hash.Builder): Hash =

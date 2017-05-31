@@ -92,7 +92,7 @@ object Node {
    *
    * @param entries The entries in the underlying table.
    */
-  case class Table(entries: SortedMap[Value, Node] = SortedMap()) extends Data {
+  case class Table(entries: SortedMap[Value, Data] = SortedMap()) extends Data {
 
     /** The list of keys in this table. */
     lazy val keys: SortedSet[Value] = entries.keySet
@@ -103,7 +103,7 @@ object Node {
      * @param key The key to return the value for.
      * @return A value in this table.
      */
-    def apply(key: Value): Node =
+    def apply(key: Value): Data =
       entries(key)
 
     /**
@@ -112,7 +112,7 @@ object Node {
      * @param key The key to return the value for.
      * @return A value if one exists in this table for the specified key.
      */
-    def get(key: Value): Option[Node] =
+    def get(key: Value): Option[Data] =
       entries get key
 
     /* Hash this table with the specified hash builder. */
@@ -132,7 +132,7 @@ object Node {
      * @param items The items to populate the table with.
      * @return A new table populated with the specified data.
      */
-    def apply(items: (Value, Node)*): Table =
+    def apply(items: (Value, Data)*): Table =
       Table(SortedMap(items: _*))
 
   }
@@ -143,7 +143,7 @@ object Node {
    * @param title   The title of the document.
    * @param content The content of the document.
    */
-  case class Document(title: String, content: Node) extends Node {
+  case class Document(title: String, content: Data) extends Node {
 
     /* Hash this table with the specified hash builder. */
     override protected def generateHash(implicit builder: Hash.Builder): Hash =

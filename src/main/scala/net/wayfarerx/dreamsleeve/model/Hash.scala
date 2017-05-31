@@ -79,7 +79,7 @@ object Hash {
    */
   final class Builder {
 
-    import Builder._
+    import Headers._
 
     /** The message digest to use. */
     private val digest = MessageDigest.getInstance("SHA-256")
@@ -299,31 +299,6 @@ object Hash {
    * Factory for creating builders.
    */
   object Builder {
-
-    /** The header for document hashes. */
-    private val DocumentHeader = 0xE1.toByte
-    /** The header for table hashes. */
-    private val TableHeader = 0xD2.toByte
-    /** The header for string hashes. */
-    private val StringHeader = 0xC3.toByte
-    /** The header for number hashes. */
-    private val NumberHeader = 0xB4.toByte
-    /** The header for boolean hashes. */
-    private val BooleanHeader = 0xA5.toByte
-    /** The header for document creation. */
-    private val CreateHeader = 0x96.toByte
-    /** The header for change document revisions. */
-    private val ReviseHeader = 0x87.toByte
-    /** The header for document removal. */
-    private val RemoveHeader = 0x78.toByte
-    /** The header for add operation hashes. */
-    private val AddHeader = 0x69.toByte
-    /** The header for copy operation hashes. */
-    private val CopyHeader = 0x5A.toByte
-    /** The header for replace operation hashes. */
-    private val ReplaceHeader = 0x4B.toByte
-    /** The header for modify operation hashes. */
-    private val ModifyHeader = 0x3C.toByte
 
     /**
      * Implicitly creates a new hash builder.

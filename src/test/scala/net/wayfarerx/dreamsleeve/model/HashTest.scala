@@ -6,7 +6,7 @@ import scala.collection.immutable.ListMap
 /**
  * Test case for the node hashing implementation.
  */
-class NodeHashingTest extends FlatSpec with Matchers {
+class HashTest extends FlatSpec with Matchers {
 
   import Node._
 
