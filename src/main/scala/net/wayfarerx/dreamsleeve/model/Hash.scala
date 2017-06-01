@@ -240,6 +240,17 @@ object Hash {
     }
 
     /**
+     * Hashes a delete operation.
+     *
+     * @param hash The hash of the value being deleted.
+     */
+    def hashDelete(hash: Hash): Hash = {
+      append(DeleteHeader)
+      append(hash)
+      complete()
+    }
+
+    /**
      * Appends a boolean value to the running digest.
      *
      * @param value The value to append.

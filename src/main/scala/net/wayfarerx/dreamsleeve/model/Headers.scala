@@ -29,5 +29,7 @@ object Headers {
   val ReplaceHeader = 0x4B.toByte
   /** The header for modify operations. */
   val ModifyHeader = 0x3C.toByte
+  /** The header for delete operations. */
+  val DeleteHeader = 0x2D.toByte
 
 }

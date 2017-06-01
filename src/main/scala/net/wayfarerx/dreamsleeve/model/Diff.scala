@@ -1,5 +1,7 @@
 package net.wayfarerx.dreamsleeve.model
 
+import scala.collection.immutable.{SortedMap, SortedSet}
+
 /**
  * Base class for all diffs applied to a document.
  */
@@ -60,20 +62,21 @@ object Diff {
         path :+= key
         try {
           (fromNode, update) match {
-            case (fromTable@Table(_), Change.Modify(fromTableHash, inserts, retains, deletes)) =>
+            case (fromTable@Table(_), Change.Modify(fromTableHash, changes)) =>
               check(fromTable.hash, fromTableHash)
+              if ((fromTable.keys -- changes.keySet).nonEmpty)
+                throw new DiffException.StructureMismatch.Undefined(path, fromTable.keys -- changes.keySet)
               var toItems = Vector[(Value, Data)]()
-              for ((k, v) <- inserts) {
-                if (fromTable.get(k).isDefined) throw new DiffException.StructureMismatch.Unexpected(path, k)
-                toItems :+= k -> v.value
-              }
-              for ((k, v) <- retains) {
-                if (fromTable.get(k).isEmpty) throw new DiffException.StructureMismatch.Missing(path, k)
-                toItems :+= k -> updating(k, fromTable(k), v)
-              }
-              for ((k, v) <- deletes) {
-                if (fromTable.get(k).isEmpty) throw new DiffException.StructureMismatch.Missing(path, k)
-                check(fromTable(k).hash, v)
+              for ((k, v) <- changes) v match {
+                case Change.Add(data) =>
+                  if (fromTable.get(k).isDefined) throw new DiffException.StructureMismatch.Unexpected(path, k)
+                  toItems :+= k -> data
+                case update: Change.Update =>
+                  if (fromTable.get(k).isEmpty) throw new DiffException.StructureMismatch.Missing(path, k)
+                  toItems :+= k -> updating(k, fromTable(k), update)
+                case Change.Delete(hash) =>
+                  if (fromTable.get(k).isEmpty) throw new DiffException.StructureMismatch.Missing(path, k)
+                  check(fromTable(k).hash, hash)
               }
               Table(toItems: _*)
             case (_, Change.Copy(fromNodeHash)) =>
@@ -82,7 +85,7 @@ object Diff {
             case (_, Change.Replace(fromNodeHash, toNode)) =>
               check(fromNode.hash, fromNodeHash)
               toNode
-            case (_, Change.Modify(fromNodeHash, _, _, _)) =>
+            case (_, Change.Modify(fromNodeHash, _)) =>
               check(fromNode.hash, fromNodeHash)
               throw new DiffException.StructureMismatch.Type(path)
           }
@@ -120,12 +123,14 @@ object Diff {
           case (f, t) if f.hash == t.hash && f == t =>
             Change.Copy(f.hash)
           case (f@Table(_), t@Table(_)) =>
-            val fk = f.keys
-            val tk = t.keys
-            Change.Modify(f.hash,
-              (tk -- fk).toVector map { k => k -> Change.Add(t(k)) },
-              (tk & fk).toVector map { k => k -> update(f(k), t(k)) },
-              (fk -- tk).toVector map { k => k -> f(k).hash })
+            Change.Modify(f.hash, SortedMap((f.keys ++ t.keys).toSeq map { k =>
+              f.get(k) -> t.get(k) match {
+                case (None, Some(tv)) => k -> Change.Add(tv)
+                case (Some(fv), Some(tv)) => k -> update(fv, tv)
+                case (Some(fv), None) => k -> Change.Delete(fv.hash)
+                case (None, None) => sys.error("unreachable")
+              }
+            }: _*))
           case (f, t) =>
             Change.Replace(f.hash, t)
         }
@@ -234,23 +239,26 @@ object Diff {
      * Modifies an existing table inside a table or document.
      *
      * @param fromHash The hash of the original node.
-     * @param inserts  The entries to be inserted into the table.
-     * @param retains  The entries to be retained in the table.
-     * @param deletes  The entries to deleted from the table.
+     * @param changes  The changes to be applied to the table.
      */
-    case class Modify(
-      fromHash: Hash,
-      inserts: Vector[(Value, Change.Add)],
-      retains: Vector[(Value, Change.Update)],
-      deletes: Vector[(Value, Hash)]
-    ) extends Update {
+    case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
       /* Return the hash for this modification. */
       override protected def generateHash(implicit builder: Hash.Builder): Hash =
-        builder.hashModify(fromHash,
-          inserts.flatMap { case (k, v) => Seq(k.hash, v.hash) }
-            ++ retains.flatMap { case (k, v) => Seq(k.hash, v.hash) }
-            ++ deletes.flatMap { case (k, v) => Seq(k.hash, v) })
+        builder.hashModify(fromHash, changes flatMap { case (k, v) => Seq(k.hash, v.hash) })
+
+    }
+
+    /**
+     * Deletes a node from a table.
+     *
+     * @param hash The hash of the value to remove from a table or document.
+     */
+    case class Delete(hash: Hash) extends Change {
+
+      /* Return the hash for this deletion. */
+      override protected def generateHash(implicit builder: Hash.Builder): Hash =
+        builder.hashDelete(hash)
 
     }
 
@@ -275,6 +283,9 @@ object Diff {
 
       final class Unexpected(path: Vector[Value], found: Value)
         extends StructureMismatch(s"Unexpected at ${path mkString "/"} expected nothing found $found")
+
+      final class Undefined(path: Vector[Value], missing: SortedSet[Value])
+        extends StructureMismatch(s"Type mismatch at ${path mkString "/"} keys not defined: ${missing mkString ","}.")
 
     }
 

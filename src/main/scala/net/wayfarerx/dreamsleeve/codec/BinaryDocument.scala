@@ -37,36 +37,56 @@ object BinaryDocument {
     val header = outer.readLong()
     if (header != Header) throw new MalformedDocument.InvalidHeader(header)
     val inner = new DataInputStream(new GZIPInputStream(outer))
-
-    /* Reads a value node from the stream. */
-    def readValue(header: Byte): Value = header match {
-      case Headers.BooleanHeader =>
-        Value.Boolean(inner.readBoolean())
-      case Headers.NumberHeader =>
-        Value.Number(inner.readDouble())
-      case Headers.StringHeader =>
-        Value.String(inner.readUTF())
-      case invalid =>
-        throw new MalformedDocument.InvalidDataHeader(invalid)
-    }
-
-    /* Reads a data node from the stream. */
-    def readData(): Data = inner.readByte() match {
-      case Headers.TableHeader =>
-        val count = inner.readShort()
-        Table((1 to count) map (_ => readValue(inner.readByte()) -> readData()): _*)
-      case other =>
-        readValue(other)
-    }
-
     val bytes = new Array[Byte](32)
     inner.readFully(bytes)
     val hash = Hash(bytes)
     val title = inner.readUTF()
-    val content = readData()
+    val content = readData(inner.readByte(), inner) match {
+      case Right(value) => value
+      case Left(invalid) => throw new MalformedDocument.InvalidDataHeader(invalid)
+    }
     val result = Document(title, content)
     if (result.hash != hash) throw new MalformedDocument.InvalidHash(hash, result.hash)
     result
+  }
+
+  /**
+   * Reads a value node from a stream.
+   *
+   * @param header The header that was just previously from the stream.
+   * @param input  The stream to read from.
+   * @return Either the first invalid header encountered or the value node that was read.
+   */
+  private[codec] def readValue(header: Byte, input: DataInput): Either[Byte, Value] = header match {
+    case Headers.BooleanHeader =>
+      Right(Value.Boolean(input.readBoolean()))
+    case Headers.NumberHeader =>
+      Right(Value.Number(input.readDouble()))
+    case Headers.StringHeader =>
+      Right(Value.String(input.readUTF()))
+    case invalid =>
+      Left(invalid)
+  }
+
+  /**
+   * Reads a data node from a stream.
+   *
+   * @param header The header that was just previously from the stream.
+   * @param input  The stream to read from.
+   * @return Either the first invalid header encountered or the data node that was read.
+   */
+  private[codec] def readData(header: Byte, input: DataInput): Either[Byte, Data] = header match {
+    case Headers.TableHeader =>
+      val count = input.readShort()
+      ((Right(Vector[(Value, Data)]()): Either[Byte, Vector[(Value, Data)]]) /: (1 to count)) {
+        case (Right(results), _) =>
+          readValue(input.readByte(), input) flatMap { k =>
+            readData(input.readByte(), input).map(v => results :+ (k, v))
+          }
+        case (left@Left(_), _) => left
+      } map (Table(_: _*))
+    case other =>
+      readValue(other, input)
   }
 
   /**
@@ -97,31 +117,36 @@ object BinaryDocument {
     }
     outer.writeLong(Header)
     val inner = new DataOutputStream(new GZIPOutputStream(outer))
-
-    /* Writes a value node to the stream. */
-    def writeData(data: Data): Unit = data match {
-      case Value.Boolean(b) =>
-        inner.writeByte(Headers.BooleanHeader)
-        inner.writeBoolean(b)
-      case Value.Number(d) =>
-        inner.writeByte(Headers.NumberHeader)
-        inner.writeDouble(d)
-      case Value.String(s) =>
-        inner.writeByte(Headers.StringHeader)
-        inner.writeUTF(s)
-      case Table(entries) =>
-        inner.writeByte(Headers.TableHeader)
-        inner.writeShort(entries.size)
-        for ((k, v) <- entries) {
-          writeData(k)
-          writeData(v)
-        }
-    }
-
     inner.write(document.hash.bytes)
     inner.writeUTF(document.title)
-    writeData(document.content)
+    writeData(document.content, inner)
     inner.close()
+  }
+
+  /**
+   * Writes a data node to the stream.
+   *
+   * @param data   The data node to write.
+   * @param output The stream to write to.
+   *
+   */
+  private[codec] def writeData(data: Data, output: DataOutput): Unit = data match {
+    case Value.Boolean(b) =>
+      output.writeByte(Headers.BooleanHeader)
+      output.writeBoolean(b)
+    case Value.Number(d) =>
+      output.writeByte(Headers.NumberHeader)
+      output.writeDouble(d)
+    case Value.String(s) =>
+      output.writeByte(Headers.StringHeader)
+      output.writeUTF(s)
+    case Table(entries) =>
+      output.writeByte(Headers.TableHeader)
+      output.writeShort(entries.size)
+      for ((k, v) <- entries) {
+        writeData(k, output)
+        writeData(v, output)
+      }
   }
 
   /**
