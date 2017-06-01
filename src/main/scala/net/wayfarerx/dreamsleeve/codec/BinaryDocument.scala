@@ -90,7 +90,11 @@ object BinaryDocument {
    * @param builder  The hash builder to use for data integrity validation.
    */
   def write(document: Document, output: OutputStream)(implicit builder: Hash.Builder): Unit = {
-    val outer = new DataOutputStream(output)
+    val outer = new DataOutputStream(output) {
+      // Prevent the underlying stream from being closed.
+      // We must close the gzip stream for it to finish.
+      override def close(): Unit = flush()
+    }
     outer.writeLong(Header)
     val inner = new DataOutputStream(new GZIPOutputStream(outer))
 
@@ -117,7 +121,6 @@ object BinaryDocument {
     inner.write(document.hash.bytes)
     inner.writeUTF(document.title)
     writeData(document.content)
-    inner.flush()
     inner.close()
   }
 
