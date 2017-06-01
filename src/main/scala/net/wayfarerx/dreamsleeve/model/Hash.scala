@@ -5,19 +5,22 @@ import java.security.MessageDigest
 /**
  * Represents an opaque SHA-256 hash.
  *
- * @param bytes The 32 bytes that define the hash.
+ * @param _bytes The 32 bytes that define the hash.
  */
-final class Hash private(private val bytes: Array[Byte]) {
+final class Hash private(private val _bytes: Array[Byte]) {
+
+  /** Returns a copy of this hash's bytes. */
+  def bytes: Array[Byte] = _bytes.clone()
 
   /* Compare to other hashes. */
   override def equals(that: Any): Boolean = that match {
-    case hash: Hash => java.util.Arrays.equals(bytes, hash.bytes)
+    case hash: Hash => java.util.Arrays.equals(_bytes, hash._bytes)
     case _ => false
   }
 
   /* Hash the hash. */
   override def hashCode(): Int =
-    java.util.Arrays.hashCode(bytes)
+    java.util.Arrays.hashCode(_bytes)
 
   /** Encodes the first 5 bytes in base-16. */
   def toShortString: String =
@@ -25,9 +28,9 @@ final class Hash private(private val bytes: Array[Byte]) {
 
   /* Encode in base-16. */
   override def toString: String = {
-    val hexChars = new Array[Char](bytes.length * 2)
-    for (i <- bytes.indices) {
-      val v: Int = bytes(i) & 0xFF
+    val hexChars = new Array[Char](_bytes.length * 2)
+    for (i <- _bytes.indices) {
+      val v: Int = _bytes(i) & 0xFF
       hexChars(i * 2) = Hash.HexArray(v >>> 4)
       hexChars(i * 2 + 1) = Hash.HexArray(v & 0x0F)
     }
@@ -43,6 +46,16 @@ object Hash {
 
   /** The characters to encode a byte array with. */
   private val HexArray = "0123456789abcdef".toCharArray
+
+  /**
+   * Creates a hash from the specified byte array.
+   *
+   * @param bytes The 32 bytes that represent the value of a hash.
+   */
+  def apply(bytes: Array[Byte]): Hash = {
+    if (bytes.length != 32) throw new IllegalArgumentException(s"Hashes must contain 32 bytes.")
+    return new Hash(bytes.clone())
+  }
 
   /**
    * Mixin that supports common hashing operations.
@@ -282,7 +295,7 @@ object Hash {
      * @param hash The hash to append.
      */
     private def append(hash: Hash): Unit =
-      digest.update(hash.bytes)
+      digest.update(hash._bytes)
 
     /**
      * Completes the running digest and generates a hash.
