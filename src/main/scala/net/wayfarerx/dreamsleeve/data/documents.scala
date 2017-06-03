@@ -28,16 +28,6 @@ import scala.collection.immutable.{SortedMap, SortedSet}
  */
 case class Document(title: String, content: Fragment) extends Hashable {
 
-  /**
-   * Computes the revise that transforms this document into the specified document.
-   *
-   * @param to     The document to compute the revise against.
-   * @param hasher The hasher to generate hashes with.
-   * @return The revise that transforms this document into the specified document.
-   */
-  def computeRevise(to: Document)(implicit hasher: Hasher): Difference.Revise =
-    Difference.Revise(this, to.title, content.computeUpdate(to.content))
-
   /* Generate the hash for this document. */
   override private[data] def generateHash(implicit hasher: Hasher): Hash =
     hasher.hashDocument(title, content.hash)
@@ -57,18 +47,7 @@ object Document {
 /**
  * The base type of all document fragments.
  */
-sealed trait Fragment extends Hashable {
-
-  /**
-   * Computes the update that transforms this fragment into the specified fragment.
-   *
-   * @param to     The fragment to compute the update against.
-   * @param hasher The hasher to generate hashes with.
-   * @return The update that transforms this fragment into the specified fragment.
-   */
-  def computeUpdate(to: Fragment)(implicit hasher: Hasher): Change.Update
-
-}
+sealed trait Fragment extends Hashable
 
 /**
  * Represents tables of fragments indexed by a value.
@@ -98,20 +77,6 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
   def get(key: Value): Option[Fragment] =
     entries get key
 
-  /* Compute the update as a copy if identical, a modify if a different table and a replace otherwise. */
-  override def computeUpdate(to: Fragment)(implicit hasher: Hasher): Change.Update = to match {
-    case toFragment if toFragment == this => Change.Copy(this)
-    case toTable@Table(_) => Change.Modify(this, (keys ++ toTable.keys).toSeq map { k =>
-      get(k) -> toTable.get(k) match {
-        case (None, Some(tf)) => k -> Change.Add(tf)
-        case (Some(ff), Some(tf)) => k -> ff.computeUpdate(tf)
-        case (Some(ff), None) => k -> Change.Remove(ff)
-        case (None, None) => sys.error("unreachable")
-      }
-    }: _*)
-    case _ => Change.Replace(hash, to)
-  }
-
   /* Generate the hash for this table. */
   override private[data] def generateHash(implicit hasher: Hasher): Hash =
     hasher.hashTable(entries flatMap { case (k, v) => Seq(k.hash, v.hash) })
@@ -140,19 +105,21 @@ object Table {
 /**
  * The base type of all fragments that represent a single value.
  */
-sealed trait Value extends Fragment with Comparable[Value] {
-
-  /* Compute the update as a copy if identical and a replace if not. */
-  final override def computeUpdate(to: Fragment)(implicit hasher: Hasher): Change.Update =
-    if (to == this) Change.Copy(hash)
-    else Change.Replace(hash, to)
-
-}
+sealed trait Value extends Fragment with Comparable[Value]
 
 /**
  * Implementations of the value types.
  */
 object Value {
+
+  /**
+   * Extracts any value implementation.
+   *
+   * @param value The value to extract.
+   * @return True for every value.
+   */
+  def unapply(value: Value): scala.Boolean =
+    true
 
   /**
    * Represents true or false values.
