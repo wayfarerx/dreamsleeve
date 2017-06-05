@@ -31,7 +31,7 @@ final class Hash private(private val bytes: Array[Byte]) {
 
   /* Compare to other hashes. */
   override def equals(that: Any): Boolean = that match {
-    case hash: Hash => java.util.Arrays.equals(bytes, hash.bytes)
+    case hash: Hash => bytes sameElements hash.bytes
     case _ => false
   }
 
@@ -127,7 +127,7 @@ object Hash {
   /**
    * A utility that allows a hasher to access the internal byte array of a hash.
    */
-  private[data] sealed trait Access {
+  private[data] trait Access {
 
     /**
      * Creates a new hash without cloning the byte array.
@@ -372,16 +372,6 @@ final class Hasher private extends Hash.Access {
     digest.update(value)
 
   /**
-   * Appends a character value to the current digest.
-   *
-   * @param value The value to append.
-   */
-  private def append(value: Char): Unit = {
-    digest.update((value >>> 8 & 0x00FF).toByte)
-    digest.update((value & 0x00FF).toByte)
-  }
-
-  /**
    * Appends a long value to the current digest.
    *
    * @param value The value to append.
@@ -403,7 +393,7 @@ final class Hasher private extends Hash.Access {
    * @param value The value to append.
    */
   private def append(value: String): Unit =
-    value foreach append
+    digest.update(value.getBytes("UTF-8"))
 
   /**
    * Appends a hash to the current digest.
