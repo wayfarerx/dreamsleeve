@@ -34,9 +34,6 @@ sealed trait Difference extends Hashable
  */
 object Difference {
 
-  /** The type that represents the result error-prone operations on difference objects. */
-  private[data] type Attempt[T] = Validated[Problem.List, T]
-
   /**
    * Represents when a document is first created.
    *
@@ -189,8 +186,10 @@ sealed trait Change extends Hashable
  */
 object Change {
 
-  import Difference.Attempt
   import Problem.Context
+
+  /** The type that represents the result error-prone operations on difference objects. */
+  private[data] type Attempt[T] = Validated[Problem.List, T]
 
   /**
    * Add a fragment into a table where there was none before.
@@ -301,15 +300,12 @@ object Change {
     def apply(from: Fragment, to: Fragment)(implicit hasher: Hasher): Update = (from, to) match {
       case (f, t) if f == t => Change.Copy(f)
       case ((Value(), _) | (_, Value())) => Change.Replace(from, to)
-      case (fromTable@Table(_), toTable@Table(_)) =>
-        Modify(fromTable, (fromTable.keys ++ toTable.keys).toSeq map { k =>
-          fromTable.get(k) -> toTable.get(k) match {
-            case (None, Some(tf)) => k -> Change.Add(tf)
-            case (Some(ff), Some(tf)) => k -> apply(ff, tf)
-            case (Some(ff), None) => k -> Change.Remove(ff)
-            case (None, None) => sys.error("unreachable")
+      case (fromTable@Table(_), toTable@Table(_)) => Modify(fromTable, (
+        (toTable.keys -- fromTable.keys map (k => k -> Change.Add(toTable(k)))) ++
+          fromTable.keys.map { k =>
+            (k, toTable get k map (apply(fromTable(k), _)) getOrElse Change.Remove(fromTable(k)))
           }
-        }: _*)
+        ).toSeq: _*)
     }
 
   }
@@ -317,18 +313,18 @@ object Change {
   /**
    * Copy an existing fragment in a table or document.
    *
-   * @param hash The hash of the original fragment.
+   * @param theHash The hash of both fragments.
    */
-  case class Copy(hash: Hash) extends Update {
+  case class Copy(theHash: Hash) extends Update {
 
     /* Apply this change by verifying and returning the fragment. */
     override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
-      if (hash == fromFragment.hash) valid(fromFragment) else
-        invalid(Problem.List.of(Problem.HashMismatch(hash, fromFragment.hash)))
+      if (theHash == fromFragment.hash) valid(fromFragment) else
+        invalid(Problem.List.of(Problem.HashMismatch(theHash, fromFragment.hash)))
 
-    /* Generate the hash for this copy. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashCopy(hash)
+    /* Generate the theHash for this copy. */
+    override private[data] def generateHash(implicit theHasher: Hasher): Hash =
+      theHasher.hashCopy(theHash)
 
   }
 
@@ -363,7 +359,7 @@ object Change {
     /* Apply this change by verifying the original fragment and returning the resulting fragment. */
     override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
       if (fromHash == fromFragment.hash) valid(toFragment) else
-        invalid(Problem.List.of(Problem.HashMismatch(hash, fromFragment.hash)))
+        invalid(Problem.List.of(Problem.HashMismatch(fromHash, fromFragment.hash)))
 
     /* Generate the hash for this replace. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
@@ -465,7 +461,7 @@ object Change {
      * @return A new modify for the specified table and changes.
      */
     def apply(from: Table, changes: (Value, Change)*)(implicit hasher: Hasher): Modify =
-      Modify(from.hash, SortedMap(changes: _*))
+      apply(from.hash, changes: _*)
 
   }
 

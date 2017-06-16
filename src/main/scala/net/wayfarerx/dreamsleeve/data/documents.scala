@@ -50,6 +50,22 @@ object Document {
 sealed trait Fragment extends Hashable
 
 /**
+ * Extractor for fragment implementations.
+ */
+object Fragment {
+
+  /**
+   * Extracts any fragment implementation.
+   *
+   * @param fragment The fragment to extract.
+   * @return True for every fragment.
+   */
+  def unapply(fragment: Fragment): Boolean =
+    true
+
+}
+
+/**
  * Represents tables of fragments indexed by a value.
  *
  * @param entries The entries in the underlying table.
