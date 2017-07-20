@@ -84,11 +84,11 @@ object Difference {
      */
     def apply(fromDocument: Document)(implicit hasher: Hasher): Either[Vector[Problem], Document] = {
       implicit val ctx = Problem.Context(Vector(Value.String(fromDocument.title)))
-      val hashCheck: Vector[Problem] = if (fromHash == fromDocument.hash) Vector() else
-        Vector(Problem.HashMismatch(hash, fromDocument.hash))
-      update(fromDocument.content).andThen { c =>
-        if (hashCheck.isEmpty) valid(Document(title, c)) else invalid(Problem.List(hashCheck(0), Nil))
-      }.leftMap(e => hashCheck ++ e.toList.toVector).toEither
+      val hashCheck = Some(fromHash) filter (_ != fromDocument.hash) map (Problem.HashMismatch(_, fromDocument.hash))
+      update(fromDocument.content)
+        .leftMap(e => hashCheck map (_ +: e.toList.toVector) getOrElse e.toList.toVector)
+        .andThen(c => hashCheck map (p => invalid(Vector(p))) getOrElse valid(Document(title, c)))
+        .toEither
     }
 
     /* Generate the hash for this revise. */
@@ -400,7 +400,7 @@ object Change {
     override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] = {
       // Verify that the from table's hash matches.
       val hashCheck: Attempt[Vector[(Value, Fragment)]] = if (fromHash == fromFragment.hash) valid(Vector()) else
-        invalid(Problem.List.of(Problem.HashMismatch(hash, fromFragment.hash)))
+        invalid(Problem.List.of(Problem.HashMismatch(fromHash, fromFragment.hash)))
       (fromFragment match {
         case v@Value() =>
           NonEmptyList(hashCheck, List(invalid(Problem.List.of(Problem.TypeMismatch(v))))).reduce

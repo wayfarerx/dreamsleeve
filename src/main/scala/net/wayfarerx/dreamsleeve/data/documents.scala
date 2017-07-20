@@ -75,6 +75,9 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
   /** The set of keys in this table. */
   lazy val keys: SortedSet[Value] = entries.keySet
 
+  /** The set of values in this table. */
+  lazy val values: Iterable[Fragment] = entries.values
+
   /**
    * Returns a fragment in this table.
    *

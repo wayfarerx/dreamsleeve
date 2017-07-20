@@ -19,10 +19,10 @@
 package net.wayfarerx.dreamsleeve.data
 
 import org.scalatest._
-
 import cats.data._
-import cats.implicits._
 import Validated.{invalid, valid}
+
+import scala.collection.immutable.SortedSet
 
 /**
  * Test case for the change implementations.
@@ -102,17 +102,56 @@ class ChangeSpec extends FlatSpec with Matchers {
     b(fb) shouldBe valid(fa)
   }
 
-  "A modify" should "act as a hashable modification of the entries in a table" in {
-    // Different types of fragments.
+  "A modify" should "act as a hashable modification to the entries in a table" in {
+    // Hash mismatch
+    val ft = Table(Value.String("a") -> Value.Number())
+    val tt = Table(Value.String("a") -> Value.Number(1.1))
+    val a = Modify(ft, ft.keys.head -> Replace(tt.values.head, ft.values.head))
+    a(tt) shouldBe invalid(Problem.List.of(Problem.HashMismatch(ft.hash, tt.hash)))
+    // Type mismatch
     val fv = Value.String("a")
-    val tt = Table(Value.String("a") -> Value.Number(1))
-    val a = Modify(fv.hash)
-    a(fv) shouldBe invalid(Problem.List.of(Problem.TypeMismatch(fv)))
-    // Identical tables.
-    val ft = tt
-    val b = Modify(ft, ft.keys.firstKey -> Copy(ft))
-    //b(ft) shouldBe valid(tt)
-    // TODO
+    val b = Modify(fv.hash)
+    b(fv) shouldBe invalid(Problem.List.of(Problem.TypeMismatch(fv)))
+    // Hash & type mismatch
+    val c = Modify(ft.hash)
+    c(fv) shouldBe invalid(Problem.List.of(Problem.HashMismatch(ft.hash, fv.hash), Problem.TypeMismatch(fv)))
+    // Missing change keys
+    val et = Table()
+    val d = Modify(ft)
+    d(ft) shouldBe invalid(Problem.List.of(Problem.MissingChangeKeys(SortedSet(ft.keys.head))))
+    // Unexpected entry
+    val e = Modify(ft, ft.keys.head -> Add(tt.values.head))
+    e(ft) shouldBe invalid(Problem.List.of(Problem.UnexpectedEntry(ft.keys.head)))
+    // Add an entry
+    val f = Modify(et, tt.keys.head -> Add(tt.values.head))
+    f(et) shouldBe valid(tt)
+    // Missing entry
+    val g = Modify(et, tt.keys.head -> Remove(tt.values.head))
+    g(et) shouldBe invalid(Problem.List.of(Problem.MissingEntry(tt.keys.head)))
+    // Remove an entry
+    val h = Modify(ft, ft.keys.head -> Remove(ft.values.head))
+    h(ft) shouldBe valid(et)
+    // Copy an entry
+    val i = Modify(tt, tt.keys.head -> Copy(tt.values.head))
+    i(tt) shouldBe valid(tt)
+    // Replace an entry
+    val j = Modify(ft, ft.keys.head -> Replace(ft.values.head, tt.values.head))
+    j(ft) shouldBe valid(tt)
+    // Modify an entry
+    val x = Value.String("x")
+    val ftt = Table(x -> ft)
+    val ttt = Table(x -> tt)
+    val k = Modify(ftt, x -> Modify(ft, ft.keys.head -> Replace(ft.values.head, tt.values.head)))
+    k(ftt) shouldBe valid(ttt)
+    // Hash, key & entries mismatch
+    val ft2 = ft.copy(entries = ft.entries + (Value.String("c") -> Value.Boolean()))
+    val l = Modify(et.hash, Value.String("a") -> Add(ft.values.head), Value.String("b") -> Remove(ft.values.head))
+    l(ft2) shouldBe invalid(Problem.List.of(
+      Problem.HashMismatch(et.hash, ft2.hash),
+      Problem.MissingChangeKeys(SortedSet(Value.String("c"))),
+      Problem.UnexpectedEntry(Value.String("a")),
+      Problem.MissingEntry(Value.String("b"))
+    ))
   }
 
 }
