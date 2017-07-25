@@ -18,11 +18,7 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import cats.data._
-import cats.implicits._
-import Validated.{invalid, valid}
-
-import scala.collection.immutable.{SortedMap, SortedSet}
+import collection.immutable.SortedMap
 
 /**
  * Base class for all differences between documents.
@@ -41,14 +37,6 @@ object Difference {
    */
   case class Create(document: Document) extends Difference {
 
-    /**
-     * Applies this difference by returning the created document.
-     *
-     * @return The created document.
-     */
-    def apply(): Document =
-      document
-
     /* Generate the hash for this create. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
       hasher.hashCreate(document.hash)
@@ -58,7 +46,7 @@ object Difference {
   /**
    * Declarations associated with creates.
    */
-  object Create {
+  object Create extends PatchingDifferences.Create {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -74,23 +62,6 @@ object Difference {
    */
   case class Revise(fromHash: Hash, title: String, update: Change.Update) extends Difference {
 
-    /**
-     * Applies this difference by applying all changes to the specified document.
-     *
-     * @param fromDocument The document to apply changes to.
-     * @param hasher       The hasher to generate hashes with.
-     * @return Either the resulting document after applying changes to the original document or any problems that were
-     *         encountered.
-     */
-    def apply(fromDocument: Document)(implicit hasher: Hasher): Either[Vector[Problem], Document] = {
-      implicit val ctx = Problem.Context(Vector(Value.String(fromDocument.title)))
-      val hashCheck = Some(fromHash) filter (_ != fromDocument.hash) map (Problem.HashMismatch(_, fromDocument.hash))
-      update(fromDocument.content)
-        .leftMap(e => hashCheck map (_ +: e.toList.toVector) getOrElse e.toList.toVector)
-        .andThen(c => hashCheck map (p => invalid(Vector(p))) getOrElse valid(Document(title, c)))
-        .toEither
-    }
-
     /* Generate the hash for this revise. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
       hasher.hashRevise(fromHash, title, update.hash)
@@ -100,7 +71,7 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise {
+  object Revise extends PatchingDifferences.Revise {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -137,16 +108,6 @@ object Difference {
    */
   case class Delete(fromHash: Hash) extends Difference {
 
-    /**
-     * Applies this difference by verifying the deleted document.
-     *
-     * @param document The document to verify the deletion of.
-     * @param hasher   The hasher to generate hashes with.
-     * @return True if the deleted document was verified, false otherwise.
-     */
-    def apply(document: Document)(implicit hasher: Hasher): Boolean =
-      document.hash == fromHash
-
 
     /* Generate the hash for this delete. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
@@ -157,7 +118,7 @@ object Difference {
   /**
    * Factory for deletes.
    */
-  object Delete {
+  object Delete extends PatchingDifferences.Delete {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -186,25 +147,12 @@ sealed trait Change extends Hashable
  */
 object Change {
 
-  import Problem.Context
-
-  /** The type that represents the result error-prone operations on difference objects. */
-  private[data] type Attempt[T] = Validated[Problem.List, T]
-
   /**
    * Add a fragment into a table where there was none before.
    *
    * @param toFragment The fragment to add into a table.
    */
   case class Add(toFragment: Fragment) extends Change {
-
-    /**
-     * Applies this change by returning the fragment to add.
-     *
-     * @return The fragment to add or problems that were encountered adding the fragment.
-     */
-    private[data] def apply(): Attempt[Fragment] =
-      valid(toFragment)
 
     /* Generate the hash for this add. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
@@ -215,7 +163,7 @@ object Change {
   /**
    * Declarations associated with adds.
    */
-  object Add {
+  object Add extends PatchingChanges.Add {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -229,18 +177,6 @@ object Change {
    */
   case class Remove(fromHash: Hash) extends Change {
 
-    /**
-     * Applies this change by verifying the removed fragment.
-     *
-     * @param fromFragment The fragment to verify the removal of.
-     * @param hasher       The hasher to generate hashes with.
-     * @param ctx          The context of this change application.
-     * @return The problems that were encountered removing the fragment, if any.
-     */
-    private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Unit] =
-      if (fromFragment.hash == fromHash) valid(()) else
-        invalid(Problem.List.of(Problem.HashMismatch(fromHash, fromFragment.hash)))
-
     /* Generate the hash for this remove. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
       hasher.hashRemove(fromHash)
@@ -250,7 +186,7 @@ object Change {
   /**
    * Factory for removes.
    */
-  object Remove {
+  object Remove extends PatchingChanges.Remove {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -270,24 +206,12 @@ object Change {
   /**
    * Base type for all changes that update existing fragments.
    */
-  sealed trait Update extends Change {
-
-    /**
-     * Applies this change to the original fragment, creating the resulting fragment..
-     *
-     * @param fromFragment The fragment that is being updated.
-     * @param hasher       The hasher to generate hashes with.
-     * @param ctx          The context of this change application.
-     * @return The resulting fragment or problems that were encountered updating the fragment.
-     */
-    private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment]
-
-  }
+  sealed trait Update extends Change
 
   /**
    * Factory for updates.
    */
-  object Update {
+  object Update extends PatchingChanges.Update {
 
     /**
      * Creates an update by collecting the differences between two fragments.
@@ -317,11 +241,6 @@ object Change {
    */
   case class Copy(theHash: Hash) extends Update {
 
-    /* Apply this change by verifying and returning the fragment. */
-    override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
-      if (theHash == fromFragment.hash) valid(fromFragment) else
-        invalid(Problem.List.of(Problem.HashMismatch(theHash, fromFragment.hash)))
-
     /* Generate the theHash for this copy. */
     override private[data] def generateHash(implicit theHasher: Hasher): Hash =
       theHasher.hashCopy(theHash)
@@ -331,7 +250,7 @@ object Change {
   /**
    * Factory for copies.
    */
-  object Copy {
+  object Copy extends PatchingChanges.Copy {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -356,11 +275,6 @@ object Change {
    */
   case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
 
-    /* Apply this change by verifying the original fragment and returning the resulting fragment. */
-    override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
-      if (fromHash == fromFragment.hash) valid(toFragment) else
-        invalid(Problem.List.of(Problem.HashMismatch(fromHash, fromFragment.hash)))
-
     /* Generate the hash for this replace. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
       hasher.hashReplace(fromHash, toFragment.hash)
@@ -370,7 +284,7 @@ object Change {
   /**
    * Factory for replaces.
    */
-  object Replace {
+  object Replace extends PatchingChanges.Replace {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -396,37 +310,6 @@ object Change {
    */
   case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
-    /* Apply this change by verifying the original table, applying all changes and returning the resulting table. */
-    override private[data] def apply(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] = {
-      // Verify that the from table's hash matches.
-      val hashCheck: Attempt[Vector[(Value, Fragment)]] = if (fromHash == fromFragment.hash) valid(Vector()) else
-        invalid(Problem.List.of(Problem.HashMismatch(fromHash, fromFragment.hash)))
-      (fromFragment match {
-        case v@Value() =>
-          NonEmptyList(hashCheck, List(invalid(Problem.List.of(Problem.TypeMismatch(v))))).reduce
-        case fromTable@Table(_) =>
-          // Verify that all from keys have matching changes.
-          val keyCheck = if ((fromTable.keys -- changes.keys).isEmpty) valid(Vector()) else
-            invalid(Problem.List.of(Problem.MissingChangeKeys(fromTable.keys -- changes.keys)))
-          // Apply all the changes.
-          val _ctx = ctx
-          val entries = changes map { case (k, c) =>
-            implicit val ctx: Context = _ctx.push(k)
-            c match {
-              case Add(_) if fromTable.get(k).nonEmpty => invalid(Problem.List.of(Problem.UnexpectedEntry(k)))
-              case add@Add(_) => add() map (v => Vector(k -> v))
-              case _ if fromTable.get(k).isEmpty => invalid(Problem.List.of(Problem.MissingEntry(k)))
-              case remove@Remove(_) => remove(fromTable(k)) map (_ => Vector())
-              case copy@Copy(_) => copy(fromTable(k)) map (v => Vector(k -> v))
-              case replace@Replace(_, _) => replace(fromTable(k)) map (v => Vector(k -> v))
-              case modify@Modify(_, _) => modify(fromTable(k)) map (v => Vector(k -> v))
-            }
-          }
-          // Construct the resulting table.
-          NonEmptyList(hashCheck, keyCheck :: entries.toList).reduce
-      }) map (e => Table(e: _*))
-    }
-
     /* Generate the hash for this modify. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
       hasher.hashModify(fromHash, changes flatMap { case (k, v) => Seq(k.hash, v.hash) })
@@ -436,7 +319,7 @@ object Change {
   /**
    * Factory for modifies.
    */
-  object Modify {
+  object Modify extends PatchingChanges.Modify {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte
@@ -463,107 +346,6 @@ object Change {
     def apply(from: Table, changes: (Value, Change)*)(implicit hasher: Hasher): Modify =
       apply(from.hash, changes: _*)
 
-  }
-
-}
-
-/**
- * Base class for problems that occur while processing differences.
- */
-sealed trait Problem {
-
-  /** The context where this problem occurred. */
-  def context: Problem.Context
-
-  /** The message that describes this problem. */
-  def message: String
-
-}
-
-/**
- * Concrete problem implementations.
- */
-object Problem {
-
-  /** The type of a list of problems. */
-  private[data] type List = NonEmptyList[Problem]
-
-  /** The factory for lists of problems. */
-  private[data] val List = NonEmptyList
-
-  /**
-   * The context passed among change applications.
-   *
-   * @param location the current location in the document.
-   */
-  case class Context private(location: Vector[Value]) {
-
-    /**
-     * Returns a context with the specified element at the end of the location.
-     *
-     * @param element The element to append to the location.
-     * @return A context with the specified element at the end of the location.
-     */
-    private[data] def push(element: Value): Context =
-      copy(location = location :+ element)
-
-  }
-
-  /**
-   * Problem returned when hashes that are expected to match do not.
-   *
-   * @param expected The value of the expected hash.
-   * @param found    The value of the hash that was encountered.
-   * @param context  The context where the problem occurred.
-   */
-  case class HashMismatch(expected: Hash, found: Hash)(implicit val context: Context) extends Problem {
-    override lazy val message: String =
-      s"Hash mismatch at /${context.location mkString "/"}" +
-        s" expected ${expected.toPrefixString()} found ${found.toPrefixString()}."
-  }
-
-  /**
-   * Problem returned when keys in a table have no matching keys in a modify.
-   *
-   * @param missing The keys in the table that did not have matching keys in a modify.
-   * @param context The context where the problem occurred.
-   */
-  case class MissingChangeKeys(missing: SortedSet[Value])(implicit val context: Context) extends Problem {
-    override lazy val message: String =
-      s"Missing change keys at /${context.location mkString "/"} expected ${missing mkString ","}."
-  }
-
-  /**
-   * Problem returned when a key in a modify has no matching key in a table.
-   *
-   * @param expected The key in the modify that did not have a matching key in a table.
-   * @param context  The context where the problem occurred.
-   */
-  case class MissingEntry(expected: Value)(implicit val context: Context) extends Problem {
-    override lazy val message: String =
-      s"Missing entry at ${context.location mkString "/"} expected $expected found nothing."
-  }
-
-  /**
-   * Problem returned when a key in a table was not expected to be there.
-   *
-   * @param found   The key in the table that was not expected to be there.
-   * @param context The context where the problem occurred.
-   */
-  case class UnexpectedEntry(found: Value)(implicit val context: Context) extends Problem {
-    override lazy val message: String =
-      s"Unexpected entry at ${context.location mkString "/"} expected nothing found $found."
-  }
-
-  /**
-   * Problem returned when a fragment expected to be a table is a value instead.
-   *
-   * @param found   The value that was found where a table was expected.
-   * @param context The context where the problem occurred.
-   */
-  case class TypeMismatch(found: Value)(implicit val context: Context) extends Problem {
-    override lazy val message: String =
-      s"Type mismatch at ${context.location mkString "/"} expected a table found $found."
   }
 
 }

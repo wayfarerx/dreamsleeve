@@ -18,7 +18,7 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import scala.collection.immutable.{SortedMap, SortedSet}
+import collection.immutable.{SortedMap, SortedSet}
 
 /**
  * Represents a data document.
