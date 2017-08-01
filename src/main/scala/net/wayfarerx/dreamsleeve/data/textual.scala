@@ -6,19 +6,17 @@ import java.io.{IOException, Writer}
 import java.nio.{BufferOverflowException, CharBuffer, ReadOnlyBufferException}
 import java.lang.{StringBuilder => JStringBuilder}
 
-import net.wayfarerx.dreamsleeve.data
-
 /**
  * Provides support for encoding and decoding documents to and from text.
  */
-object TextDocuments {
+object TextualDocuments {
 
   import Problem.Context
 
   /**
    * Support for the document factory object.
    */
-  trait Document {
+  trait Documents {
 
     /**
      * Wraps any document with the text output interface.
@@ -27,7 +25,7 @@ object TextDocuments {
      * @return The text output interface.
      */
     @inline
-    implicit def documentToDocumentWriter(document: data.Document): DocumentWriter =
+    implicit def documentToDocumentWriter(document: Document): DocumentWriter =
     new DocumentWriter(document)
 
   }
@@ -37,7 +35,7 @@ object TextDocuments {
    *
    * @param document The document to provide the text output interface for.
    */
-  final class DocumentWriter(val document: data.Document) extends AnyVal {
+  final class DocumentWriter(val document: Document) extends AnyVal {
 
     /**
      * Writes the document to the specified output object.
@@ -47,8 +45,8 @@ object TextDocuments {
      * @param indent The number of times to indent new lines, defaults to zero.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T, indent: Int = 0): Either[TextProblem, Unit] = {
-      val out = implicitly[TextSupport.Output[T]]
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Either[TextualProblem, Unit] = {
+      val out = implicitly[TextualSupport.Output[T]]
       implicit val ctx = Context(Vector.empty)
       out.write(output, document.title) flatMap (_ => out.write(output, " = ")) flatMap { _ =>
         implicit val ctx = Context(Vector(Value.String(document.title)))
@@ -63,15 +61,15 @@ object TextDocuments {
 /**
  * Provides support for encoding and decoding fragments to and from text.
  */
-object TextFragments {
+object TextualFragments {
 
   import Problem.Context
-  import TextProblem.Attempt
+  import TextualProblem.Attempt
 
   /**
    * Support for the fragment factory object.
    */
-  trait Fragment {
+  trait Fragments {
 
     /**
      * Wraps any fragment with the text output interface.
@@ -80,7 +78,7 @@ object TextFragments {
      * @return The text output interface.
      */
     @inline
-    implicit def fragmentToFragmentWriter(fragment: data.Fragment): FragmentWriter =
+    implicit def fragmentToFragmentWriter(fragment: Fragment): FragmentWriter =
     new FragmentWriter(fragment)
 
   }
@@ -90,7 +88,7 @@ object TextFragments {
    *
    * @param fragment The fragment to provide the text output interface for.
    */
-  final class FragmentWriter(val fragment: data.Fragment) extends AnyVal {
+  final class FragmentWriter(val fragment: Fragment) extends AnyVal {
 
     /**
      * Writes the fragment to the specified output object.
@@ -101,10 +99,10 @@ object TextFragments {
      * @param ctx    The context of the fragment writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] =
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] =
       fragment match {
-        case v@data.Value() => v.writeText(output)
-        case t@data.Table(_) => t.writeText(output, indent)
+        case v@Value() => v.writeText(output)
+        case t@Table(_) => t.writeText(output, indent)
       }
 
   }
@@ -114,10 +112,10 @@ object TextFragments {
 /**
  * Provides support for encoding and decoding values to and from text.
  */
-object TextValues {
+object TextualValues {
 
   import Problem.Context
-  import TextProblem.Attempt
+  import TextualProblem.Attempt
 
   /** The 16-bit bell character. */
   val Bell: Char = 0x00000007.toChar
@@ -128,7 +126,7 @@ object TextValues {
   /**
    * Support for the value factory object.
    */
-  trait Value {
+  trait Values {
 
     /**
      * Wraps any value with the text output interface.
@@ -137,8 +135,59 @@ object TextValues {
      * @return The text output interface.
      */
     @inline
-    implicit def valueToValueWriter(value: data.Value): ValueWriter =
+    implicit def valueToValueWriter(value: Value): ValueWriter =
     new ValueWriter(value)
+
+  }
+
+  /**
+   * Support for the boolean factory object.
+   */
+  trait Booleans {
+
+    /**
+     * Wraps any boolean with the text output interface.
+     *
+     * @param boolean The boolean to wrap.
+     * @return The text output interface.
+     */
+    @inline
+    implicit def booleanToBooleanWriter(boolean: Value.Boolean): BooleanWriter =
+    new BooleanWriter(boolean)
+
+  }
+
+  /**
+   * Support for the number factory object.
+   */
+  trait Numbers {
+
+    /**
+     * Wraps any number with the text output interface.
+     *
+     * @param number The number to wrap.
+     * @return The text output interface.
+     */
+    @inline
+    implicit def numberToNumberWriter(number: Value.Number): NumberWriter =
+    new NumberWriter(number)
+
+  }
+
+  /**
+   * Support for the string factory object.
+   */
+  trait Strings {
+
+    /**
+     * Wraps any string with the text output interface.
+     *
+     * @param string The string to wrap.
+     * @return The text output interface.
+     */
+    @inline
+    implicit def numberToNumberWriter(string: Value.String): StringWriter =
+    new StringWriter(string)
 
   }
 
@@ -147,7 +196,7 @@ object TextValues {
    *
    * @param value The value to provide the text output interface for.
    */
-  final class ValueWriter(val value: data.Value) extends AnyVal {
+  final class ValueWriter(val value: Value) extends AnyVal {
 
     /**
      * Writes the value to the specified output object.
@@ -157,29 +206,12 @@ object TextValues {
      * @param ctx    The context of the value writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] =
+    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] =
       value match {
-        case b@data.Value.Boolean(_) => b.writeText(output)
-        case n@data.Value.Number(_) => n.writeText(output)
-        case s@data.Value.String(_) => s.writeText(output)
+        case b@Value.Boolean(_) => b.writeText(output)
+        case n@Value.Number(_) => n.writeText(output)
+        case s@Value.String(_) => s.writeText(output)
       }
-
-  }
-
-  /**
-   * Support for the boolean factory object.
-   */
-  trait Boolean {
-
-    /**
-     * Wraps any boolean with the text output interface.
-     *
-     * @param boolean The boolean to wrap.
-     * @return The text output interface.
-     */
-    @inline
-    implicit def booleanToBooleanWriter(boolean: data.Value.Boolean): BooleanWriter =
-    new BooleanWriter(boolean)
 
   }
 
@@ -188,7 +220,7 @@ object TextValues {
    *
    * @param boolean The boolean to provide the text output interface for.
    */
-  final class BooleanWriter(val boolean: data.Value.Boolean) extends AnyVal {
+  final class BooleanWriter(val boolean: Value.Boolean) extends AnyVal {
 
     /**
      * Writes the value to the specified output object.
@@ -198,26 +230,9 @@ object TextValues {
      * @param ctx    The context of the boolean writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
-      implicitly[TextSupport.Output[T]].write(output, boolean.value.toString)
+    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+      implicitly[TextualSupport.Output[T]].write(output, boolean.value.toString)
     }
-
-  }
-
-  /**
-   * Support for the number factory object.
-   */
-  trait Number {
-
-    /**
-     * Wraps any number with the text output interface.
-     *
-     * @param number The number to wrap.
-     * @return The text output interface.
-     */
-    @inline
-    implicit def numberToNumberWriter(number: data.Value.Number): NumberWriter =
-    new NumberWriter(number)
 
   }
 
@@ -226,7 +241,7 @@ object TextValues {
    *
    * @param number The number to provide the text output interface for.
    */
-  final class NumberWriter(val number: data.Value.Number) extends AnyVal {
+  final class NumberWriter(val number: Value.Number) extends AnyVal {
 
     /**
      * Writes the value to the specified output object.
@@ -236,8 +251,8 @@ object TextValues {
      * @param ctx    The context of the number writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
-      val out = implicitly[TextSupport.Output[T]]
+    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+      val out = implicitly[TextualSupport.Output[T]]
       number.value match {
         case value if value.isNaN => out.write(output, '0')
         case value if value.isNegInfinity => out.write(output, Double.MinValue.toString)
@@ -250,28 +265,11 @@ object TextValues {
   }
 
   /**
-   * Support for the string factory object.
-   */
-  trait String {
-
-    /**
-     * Wraps any string with the text output interface.
-     *
-     * @param string The string to wrap.
-     * @return The text output interface.
-     */
-    @inline
-    implicit def numberToNumberWriter(string: data.Value.String): StringWriter =
-    new StringWriter(string)
-
-  }
-
-  /**
    * The text output interface for string values.
    *
    * @param string The string to provide the text output interface for.
    */
-  final class StringWriter(val string: data.Value.String) extends AnyVal {
+  final class StringWriter(val string: Value.String) extends AnyVal {
 
     /**
      * Writes the value to the specified output object.
@@ -281,8 +279,8 @@ object TextValues {
      * @param ctx    The context of the string writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
-      val out = implicitly[TextSupport.Output[T]]
+    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+      val out = implicitly[TextualSupport.Output[T]]
       (out.write(output, '"') /: string.value) { (previous, c) =>
         previous flatMap (_ => c match {
           case 0 => out.write(output, """\0""")
@@ -307,10 +305,10 @@ object TextValues {
 /**
  * Provides support for encoding and decoding tables to and from text.
  */
-object TextTables {
+object TextualTables {
 
   import Problem.Context
-  import TextProblem.Attempt
+  import TextualProblem.Attempt
 
   /** The value that is used to indent nested lines. */
   val Indent = "    "
@@ -318,7 +316,7 @@ object TextTables {
   /**
    * Support for the table factory object.
    */
-  trait Table {
+  trait Tables {
 
     /**
      * Wraps any table with the text output interface.
@@ -327,7 +325,7 @@ object TextTables {
      * @return The text output interface.
      */
     @inline
-    implicit def tableToTableWriter(table: data.Table): TableWriter =
+    implicit def tableToTableWriter(table: Table): TableWriter =
     new TableWriter(table)
 
   }
@@ -337,7 +335,7 @@ object TextTables {
    *
    * @param table The table to provide the text output interface for.
    */
-  final class TableWriter(val table: data.Table) extends AnyVal {
+  final class TableWriter(val table: Table) extends AnyVal {
 
     /**
      * Writes the table to the specified output object.
@@ -348,8 +346,8 @@ object TextTables {
      * @param ctx    The context of the table writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] = {
-      val out = implicitly[TextSupport.Output[T]]
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] = {
+      val out = implicitly[TextualSupport.Output[T]]
       val deeper = indent + 1
       val short = Indent * indent
       val long = Indent * deeper
@@ -383,10 +381,10 @@ object TextTables {
 /**
  * Definition of the text input/output interface.
  */
-object TextSupport {
+object TextualSupport {
 
   import Problem.Context
-  import TextProblem.Attempt
+  import TextualProblem.Attempt
 
   /** The line break that is written. */
   val LineBreak = "\r\n"
@@ -474,14 +472,14 @@ object TextSupport {
 
       override def write(target: CharBuffer, c: Char)(implicit ctx: Context): Attempt[Unit] =
         try Right(target.append(c)) catch {
-          case e: BufferOverflowException => Left(TextProblem.Overflow(e))
-          case e: ReadOnlyBufferException => Left(TextProblem.ReadOnly(e))
+          case e: BufferOverflowException => Left(TextualProblem.Overflow(e))
+          case e: ReadOnlyBufferException => Left(TextualProblem.ReadOnly(e))
         }
 
       override def write(target: CharBuffer, string: String)(implicit ctx: Context): Attempt[Unit] =
         try Right(target.append(string)) catch {
-          case e: BufferOverflowException => Left(TextProblem.Overflow(e))
-          case e: ReadOnlyBufferException => Left(TextProblem.ReadOnly(e))
+          case e: BufferOverflowException => Left(TextualProblem.Overflow(e))
+          case e: ReadOnlyBufferException => Left(TextualProblem.ReadOnly(e))
         }
 
     }
@@ -491,12 +489,12 @@ object TextSupport {
 
       override def write(target: Writer, c: Char)(implicit ctx: Context): Attempt[Unit] =
         try Right(target.write(c)) catch {
-          case e: IOException => Left(TextProblem.IO(e))
+          case e: IOException => Left(TextualProblem.IO(e))
         }
 
       override def write(target: Writer, string: String)(implicit ctx: Context): Attempt[Unit] =
         try Right(target.write(string)) catch {
-          case e: IOException => Left(TextProblem.IO(e))
+          case e: IOException => Left(TextualProblem.IO(e))
         }
 
     }
@@ -508,15 +506,15 @@ object TextSupport {
 /**
  * Base class for problems that occur while reading or writing text.
  */
-sealed trait TextProblem extends Problem
+sealed trait TextualProblem extends Problem
 
 /**
  * Concrete problem implementations.
  */
-object TextProblem extends Problem.Factory[TextProblem] {
+object TextualProblem extends Problem.Factory[TextualProblem] {
 
   /** The type that represents the result of error-prone text operations. */
-  final type Attempt[T] = Either[TextProblem, T]
+  final type Attempt[T] = Either[TextualProblem, T]
 
   /**
    * Problem returned when an IO exception is encountered.
@@ -524,7 +522,7 @@ object TextProblem extends Problem.Factory[TextProblem] {
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class IO(exception: IOException)(implicit val context: Context) extends TextProblem
+  case class IO(exception: IOException)(implicit val context: Context) extends TextualProblem
 
   /**
    * Problem returned when a buffer is overflowed while writing.
@@ -532,7 +530,7 @@ object TextProblem extends Problem.Factory[TextProblem] {
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class Overflow(exception: BufferOverflowException)(implicit val context: Context) extends TextProblem
+  case class Overflow(exception: BufferOverflowException)(implicit val context: Context) extends TextualProblem
 
   /**
    * Problem returned when attempting to write to a read only buffer.
@@ -540,6 +538,6 @@ object TextProblem extends Problem.Factory[TextProblem] {
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class ReadOnly(exception: ReadOnlyBufferException)(implicit val context: Context) extends TextProblem
+  case class ReadOnly(exception: ReadOnlyBufferException)(implicit val context: Context) extends TextualProblem
 
 }

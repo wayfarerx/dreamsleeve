@@ -37,7 +37,7 @@ case class Document(title: String, content: Fragment) extends Hashable {
 /**
  * Declarations associated with documents.
  */
-object Document extends TextDocuments.Document {
+object Document extends TextualDocuments.Documents {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -52,7 +52,7 @@ sealed trait Fragment extends Hashable
 /**
  * Extractor for fragment implementations.
  */
-object Fragment extends TextFragments.Fragment {
+object Fragment extends TextualFragments.Fragments {
 
   /**
    * Extracts any fragment implementation.
@@ -73,7 +73,7 @@ sealed trait Value extends Fragment with Comparable[Value]
 /**
  * Implementations of the value types.
  */
-object Value extends TextValues.Value {
+object Value extends TextualValues.Values {
 
   /**
    * Extracts any value implementation.
@@ -106,7 +106,7 @@ object Value extends TextValues.Value {
   /**
    * Declarations associated with booleans.
    */
-  object Boolean extends TextValues.Boolean {
+  object Boolean extends TextualValues.Booleans {
 
     /** The header for booleans. */
     val Header: Byte = 0xC3.toByte
@@ -136,7 +136,7 @@ object Value extends TextValues.Value {
   /**
    * Declarations associated with numbers.
    */
-  object Number extends TextValues.Number {
+  object Number extends TextualValues.Numbers {
 
     /** The header for numbers. */
     val Header: Byte = 0xB4.toByte
@@ -165,7 +165,7 @@ object Value extends TextValues.Value {
   /**
    * Declarations associated with strings.
    */
-  object String extends TextValues.String {
+  object String extends TextualValues.Strings {
 
     /** The header for strings. */
     val Header: Byte = 0xA5.toByte
@@ -214,7 +214,7 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
 /**
  * Factory for tables.
  */
-object Table extends TextTables.Table {
+object Table extends TextualTables.Tables {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte

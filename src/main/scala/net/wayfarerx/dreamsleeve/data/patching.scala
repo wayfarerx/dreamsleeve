@@ -234,7 +234,7 @@ object PatchingChanges {
 object PatchingUpdates {
 
   import Problem.Context
-  import PatchingProblem.Attempt
+  import PatchingProblem._
 
   /**
    * Support for the update factory object.
@@ -338,7 +338,7 @@ object PatchingUpdates {
     /** Applies this change by verifying and returning the fragment. */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
       if (copy.theHash == fromFragment.hash) valid(fromFragment) else
-        invalid(PatchingProblem.List.of(PatchingProblem.HashMismatch(copy.theHash, fromFragment.hash)))
+        invalid(PatchingProblem.List.of(HashMismatch(copy.theHash, fromFragment.hash)))
 
   }
 
@@ -352,7 +352,7 @@ object PatchingUpdates {
     /** Applies this change by verifying the original fragment and returning the resulting fragment. */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
       if (replace.fromHash == fromFragment.hash) valid(replace.toFragment) else
-        invalid(PatchingProblem.List.of(PatchingProblem.HashMismatch(replace.fromHash, fromFragment.hash)))
+        invalid(PatchingProblem.List.of(HashMismatch(replace.fromHash, fromFragment.hash)))
 
   }
 
@@ -368,22 +368,22 @@ object PatchingUpdates {
       // Verify that the from table's hash matches.
       val hashCheck: Attempt[Vector[(Value, Fragment)]] =
         if (modify.fromHash == fromFragment.hash) valid(Vector())
-        else invalid(PatchingProblem.List.of(PatchingProblem.HashMismatch(modify.fromHash, fromFragment.hash)))
+        else invalid(PatchingProblem.List.of(HashMismatch(modify.fromHash, fromFragment.hash)))
       (fromFragment match {
         case v@Value() =>
-          NonEmptyList(hashCheck, List(invalid(PatchingProblem.List.of(PatchingProblem.TypeMismatch(v))))).reduce
+          NonEmptyList.of(hashCheck, invalid(PatchingProblem.List.of(TypeMismatch(v)))).reduce
         case fromTable@Table(_) =>
           // Verify that all from keys have matching changes.
           val keyCheck = if ((fromTable.keys -- modify.changes.keys).isEmpty) valid(Vector()) else
-            invalid(PatchingProblem.List.of(PatchingProblem.MissingChangeKeys(fromTable.keys -- modify.changes.keys)))
+            invalid(PatchingProblem.List.of(MissingChangeKeys(fromTable.keys -- modify.changes.keys)))
           // Apply all the changes.
           val _ctx = ctx
           val entries = modify.changes map { case (k, c) =>
             implicit val ctx: Context = _ctx.push(k)
             c match {
-              case Change.Add(_) if fromTable.get(k).nonEmpty => invalid(PatchingProblem.List.of(PatchingProblem.UnexpectedEntry(k)))
+              case Change.Add(_) if fromTable.get(k).nonEmpty => invalid(PatchingProblem.List.of(UnexpectedEntry(k)))
               case add@Change.Add(_) => add.patch() map (v => Vector(k -> v))
-              case _ if fromTable.get(k).isEmpty => invalid(PatchingProblem.List.of(PatchingProblem.MissingEntry(k)))
+              case _ if fromTable.get(k).isEmpty => invalid(PatchingProblem.List.of(MissingEntry(k)))
               case remove@Change.Remove(_) => remove.patch(fromTable(k)) map (_ => Vector())
               case copy@Update.Copy(_) => copy.patch(fromTable(k)) map (v => Vector(k -> v))
               case replace@Update.Replace(_, _) => replace.patch(fromTable(k)) map (v => Vector(k -> v))
