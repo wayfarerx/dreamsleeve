@@ -46,7 +46,7 @@ object Difference {
   /**
    * Declarations associated with creates.
    */
-  object Create extends PatchingDifferences.Create {
+  object Create extends PatchingDifferences.Creates {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -71,7 +71,7 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise extends PatchingDifferences.Revise {
+  object Revise extends PatchingDifferences.Revises {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -118,7 +118,7 @@ object Difference {
   /**
    * Factory for deletes.
    */
-  object Delete extends PatchingDifferences.Delete {
+  object Delete extends PatchingDifferences.Deletes {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -163,7 +163,7 @@ object Change {
   /**
    * Declarations associated with adds.
    */
-  object Add extends PatchingChanges.Add {
+  object Add extends PatchingChanges.Adds {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -186,7 +186,7 @@ object Change {
   /**
    * Factory for removes.
    */
-  object Remove extends PatchingChanges.Remove {
+  object Remove extends PatchingChanges.Removes {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -211,7 +211,7 @@ object Change {
   /**
    * Factory for updates.
    */
-  object Update extends PatchingChanges.Update {
+  object Update extends PatchingChanges.Updates {
 
     /**
      * Creates an update by collecting the differences between two fragments.
@@ -250,7 +250,7 @@ object Change {
   /**
    * Factory for copies.
    */
-  object Copy extends PatchingChanges.Copy {
+  object Copy extends PatchingChanges.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -284,7 +284,7 @@ object Change {
   /**
    * Factory for replaces.
    */
-  object Replace extends PatchingChanges.Replace {
+  object Replace extends PatchingChanges.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -319,7 +319,7 @@ object Change {
   /**
    * Factory for modifies.
    */
-  object Modify extends PatchingChanges.Modify {
+  object Modify extends PatchingChanges.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

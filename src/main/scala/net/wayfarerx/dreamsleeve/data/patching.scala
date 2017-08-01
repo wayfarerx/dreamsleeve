@@ -18,12 +18,12 @@
 
 package net.wayfarerx.dreamsleeve.data
 
+import collection.immutable.SortedSet
 import language.implicitConversions
+
 import cats.data._
 import cats.implicits._
 import Validated.{invalid, valid}
-
-import scala.collection.immutable.SortedSet
 
 /**
  * Provides support for patching documents with differences.
@@ -33,7 +33,7 @@ object PatchingDifferences {
   /**
    * Support for the creation factory object.
    */
-  trait Create {
+  trait Creates {
 
     /**
      * Wraps any creation with the patching interface.
@@ -50,7 +50,7 @@ object PatchingDifferences {
   /**
    * Support for the revision factory object.
    */
-  trait Revise {
+  trait Revises {
 
     /**
      * Wraps any revision with the patching interface.
@@ -67,7 +67,7 @@ object PatchingDifferences {
   /**
    * Support for the deletion factory object.
    */
-  trait Delete {
+  trait Deletes {
 
     /**
      * Wraps any deletion with the patching interface.
@@ -157,7 +157,7 @@ object PatchingChanges {
   /**
    * Support for the addition factory object.
    */
-  trait Add {
+  trait Adds {
 
     /**
      * Wraps any addition with the patching interface.
@@ -174,7 +174,7 @@ object PatchingChanges {
   /**
    * Support for the removal factory object.
    */
-  trait Remove {
+  trait Removes {
 
     /**
      * Wraps any removal with the patching interface.
@@ -191,7 +191,7 @@ object PatchingChanges {
   /**
    * Support for the update factory object.
    */
-  trait Update {
+  trait Updates {
 
     /**
      * Wraps any update with the patching interface.
@@ -208,7 +208,7 @@ object PatchingChanges {
   /**
    * Support for the copies factory object.
    */
-  trait Copy {
+  trait Copies {
 
     /**
      * Wraps any copy with the patching interface.
@@ -225,7 +225,7 @@ object PatchingChanges {
   /**
    * Support for the replacement factory object.
    */
-  trait Replace {
+  trait Replaces {
 
     /**
      * Wraps any replacement with the patching interface.
@@ -242,7 +242,7 @@ object PatchingChanges {
   /**
    * Support for the modification factory object.
    */
-  trait Modify {
+  trait Modifies {
 
     /**
      * Wraps any modification with the patching interface.
@@ -398,6 +398,9 @@ sealed trait PatchingProblem extends Problem
  * Concrete problem implementations.
  */
 object PatchingProblem extends Problem.Factory[PatchingProblem] {
+
+  /** The type that represents the result of error-prone patching operations. */
+  final type Attempt[T] = Validated[List, T]
 
   /**
    * Problem returned when hashes that are expected to match do not.

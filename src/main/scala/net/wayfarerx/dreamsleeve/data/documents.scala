@@ -37,7 +37,7 @@ case class Document(title: String, content: Fragment) extends Hashable {
 /**
  * Declarations associated with documents.
  */
-object Document {
+object Document extends TextDocuments.Document {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -52,7 +52,7 @@ sealed trait Fragment extends Hashable
 /**
  * Extractor for fragment implementations.
  */
-object Fragment {
+object Fragment extends TextFragments.Fragment {
 
   /**
    * Extracts any fragment implementation.
@@ -62,6 +62,115 @@ object Fragment {
    */
   def unapply(fragment: Fragment): Boolean =
     true
+
+}
+
+/**
+ * The base type of all fragments that represent a single value.
+ */
+sealed trait Value extends Fragment with Comparable[Value]
+
+/**
+ * Implementations of the value types.
+ */
+object Value extends TextValues.Value {
+
+  /**
+   * Extracts any value implementation.
+   *
+   * @param value The value to extract.
+   * @return True for every value.
+   */
+  def unapply(value: Value): scala.Boolean =
+    true
+
+  /**
+   * Represents true or false values.
+   *
+   * @param value The underlying value.
+   */
+  case class Boolean(value: scala.Boolean = false) extends Value {
+
+    /* Generate the hash for this boolean value. */
+    override private[data] def generateHash(implicit hasher: Hasher): Hash =
+      hasher.hashBoolean(value)
+
+    /* Compare this value with another value. */
+    override def compareTo(that: Value): Int = that match {
+      case Boolean(b) => if (b == value) 0 else if (b) -1 else 1
+      case _ => -1
+    }
+
+  }
+
+  /**
+   * Declarations associated with booleans.
+   */
+  object Boolean extends TextValues.Boolean {
+
+    /** The header for booleans. */
+    val Header: Byte = 0xC3.toByte
+
+  }
+
+  /**
+   * Represents numerical values.
+   *
+   * @param value The underlying value.
+   */
+  case class Number(value: Double = 0.0) extends Value {
+
+    /* Generate the hash for this number value. */
+    override private[data] def generateHash(implicit hasher: Hasher): Hash =
+      hasher.hashNumber(value)
+
+    /* Compare this value with another value. */
+    override def compareTo(that: Value): Int = that match {
+      case Boolean(_) => 1
+      case Number(n) => if (n == value) 0 else if (n > value) -1 else 1
+      case _ => -1
+    }
+
+  }
+
+  /**
+   * Declarations associated with numbers.
+   */
+  object Number extends TextValues.Number {
+
+    /** The header for numbers. */
+    val Header: Byte = 0xB4.toByte
+
+  }
+
+  /**
+   * Represents string values.
+   *
+   * @param value The underlying value.
+   */
+  case class String(value: java.lang.String = "") extends Value {
+
+    /* Generate the hash for this string value. */
+    override private[data] def generateHash(implicit hasher: Hasher): Hash =
+      hasher.hashString(value)
+
+    /* Compare this value with another value. */
+    override def compareTo(that: Value): Int = that match {
+      case String(s) => value.compareTo(s)
+      case _ => 1
+    }
+
+  }
+
+  /**
+   * Declarations associated with strings.
+   */
+  object String extends TextValues.String {
+
+    /** The header for strings. */
+    val Header: Byte = 0xA5.toByte
+
+  }
 
 }
 
@@ -105,7 +214,7 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
 /**
  * Factory for tables.
  */
-object Table {
+object Table extends TextTables.Table {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte
@@ -118,114 +227,5 @@ object Table {
    */
   def apply(entries: (Value, Fragment)*): Table =
     Table(SortedMap(entries: _*))
-
-}
-
-/**
- * The base type of all fragments that represent a single value.
- */
-sealed trait Value extends Fragment with Comparable[Value]
-
-/**
- * Implementations of the value types.
- */
-object Value {
-
-  /**
-   * Extracts any value implementation.
-   *
-   * @param value The value to extract.
-   * @return True for every value.
-   */
-  def unapply(value: Value): scala.Boolean =
-    true
-
-  /**
-   * Represents true or false values.
-   *
-   * @param value The underlying value.
-   */
-  case class Boolean(value: scala.Boolean = false) extends Value {
-
-    /* Generate the hash for this boolean value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashBoolean(value)
-
-    /* Compare this value with another value. */
-    override def compareTo(that: Value): Int = that match {
-      case Boolean(b) => if (b == value) 0 else if (b) -1 else 1
-      case _ => -1
-    }
-
-  }
-
-  /**
-   * Declarations associated with booleans.
-   */
-  object Boolean {
-
-    /** The header for booleans. */
-    val Header: Byte = 0xC3.toByte
-
-  }
-
-  /**
-   * Represents numerical values.
-   *
-   * @param value The underlying value.
-   */
-  case class Number(value: Double = 0.0) extends Value {
-
-    /* Generate the hash for this number value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashNumber(value)
-
-    /* Compare this value with another value. */
-    override def compareTo(that: Value): Int = that match {
-      case Boolean(_) => 1
-      case Number(n) => if (n == value) 0 else if (n > value) -1 else 1
-      case _ => -1
-    }
-
-  }
-
-  /**
-   * Declarations associated with numbers.
-   */
-  object Number {
-
-    /** The header for numbers. */
-    val Header: Byte = 0xB4.toByte
-
-  }
-
-  /**
-   * Represents string values.
-   *
-   * @param value The underlying value.
-   */
-  case class String(value: java.lang.String = "") extends Value {
-
-    /* Generate the hash for this string value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashString(value)
-
-    /* Compare this value with another value. */
-    override def compareTo(that: Value): Int = that match {
-      case String(s) => value.compareTo(s)
-      case _ => 1
-    }
-
-  }
-
-  /**
-   * Declarations associated with strings.
-   */
-  object String {
-
-    /** The header for strings. */
-    val Header: Byte = 0xA5.toByte
-
-  }
 
 }

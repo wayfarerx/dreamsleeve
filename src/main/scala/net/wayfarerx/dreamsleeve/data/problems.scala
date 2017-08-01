@@ -42,9 +42,6 @@ object Problem {
    */
   trait Factory[ProblemType] {
 
-    /** The type that represents the result of error-prone operations. */
-    final type Attempt[T] = Validated[List, T]
-
     /** The context that all problems originate from. */
     final type Context = Problem.Context
 
