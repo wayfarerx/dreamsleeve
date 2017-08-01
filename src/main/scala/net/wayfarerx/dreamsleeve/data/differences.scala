@@ -60,7 +60,7 @@ object Difference {
    * @param title    The title of the resulting document.
    * @param update   The change to apply to the original document's content.
    */
-  case class Revise(fromHash: Hash, title: String, update: Change.Update) extends Difference {
+  case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
 
     /* Generate the hash for this revise. */
     override private[data] def generateHash(implicit hasher: Hasher): Hash =
@@ -85,7 +85,7 @@ object Difference {
      * @param update The change to apply to the original document's content.
      * @param hasher The hasher to generate hashes with.
      */
-    def apply(from: Document, title: String, update: Change.Update)(implicit hasher: Hasher): Revise =
+    def apply(from: Document, title: String, update: Update)(implicit hasher: Hasher): Revise =
       Revise(from.hash, title, update)
 
     /**
@@ -97,7 +97,7 @@ object Difference {
      * @return A revise collecting the differences between two documents.
      */
     def apply(from: Document, to: Document)(implicit hasher: Hasher): Revise =
-      Revise(from, to.title, Change.Update(from.content, to.content))
+      Revise(from, to.title, Update(from.content, to.content))
 
   }
 
@@ -203,35 +203,35 @@ object Change {
 
   }
 
-  /**
-   * Base type for all changes that update existing fragments.
-   */
-  sealed trait Update extends Change
+}
+
+/**
+ * Base type for all changes that update existing fragments.
+ */
+sealed trait Update extends Change
+
+/**
+ * Factory for updates.
+ */
+object Update extends PatchingUpdates.Updates {
 
   /**
-   * Factory for updates.
+   * Creates an update by collecting the differences between two fragments.
+   *
+   * @param from   The fragment that is being updated.
+   * @param to     The fragment that is a result of the update.
+   * @param hasher The hasher to generate hashes with.
+   * @return An update collecting the differences between two fragments.
    */
-  object Update extends PatchingChanges.Updates {
-
-    /**
-     * Creates an update by collecting the differences between two fragments.
-     *
-     * @param from   The fragment that is being updated.
-     * @param to     The fragment that is a result of the update.
-     * @param hasher The hasher to generate hashes with.
-     * @return An update collecting the differences between two fragments.
-     */
-    def apply(from: Fragment, to: Fragment)(implicit hasher: Hasher): Update = (from, to) match {
-      case (f, t) if f == t => Change.Copy(f)
-      case ((Value(), _) | (_, Value())) => Change.Replace(from, to)
-      case (fromTable@Table(_), toTable@Table(_)) => Modify(fromTable, (
-        (toTable.keys -- fromTable.keys map (k => k -> Change.Add(toTable(k)))) ++
-          fromTable.keys.map { k =>
-            (k, toTable get k map (apply(fromTable(k), _)) getOrElse Change.Remove(fromTable(k)))
-          }
-        ).toSeq: _*)
-    }
-
+  def apply(from: Fragment, to: Fragment)(implicit hasher: Hasher): Update = (from, to) match {
+    case (f, t) if f == t => Copy(f)
+    case ((Value(), _) | (_, Value())) => Replace(from, to)
+    case (fromTable@Table(_), toTable@Table(_)) => Modify(fromTable, (
+      (toTable.keys -- fromTable.keys map (k => k -> Change.Add(toTable(k)))) ++
+        fromTable.keys.map { k =>
+          (k, toTable get k map (apply(fromTable(k), _)) getOrElse Change.Remove(fromTable(k)))
+        }
+      ).toSeq: _*)
   }
 
   /**
@@ -250,7 +250,7 @@ object Change {
   /**
    * Factory for copies.
    */
-  object Copy extends PatchingChanges.Copies {
+  object Copy extends PatchingUpdates.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -284,7 +284,7 @@ object Change {
   /**
    * Factory for replaces.
    */
-  object Replace extends PatchingChanges.Replaces {
+  object Replace extends PatchingUpdates.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -319,7 +319,7 @@ object Change {
   /**
    * Factory for modifies.
    */
-  object Modify extends PatchingChanges.Modifies {
+  object Modify extends PatchingUpdates.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte
@@ -347,5 +347,6 @@ object Change {
       apply(from.hash, changes: _*)
 
   }
+
 
 }

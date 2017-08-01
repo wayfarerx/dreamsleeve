@@ -189,74 +189,6 @@ object PatchingChanges {
   }
 
   /**
-   * Support for the update factory object.
-   */
-  trait Updates {
-
-    /**
-     * Wraps any update with the patching interface.
-     *
-     * @param update The update to wrap.
-     * @return The patching interface.
-     */
-    @inline
-    implicit def updateToUpdatePatch(update: Change.Update): UpdatePatch =
-    new UpdatePatch(update)
-
-  }
-
-  /**
-   * Support for the copies factory object.
-   */
-  trait Copies {
-
-    /**
-     * Wraps any copy with the patching interface.
-     *
-     * @param copy The copy to wrap.
-     * @return The patching interface.
-     */
-    @inline
-    implicit def copyToCopyPatch(copy: Change.Copy): CopyPatch =
-    new CopyPatch(copy)
-
-  }
-
-  /**
-   * Support for the replacement factory object.
-   */
-  trait Replaces {
-
-    /**
-     * Wraps any replacement with the patching interface.
-     *
-     * @param replace The replacement to wrap.
-     * @return The patching interface.
-     */
-    @inline
-    implicit def replaceToReplacePatch(replace: Change.Replace): ReplacePatch =
-    new ReplacePatch(replace)
-
-  }
-
-  /**
-   * Support for the modification factory object.
-   */
-  trait Modifies {
-
-    /**
-     * Wraps any modification with the patching interface.
-     *
-     * @param modify The modification to wrap.
-     * @return The patching interface.
-     */
-    @inline
-    implicit def modifyToModifyPatch(modify: Change.Modify): ModifyPatch =
-    new ModifyPatch(modify)
-
-  }
-
-  /**
    * The patching interface for additions.
    *
    * @param add The addition to provide the patching interface for.
@@ -294,12 +226,90 @@ object PatchingChanges {
 
   }
 
+}
+
+/**
+ * Provides support for patching fragments with changes.
+ */
+object PatchingUpdates {
+
+  import Problem.Context
+  import PatchingProblem.Attempt
+
+  /**
+   * Support for the update factory object.
+   */
+  trait Updates {
+
+    /**
+     * Wraps any update with the patching interface.
+     *
+     * @param update The update to wrap.
+     * @return The patching interface.
+     */
+    @inline
+    implicit def updateToUpdatePatch(update: Update): UpdatePatch =
+    new UpdatePatch(update)
+
+  }
+
+  /**
+   * Support for the copies factory object.
+   */
+  trait Copies {
+
+    /**
+     * Wraps any copy with the patching interface.
+     *
+     * @param copy The copy to wrap.
+     * @return The patching interface.
+     */
+    @inline
+    implicit def copyToCopyPatch(copy: Update.Copy): CopyPatch =
+    new CopyPatch(copy)
+
+  }
+
+  /**
+   * Support for the replacement factory object.
+   */
+  trait Replaces {
+
+    /**
+     * Wraps any replacement with the patching interface.
+     *
+     * @param replace The replacement to wrap.
+     * @return The patching interface.
+     */
+    @inline
+    implicit def replaceToReplacePatch(replace: Update.Replace): ReplacePatch =
+    new ReplacePatch(replace)
+
+  }
+
+  /**
+   * Support for the modification factory object.
+   */
+  trait Modifies {
+
+    /**
+     * Wraps any modification with the patching interface.
+     *
+     * @param modify The modification to wrap.
+     * @return The patching interface.
+     */
+    @inline
+    implicit def modifyToModifyPatch(modify: Update.Modify): ModifyPatch =
+    new ModifyPatch(modify)
+
+  }
+
   /**
    * The patching interface for updates.
    *
    * @param update The update to provide the patching interface for.
    */
-  final class UpdatePatch(val update: Change.Update) extends AnyVal {
+  final class UpdatePatch(val update: Update) extends AnyVal {
 
     /**
      * Applies this change to the original fragment, creating the resulting fragment..
@@ -311,9 +321,9 @@ object PatchingChanges {
      */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
       update match {
-        case c@Change.Copy(_) => c.patch(fromFragment)
-        case r@Change.Replace(_, _) => r.patch(fromFragment)
-        case m@Change.Modify(_, _) => m.patch(fromFragment)
+        case c@Update.Copy(_) => c.patch(fromFragment)
+        case r@Update.Replace(_, _) => r.patch(fromFragment)
+        case m@Update.Modify(_, _) => m.patch(fromFragment)
       }
 
   }
@@ -323,7 +333,7 @@ object PatchingChanges {
    *
    * @param copy The copy to provide the patching interface for.
    */
-  final class CopyPatch(val copy: Change.Copy) extends AnyVal {
+  final class CopyPatch(val copy: Update.Copy) extends AnyVal {
 
     /** Applies this change by verifying and returning the fragment. */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
@@ -337,7 +347,7 @@ object PatchingChanges {
    *
    * @param replace The replacement to provide the patching interface for.
    */
-  final class ReplacePatch(val replace: Change.Replace) extends AnyVal {
+  final class ReplacePatch(val replace: Update.Replace) extends AnyVal {
 
     /** Applies this change by verifying the original fragment and returning the resulting fragment. */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] =
@@ -351,7 +361,7 @@ object PatchingChanges {
    *
    * @param modify The modification to provide the patching interface for.
    */
-  final class ModifyPatch(val modify: Change.Modify) extends AnyVal {
+  final class ModifyPatch(val modify: Update.Modify) extends AnyVal {
 
     /** Applies this change by verifying the original table, applying all changes and returning the resulting table. */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Fragment] = {
@@ -375,9 +385,9 @@ object PatchingChanges {
               case add@Change.Add(_) => add.patch() map (v => Vector(k -> v))
               case _ if fromTable.get(k).isEmpty => invalid(PatchingProblem.List.of(PatchingProblem.MissingEntry(k)))
               case remove@Change.Remove(_) => remove.patch(fromTable(k)) map (_ => Vector())
-              case copy@Change.Copy(_) => copy.patch(fromTable(k)) map (v => Vector(k -> v))
-              case replace@Change.Replace(_, _) => replace.patch(fromTable(k)) map (v => Vector(k -> v))
-              case modify@Change.Modify(_, _) => modify.patch(fromTable(k)) map (v => Vector(k -> v))
+              case copy@Update.Copy(_) => copy.patch(fromTable(k)) map (v => Vector(k -> v))
+              case replace@Update.Replace(_, _) => replace.patch(fromTable(k)) map (v => Vector(k -> v))
+              case modify@Update.Modify(_, _) => modify.patch(fromTable(k)) map (v => Vector(k -> v))
             }
           }
           // Construct the resulting table.

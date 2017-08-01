@@ -41,46 +41,4 @@ class ChangeSpec extends FlatSpec with Matchers {
     Remove(fb.hash).hash shouldBe implicitly[Hasher].hashRemove(fb.hash)
   }
 
-  "Update" should "create updates for specified from and to states" in {
-    val b: Value = Value.Boolean(true)
-    val n: Value = Value.Number(Math.PI)
-    val s: Value = Value.String("hello")
-    val t1: Fragment = Table(b -> n)
-    val t2: Fragment = Table(b -> s)
-    val t3: Fragment = Table(n -> b, s -> b)
-    Update(b, b) shouldBe Copy(b)
-    Update(n, n) shouldBe Copy(n)
-    Update(s, s) shouldBe Copy(s)
-    Update(t1, t1) shouldBe Copy(t1)
-    Update(b, t1) shouldBe Replace(b, t1)
-    Update(t2, n) shouldBe Replace(t2, n)
-    Update(n, s) shouldBe Replace(n, s)
-    Update(t1, t2) shouldBe Modify(t1.hash, b -> Replace(n, s))
-    Update(t2, t3) shouldBe Modify(t2.hash, b -> Remove(s), n -> Add(b), s -> Add(b))
-    Update(t3, t1) shouldBe Modify(t3.hash, n -> Remove(b), s -> Remove(b), b -> Add(n))
-  }
-
-  "A copy" should "act as a hashable copy of a fragment between tables" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    Copy(fa).hash shouldBe implicitly[Hasher].hashCopy(fa.hash)
-    Copy(fb.hash).hash shouldBe implicitly[Hasher].hashCopy(fb.hash)
-  }
-
-  "A replace" should "act as a hashable replacement of a fragment in a table" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    Replace(fa, fb).hash shouldBe implicitly[Hasher].hashReplace(fa.hash, fb.hash)
-    Replace(fb.hash, fa).hash shouldBe implicitly[Hasher].hashReplace(fb.hash, fa.hash)
-  }
-
-  "A modify" should "act as a hashable modification to the entries in a table" in {
-    // Hash mismatch
-    val ft = Table(Value.String("a") -> Value.Number())
-    val tt = Table(Value.String("a") -> Value.Number(1.1))
-    val r = Replace(tt.values.head, ft.values.head)
-    Modify(tt.hash).hash shouldBe implicitly[Hasher].hashModify(tt.hash, Iterable.empty)
-    Modify(ft, ft.keys.head -> r).hash shouldBe implicitly[Hasher].hashModify(ft.hash, Seq(ft.keys.head.hash, r.hash))
-  }
-
 }

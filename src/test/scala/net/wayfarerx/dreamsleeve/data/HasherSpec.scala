@@ -85,18 +85,18 @@ class HasherSpec extends FlatSpec with Matchers {
     Hash(digest.digest())
   }
   private val copy = {
-    digest.update(Change.Copy.Header)
+    digest.update(Update.Copy.Header)
     digest.update(string.toBytes)
     Hash(digest.digest())
   }
   private val replace = {
-    digest.update(Change.Replace.Header)
+    digest.update(Update.Replace.Header)
     digest.update(table.toBytes)
     digest.update(string.toBytes)
     Hash(digest.digest())
   }
   private val modify = {
-    digest.update(Change.Modify.Header)
+    digest.update(Update.Modify.Header)
     digest.update(table.toBytes)
     digest.update(string.toBytes)
     digest.update(replace.toBytes)

@@ -322,7 +322,7 @@ final class Hasher private extends Hash.Access {
    * @return The hash generated for the specified copy.
    */
   private[data] def hashCopy(fromHash: Hash): Hash = {
-    append(Change.Copy.Header)
+    append(Update.Copy.Header)
     append(fromHash)
     complete()
   }
@@ -335,7 +335,7 @@ final class Hasher private extends Hash.Access {
    * @return The hash generated for the specified replace.
    */
   private[data] def hashReplace(fromHash: Hash, toHash: Hash): Hash = {
-    append(Change.Replace.Header)
+    append(Update.Replace.Header)
     append(fromHash)
     append(toHash)
     complete()
@@ -349,7 +349,7 @@ final class Hasher private extends Hash.Access {
    * @return The hash generated for the specified modify.
    */
   private[data] def hashModify(fromHash: Hash, changeHashes: Iterable[Hash]): Hash = {
-    append(Change.Modify.Header)
+    append(Update.Modify.Header)
     append(fromHash)
     changeHashes foreach append
     complete()
