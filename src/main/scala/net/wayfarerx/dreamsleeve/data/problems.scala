@@ -84,5 +84,11 @@ object Problems {
   /** The factory for patching problems. */
   val Patching = PatchingProblem
 
+  /** The base class of textual problems. */
+  type Textual = TextualProblem
+
+  /** The factory for textual problems. */
+  val Textual = TextualProblem
+
 }
 

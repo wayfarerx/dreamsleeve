@@ -50,7 +50,7 @@ object TextualDocuments {
       implicit val ctx = Context(Vector.empty)
       out.write(output, document.title) flatMap (_ => out.write(output, " = ")) flatMap { _ =>
         implicit val ctx = Context(Vector(Value.String(document.title)))
-        document.content.writeText(output)
+        document.content.writeText(output, indent)
       }
     }
 
@@ -311,7 +311,7 @@ object TextualTables {
   import TextualProblem.Attempt
 
   /** The value that is used to indent nested lines. */
-  val Indent = "    "
+  val Indent: String = " " * 4
 
   /**
    * Support for the table factory object.
