@@ -1,10 +1,14 @@
 package net.wayfarerx.dreamsleeve.data
 
 import language.implicitConversions
+import util.{Failure, Success}
 
-import java.io.{IOException, Writer}
-import java.nio.{BufferOverflowException, CharBuffer, ReadOnlyBufferException}
 import java.lang.{StringBuilder => JStringBuilder}
+import java.io.{IOException, Reader, Writer}
+import java.nio.{BufferOverflowException, CharBuffer, ReadOnlyBufferException}
+
+import org.parboiled2._
+
 
 /**
  * Provides support for encoding and decoding documents to and from text.
@@ -18,6 +22,8 @@ object TextualDocuments {
    */
   trait Documents {
 
+    import TextualProblem.Reading.Attempt
+
     /**
      * Wraps any document with the text output interface.
      *
@@ -28,6 +34,23 @@ object TextualDocuments {
     implicit def documentToDocumentWriter(document: Document): DocumentWriter =
     new DocumentWriter(document)
 
+    /**
+     * Reads a document from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the document that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Document] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Documents.run() match {
+          case Success(document) => Right(document)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
@@ -37,6 +60,8 @@ object TextualDocuments {
    */
   final class DocumentWriter(val document: Document) extends AnyVal {
 
+    import TextualProblem.Writing.Attempt
+
     /**
      * Writes the document to the specified output object.
      *
@@ -45,7 +70,7 @@ object TextualDocuments {
      * @param indent The number of times to indent new lines, defaults to zero.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Either[TextualProblem, Unit] = {
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Attempt[Unit] = {
       val out = implicitly[TextualSupport.Output[T]]
       implicit val ctx = Context(Vector.empty)
       out.write(output, document.title) flatMap (_ => out.write(output, " = ")) flatMap { _ =>
@@ -64,12 +89,13 @@ object TextualDocuments {
 object TextualFragments {
 
   import Problem.Context
-  import TextualProblem.Attempt
 
   /**
    * Support for the fragment factory object.
    */
   trait Fragments {
+
+    import TextualProblem.Reading.Attempt
 
     /**
      * Wraps any fragment with the text output interface.
@@ -81,6 +107,23 @@ object TextualFragments {
     implicit def fragmentToFragmentWriter(fragment: Fragment): FragmentWriter =
     new FragmentWriter(fragment)
 
+    /**
+     * Reads a fragment from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the fragment that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Fragment] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Fragments.run() match {
+          case Success(fragment) => Right(fragment)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
@@ -89,6 +132,8 @@ object TextualFragments {
    * @param fragment The fragment to provide the text output interface for.
    */
   final class FragmentWriter(val fragment: Fragment) extends AnyVal {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes the fragment to the specified output object.
@@ -115,7 +160,6 @@ object TextualFragments {
 object TextualValues {
 
   import Problem.Context
-  import TextualProblem.Attempt
 
   /** The 16-bit bell character. */
   val Bell: Char = 0x00000007.toChar
@@ -128,6 +172,8 @@ object TextualValues {
    */
   trait Values {
 
+    import TextualProblem.Reading.Attempt
+
     /**
      * Wraps any value with the text output interface.
      *
@@ -138,12 +184,31 @@ object TextualValues {
     implicit def valueToValueWriter(value: Value): ValueWriter =
     new ValueWriter(value)
 
+    /**
+     * Reads a value from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the value that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Value] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Values.run() match {
+          case Success(value) => Right(value)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
    * Support for the boolean factory object.
    */
   trait Booleans {
+
+    import TextualProblem.Reading.Attempt
 
     /**
      * Wraps any boolean with the text output interface.
@@ -155,12 +220,31 @@ object TextualValues {
     implicit def booleanToBooleanWriter(boolean: Value.Boolean): BooleanWriter =
     new BooleanWriter(boolean)
 
+    /**
+     * Reads a boolean from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the boolean that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Value.Boolean] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Booleans.run() match {
+          case Success(boolean) => Right(boolean)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
    * Support for the number factory object.
    */
   trait Numbers {
+
+    import TextualProblem.Reading.Attempt
 
     /**
      * Wraps any number with the text output interface.
@@ -172,12 +256,31 @@ object TextualValues {
     implicit def numberToNumberWriter(number: Value.Number): NumberWriter =
     new NumberWriter(number)
 
+    /**
+     * Reads a number from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the number that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Value.Number] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Numbers.run() match {
+          case Success(number) => Right(number)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
    * Support for the string factory object.
    */
   trait Strings {
+
+    import TextualProblem.Reading.Attempt
 
     /**
      * Wraps any string with the text output interface.
@@ -189,6 +292,23 @@ object TextualValues {
     implicit def numberToNumberWriter(string: Value.String): StringWriter =
     new StringWriter(string)
 
+    /**
+     * Reads a string from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the string that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Value.String] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Strings.run() match {
+          case Success(string) => Right(string)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
@@ -197,6 +317,8 @@ object TextualValues {
    * @param value The value to provide the text output interface for.
    */
   final class ValueWriter(val value: Value) extends AnyVal {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes the value to the specified output object.
@@ -222,6 +344,8 @@ object TextualValues {
    */
   final class BooleanWriter(val boolean: Value.Boolean) extends AnyVal {
 
+    import TextualProblem.Writing.Attempt
+
     /**
      * Writes the value to the specified output object.
      *
@@ -242,6 +366,8 @@ object TextualValues {
    * @param number The number to provide the text output interface for.
    */
   final class NumberWriter(val number: Value.Number) extends AnyVal {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes the value to the specified output object.
@@ -270,6 +396,8 @@ object TextualValues {
    * @param string The string to provide the text output interface for.
    */
   final class StringWriter(val string: Value.String) extends AnyVal {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes the value to the specified output object.
@@ -308,7 +436,6 @@ object TextualValues {
 object TextualTables {
 
   import Problem.Context
-  import TextualProblem.Attempt
 
   /** The value that is used to indent nested lines. */
   val Indent: String = " " * 4
@@ -317,6 +444,8 @@ object TextualTables {
    * Support for the table factory object.
    */
   trait Tables {
+
+    import TextualProblem.Reading.Attempt
 
     /**
      * Wraps any table with the text output interface.
@@ -328,6 +457,23 @@ object TextualTables {
     implicit def tableToTableWriter(table: Table): TableWriter =
     new TableWriter(table)
 
+    /**
+     * Reads a table from the specified input object.
+     *
+     * @tparam T The type of the input object.
+     * @param input The object to read from.
+     * @return Either the table that was read or the first exception that was thrown.
+     */
+    final def readText[T: TextualSupport.Input](input: T): Attempt[Table] = {
+      implicit val ctx = Problem.Context(Vector.empty)
+      implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
+        new TextualSupport.TextParser(in).Tables.run() match {
+          case Success(table) => Right(table)
+          case Failure(thrown) => Left(TextualProblem.Syntax(thrown))
+        }
+      }
+    }
+
   }
 
   /**
@@ -336,6 +482,8 @@ object TextualTables {
    * @param table The table to provide the text output interface for.
    */
   final class TableWriter(val table: Table) extends AnyVal {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes the table to the specified output object.
@@ -384,17 +532,86 @@ object TextualTables {
 object TextualSupport {
 
   import Problem.Context
-  import TextualProblem.Attempt
 
+  /** The bell character. */
+  val Bell: String = 0x00000007.toChar.toString
   /** The line break that is written. */
   val LineBreak = "\r\n"
+  /** The vertical tab character. */
+  val VerticalTab: Char = 0x0000000B.toChar
+
+  /**
+   * The type class for objects that can be read from.
+   *
+   * @tparam T The type of object that can be read from.
+   */
+  trait Input[T] {
+
+    import TextualProblem.Reading.Attempt
+
+    /**
+     * Creates a parser input object from the target object.
+     *
+     * @param target The object to create a parser input from.
+     * @return The parser input created from the target object.
+     */
+    def toParserInput(target: T): Attempt[ParserInput]
+
+  }
+
+  /**
+   * Supported input implementations.
+   */
+  object Input {
+
+    /** The implicit input implementation for character builders. */
+    implicit val CharSequenceInput: Input[CharSequence] = { (target: CharSequence) =>
+      Right(new ParserInput.DefaultParserInput {
+
+        override def length: Int =
+          target.length
+
+        override def charAt(ix: Int): Char =
+          target.charAt(ix)
+
+        override def sliceString(start: Int, end: Int): String =
+          target.subSequence(start, end).toString
+
+        override def sliceCharArray(start: Int, end: Int): Array[Char] = {
+          val chars = new Array[Char](end - start)
+          for (i <- chars.indices) chars(i) = target.charAt(start + i)
+          chars
+        }
+
+      })
+    }
+
+    /** The implicit input implementation for readers. */
+    implicit val ReaderInput: Input[Reader] = { (target: Reader) =>
+      val buffer = new Array[Char](128)
+      val result = new StringBuilder(buffer.length)
+      try {
+        var read = target.read(buffer)
+        while (read >= 0) {
+          if (read > 0) result.append(buffer, 0, read)
+          read = target.read(buffer)
+        }
+        CharSequenceInput.toParserInput(result)
+      } catch {
+        case e: IOException => Left(TextualProblem.IO(e)(Context(Vector.empty)))
+      }
+    }
+
+  }
 
   /**
    * The type class for objects that can be written to.
    *
-   * @tparam T The type of object that can  be written to.
+   * @tparam T The type of object that can be written to.
    */
   trait Output[T] {
+
+    import TextualProblem.Writing.Attempt
 
     /**
      * Writes a character to the target object.
@@ -433,6 +650,8 @@ object TextualSupport {
    * Supported output implementations.
    */
   object Output {
+
+    import TextualProblem.Writing.Attempt
 
     /** The implicit output implementation for string builders. */
     implicit val StringBuilderOutput: Output[StringBuilder] = new Output[StringBuilder] {
@@ -501,6 +720,191 @@ object TextualSupport {
 
   }
 
+  /**
+   * A parser for documents & fragments written as text.
+   *
+   * @param input The input to this parser.
+   */
+  private[data] final class TextParser(override val input: ParserInput) extends Parser {
+
+    /** The type of key/value pairs. */
+    private type Entry = (Value, Fragment)
+
+    //
+    // External rules for documents and fragments.
+    //
+
+    /** The top-level parser for documents. */
+    def Documents: Rule1[Document] = rule {
+      Whitespace ~ DocumentParser ~ EOI
+    }
+
+    /** The top-level parser for fragments. */
+    def Fragments: Rule1[Fragment] = rule {
+      Whitespace ~ FragmentParser ~ EOI
+    }
+
+    /** The top-level parser for values. */
+    def Values: Rule1[Value] = rule {
+      Whitespace ~ ValueParser ~ EOI
+    }
+
+    /** The top-level parser for booleans. */
+    def Booleans: Rule1[Value.Boolean] = rule {
+      Whitespace ~ BooleanParser ~ EOI
+    }
+
+    /** The top-level parser for numbers. */
+    def Numbers: Rule1[Value.Number] = rule {
+      Whitespace ~ NumberParser ~ EOI
+    }
+
+    /** The top-level parser for strings. */
+    def Strings: Rule1[Value.String] = rule {
+      Whitespace ~ StringParser ~ EOI
+    }
+
+    /** The top-level parser for tables. */
+    def Tables: Rule1[Table] = rule {
+      Whitespace ~ TableParser ~ EOI
+    }
+
+    //
+    // Internal rules for fragments and other syntax components.
+    //
+
+    /** The internal parser for documents. */
+    private def DocumentParser: Rule1[Document] = rule {
+      TitleParser ~ Equals ~ FragmentParser ~> Document.apply _
+    }
+
+    /** The internal parser for titles. */
+    private def TitleParser: Rule1[String] = rule {
+      capture(atomic((CharPredicate.Alpha | '_') ~ zeroOrMore(CharPredicate.Alpha | CharPredicate.Digit | '_'))) ~
+        Whitespace
+    }
+
+    /** The internal parser for fragments. */
+    private def FragmentParser: Rule1[Fragment] = rule {
+      ValueParser | TableParser
+    }
+
+    /** The internal parser for values. */
+    private def ValueParser: Rule1[Value] = rule {
+      BooleanParser | NumberParser | StringParser
+    }
+
+    /** The internal parser for booleans. */
+    private def BooleanParser: Rule1[Value.Boolean] = rule {
+      capture(atomic("true" | "false")) ~> { (v: String) => Value.Boolean(v.toBoolean) } ~ Whitespace
+    }
+
+    /** The internal parser for numbers. */
+    private def NumberParser: Rule1[Value.Number] = rule {
+      capture(atomic {
+        optional("+" | '-') ~ oneOrMore(CharPredicate.Digit) ~ optional(ch('.') ~ oneOrMore(CharPredicate.Digit))
+      }) ~> { (v: String) => Value.Number(java.lang.Double.parseDouble(v)) } ~ Whitespace
+    }
+
+    /** The internal parser for strings. */
+    private def StringParser: Rule1[Value.String] = rule {
+      SingleQuotedString | DoubleQuotedString | BracketedString
+    }
+
+    /** The internal parser for tables. */
+    private def TableParser: Rule1[Table] = rule {
+      LeftBrace ~ optional(Entries) ~ RightBrace ~> { t: Option[Seq[Entry]] => Table((t getOrElse Seq.empty): _*) }
+    }
+
+    /** The internal parser for single-quoted strings. */
+    private def SingleQuotedString: Rule1[Value.String] = rule {
+      "'" ~ zeroOrMore(capture(noneOf("\'\\")) | StringEscape) ~ "'" ~> { (v: Seq[String]) =>
+        Value.String(v.mkString)
+      } ~ Whitespace
+    }
+
+    /** The internal parser for double-quoted strings. */
+    private def DoubleQuotedString: Rule1[Value.String] = rule {
+      '"' ~ zeroOrMore(capture(noneOf("\"\\")) | StringEscape) ~ '"' ~> { (v: Seq[String]) =>
+        Value.String(v.mkString)
+      } ~ Whitespace
+    }
+
+    /** The internal parser for bracketed strings. */
+    private def BracketedString: Rule1[Value.String] = rule {
+      "[[" ~ zeroOrMore(capture(noneOf("]\\")) | StringEscape) ~ "]]" ~> { (v: Seq[String]) =>
+        Value.String(v.mkString)
+      } ~ Whitespace
+    }
+
+    /** The internal parser for string escapes. */
+    private def StringEscape: Rule1[String] = rule {
+      capture("""\a""") ~> { _: String => Bell } |
+        capture("""\b""") ~> { _: String => "\b" } |
+        capture("""\r""") ~> { _: String => "\r" } |
+        capture("""\n""") ~> { _: String => "\n" } |
+        capture("""\f""") ~> { _: String => "\f" } |
+        capture("""\t""") ~> { _: String => "\t" } |
+        capture("""\v""") ~> { _: String => VerticalTab.toString } |
+        capture("""\\""") ~> { _: String => "\\" } |
+        capture("""\'""") ~> { _: String => "'" } |
+        capture("""\"""") ~> { _: String => "\"" } |
+        capture("""\[""") ~> { _: String => "[" } |
+        capture("""\]""") ~> { _: String => "]" }
+    }
+
+    /** The internal parser for table keys. */
+    private def Key: Rule1[Value] = rule {
+      LeftBracket ~ ValueParser ~ RightBracket
+    }
+
+    /** The internal parser for table entries. */
+    private def Entry: Rule1[Entry] = rule {
+      (Key ~ Equals ~ FragmentParser) ~> { (k: Value, d: Fragment) => k -> d }
+    }
+
+    /** The internal parser for table entry sequences. */
+    private def Entries: Rule1[Seq[Entry]] = rule {
+      Entry ~ zeroOrMore(Comma ~ Entry) ~ optional(Comma) ~> { (h: Entry, t: Seq[Entry]) => h +: t }
+    }
+
+    /** The internal parser for commas. */
+    private def Comma: Rule0 = rule {
+      ch(',') ~ Whitespace
+    }
+
+    /** The internal parser for equals signs. */
+    private def Equals: Rule0 = rule {
+      ch('=') ~ Whitespace
+    }
+
+    /** The internal parser for left brackets. */
+    private def LeftBracket: Rule0 = rule {
+      ch('[') ~ Whitespace
+    }
+
+    /** The internal parser for right brackets. */
+    private def RightBracket: Rule0 = rule {
+      ch(']') ~ Whitespace
+    }
+
+    /** The internal parser for left braces. */
+    private def LeftBrace: Rule0 = rule {
+      ch('{') ~ Whitespace
+    }
+
+    /** The internal parser for right braces. */
+    private def RightBrace: Rule0 = rule {
+      ch('}') ~ Whitespace
+    }
+
+    /** The internal parser for optional whitespace. */
+    private def Whitespace: Rule0 = rule {
+      zeroOrMore(ch(' ') | '\n' | '\r' | '\t' | VerticalTab | '\f')
+    }
+
+  }
+
 }
 
 /**
@@ -513,16 +917,43 @@ sealed trait TextualProblem extends Problem
  */
 object TextualProblem extends Problem.Factory[TextualProblem] {
 
-  /** The type that represents the result of error-prone text operations. */
-  final type Attempt[T] = Either[TextualProblem, T]
+  /**
+   * Marker trait for problems that can occur during input operations.
+   */
+  trait Reading extends Problem
 
   /**
-   * Problem returned when an IO exception is encountered.
+   * Definitions associated with input problems.
+   */
+  object Reading {
+
+    /** The type that represents the result of error-prone text input operations. */
+    final type Attempt[T] = Either[Reading, T]
+
+  }
+
+  /**
+   * Marker trait for problems that can occur during output operations.
+   */
+  trait Writing extends Problem
+
+  /**
+   * Definitions associated with output problems.
+   */
+  object Writing {
+
+    /** The type that represents the result of error-prone text output operations. */
+    final type Attempt[T] = Either[Writing, T]
+
+  }
+
+  /**
+   * Problem returned when a syntax error is encountered while reading.
    *
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class IO(exception: IOException)(implicit val context: Context) extends TextualProblem
+  case class Syntax(exception: Throwable)(implicit val context: Context) extends Reading
 
   /**
    * Problem returned when a buffer is overflowed while writing.
@@ -530,7 +961,7 @@ object TextualProblem extends Problem.Factory[TextualProblem] {
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class Overflow(exception: BufferOverflowException)(implicit val context: Context) extends TextualProblem
+  case class Overflow(exception: BufferOverflowException)(implicit val context: Context) extends Writing
 
   /**
    * Problem returned when attempting to write to a read only buffer.
@@ -538,6 +969,14 @@ object TextualProblem extends Problem.Factory[TextualProblem] {
    * @param exception The exception that was encountered.
    * @param context   The context where the problem occurred.
    */
-  case class ReadOnly(exception: ReadOnlyBufferException)(implicit val context: Context) extends TextualProblem
+  case class ReadOnly(exception: ReadOnlyBufferException)(implicit val context: Context) extends Writing
+
+  /**
+   * Problem returned when an IO exception is encountered.
+   *
+   * @param exception The exception that was encountered.
+   * @param context   The context where the problem occurred.
+   */
+  case class IO(exception: IOException)(implicit val context: Context) extends Reading with Writing
 
 }

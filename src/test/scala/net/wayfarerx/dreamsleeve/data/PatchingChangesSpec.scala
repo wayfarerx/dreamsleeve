@@ -21,8 +21,6 @@ package net.wayfarerx.dreamsleeve.data
 import cats.data.Validated.{invalid, valid}
 import org.scalatest._
 
-import scala.collection.immutable.SortedSet
-
 /**
  * Test case for the change patching implementations.
  */
