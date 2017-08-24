@@ -46,7 +46,7 @@ object Difference {
   /**
    * Declarations associated with creates.
    */
-  object Create extends PatchingDifferences.Creates {
+  object Create extends patching.Creates {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -71,7 +71,7 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise extends PatchingDifferences.Revises {
+  object Revise extends patching.Revises {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -118,7 +118,7 @@ object Difference {
   /**
    * Factory for deletes.
    */
-  object Delete extends PatchingDifferences.Deletes {
+  object Delete extends patching.Deletes {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -163,7 +163,7 @@ object Change {
   /**
    * Declarations associated with adds.
    */
-  object Add extends PatchingChanges.Adds {
+  object Add extends patching.Adds {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -186,7 +186,7 @@ object Change {
   /**
    * Factory for removes.
    */
-  object Remove extends PatchingChanges.Removes {
+  object Remove extends patching.Removes {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -213,7 +213,7 @@ sealed trait Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends PatchingUpdates.Updates {
+object Update extends patching.Updates {
 
   /**
    * Creates an update by collecting the differences between two fragments.
@@ -235,6 +235,15 @@ object Update extends PatchingUpdates.Updates {
   }
 
   /**
+   * Extracts any update implementation.
+   *
+   * @param update The update to extract.
+   * @return True for every update.
+   */
+  def unapply(update: Update): scala.Boolean =
+    true
+
+  /**
    * Copy an existing fragment in a table or document.
    *
    * @param theHash The hash of both fragments.
@@ -250,7 +259,7 @@ object Update extends PatchingUpdates.Updates {
   /**
    * Factory for copies.
    */
-  object Copy extends PatchingUpdates.Copies {
+  object Copy extends patching.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -284,7 +293,7 @@ object Update extends PatchingUpdates.Updates {
   /**
    * Factory for replaces.
    */
-  object Replace extends PatchingUpdates.Replaces {
+  object Replace extends patching.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -319,7 +328,7 @@ object Update extends PatchingUpdates.Updates {
   /**
    * Factory for modifies.
    */
-  object Modify extends PatchingUpdates.Modifies {
+  object Modify extends patching.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

@@ -79,10 +79,10 @@ object Problem {
 object Problems {
 
   /** The base class of patching problems. */
-  type Patching = PatchingProblem
+  type Patching = patching.Problems
 
   /** The factory for patching problems. */
-  val Patching = PatchingProblem
+  val Patching = patching.Problems
 
   /** The base class of textual problems. */
   type Textual = TextualProblem

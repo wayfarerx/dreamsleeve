@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve.data
+package net.wayfarerx.dreamsleeve.data.patching
 
-import cats.data.Validated.{invalid, valid}
+import net.wayfarerx.dreamsleeve.data._
 import org.scalatest._
 
 /**
@@ -35,8 +35,8 @@ class PatchingChangesSpec extends FlatSpec with Matchers {
     val fb: Fragment = Value.String("b")
     val a = Add(fa)
     val b = Add(fb)
-    a.patch() shouldBe valid(fa)
-    b.patch() shouldBe valid(fb)
+    a.patch() shouldBe Right(fa)
+    b.patch() shouldBe Right(fb)
   }
 
   "A remove" should "patch the removal of a fragment from a table" in {
@@ -44,10 +44,10 @@ class PatchingChangesSpec extends FlatSpec with Matchers {
     val fb: Fragment = Value.String("b")
     val a = Remove(fa)
     val b = Remove(fb.hash)
-    a.patch(fa) shouldBe valid(())
-    a.patch(fb) shouldBe invalid(Problems.Patching.List.of(Problems.Patching.HashMismatch(fa.hash, fb.hash)))
-    b.patch(fa) shouldBe invalid(Problems.Patching.List.of(Problems.Patching.HashMismatch(fb.hash, fa.hash)))
-    b.patch(fb) shouldBe valid(())
+    a.patch(fa) shouldBe Right(())
+    a.patch(fb) shouldBe Left(Vector(Problems.HashMismatch(fa.hash, fb.hash)))
+    b.patch(fa) shouldBe Left(Vector(Problems.HashMismatch(fb.hash, fa.hash)))
+    b.patch(fb) shouldBe Right(())
   }
 
 }

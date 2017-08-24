@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve.data
+package net.wayfarerx.dreamsleeve.data.patching
 
+import net.wayfarerx.dreamsleeve.data._
 import org.scalatest._
 
 /**
@@ -40,11 +41,11 @@ class PatchingDifferencesSpec extends FlatSpec with Matchers {
     val d3 = Document("g", Table(Value.String("a") -> Value.Number(2)))
     val d4 = Document("h", Table(Value.String("a") -> Value.Number(3)))
     Revise(d1, d3).patch(d1) shouldBe Right(d3)
-    Revise(d1, d2).patch(d2) shouldBe Left(Vector(Problems.Patching.HashMismatch(d1.hash, d2.hash)))
+    Revise(d1, d2).patch(d2) shouldBe Left(Vector(Problems.HashMismatch(d1.hash, d2.hash)))
     Revise(d1, d3).patch(d4) shouldBe
-      Left(Vector(Problems.Patching.HashMismatch(d1.hash, d4.hash),
-        Problems.Patching.HashMismatch(d1.content.hash, d4.content.hash),
-        Problems.Patching.HashMismatch(Value.Number(1).hash, Value.Number(3).hash)))
+      Left(Vector(Problems.HashMismatch(d1.hash, d4.hash),
+        Problems.HashMismatch(d1.content.hash, d4.content.hash),
+        Problems.HashMismatch(Value.Number(1).hash, Value.Number(3).hash)))
   }
 
   "A delete" should "patch the removal of a document" in {
