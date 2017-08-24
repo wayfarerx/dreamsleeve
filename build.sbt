@@ -1,5 +1,7 @@
 import Dependencies._
 
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4")
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
