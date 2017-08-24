@@ -1,15 +1,34 @@
 import Dependencies._
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4")
+lazy val common = Seq(
+  organization := "net.wayfarerx",
+  scalaVersion := "2.12.1",
+  version := "0.1.0-SNAPSHOT"
+)
 
-lazy val root = (project in file(".")).
+lazy val core = (project in file("shared/core")).
   settings(
-    inThisBuild(List(
-      organization := "net.wayfarerx",
-      scalaVersion := "2.12.1",
-      version := "0.1.0-SNAPSHOT"
-    )),
-    name := "dreamsleeve",
+    common,
+    name := "dreamsleeve-core",
+    libraryDependencies += cats,
+    libraryDependencies += scalaTest % Test,
+    addCompilerPlugin(kinds)
+  )
+
+lazy val io = (project in file("shared/io")).
+  dependsOn(core).
+  settings(
+    common,
+    name := "dreamsleeve-io",
+    libraryDependencies += cats,
+    libraryDependencies += scalaTest % Test
+  )
+
+lazy val data = (project in file("shared/data")).
+  dependsOn(core, io).
+  settings(
+    common,
+    name := "dreamsleeve-data",
     libraryDependencies += cats,
     libraryDependencies += parboiled,
     libraryDependencies += scalaTest % Test
