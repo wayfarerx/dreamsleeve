@@ -49,9 +49,11 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of bytes to read.
-   * @return A buffer containing the requested bytes or any problem that occurs.
+   * @param f     The function that reads the bytes.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readBytes(count: Int): IOResult.Input[ByteBuffer] = {
+  final def readBytes[T](count: Int)(f: ByteBuffer => T): IOResult.Input[T] = {
 
     @inline
     @tailrec
@@ -67,7 +69,7 @@ trait BinaryInput extends BinaryContext {
       }
     }
 
-    readFully(acquireBytes(count)) map { buffer => buffer.rewind(); buffer }
+    readFully(acquireBytes(count)) map { buffer => buffer.rewind(); f(buffer) }
   }
 
   /**
@@ -76,10 +78,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of shorts to read.
-   * @return A buffer containing the requested shorts or any problem that occurs.
+   * @param f     The function that reads the shorts.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readShorts(count: Int): IOResult.Input[ShortBuffer] =
-    readBytes(count * 2) map (_.asShortBuffer())
+  final def readShorts[T](count: Int)(f: ShortBuffer => T): IOResult.Input[T] =
+    readBytes(count * 2)(f.compose(_.asShortBuffer()))
 
   /**
    * Reads the specified number of chars from the input, returning an underflow problem if there are not enough.
@@ -87,10 +91,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of chars to read.
-   * @return A buffer containing the requested chars or any problem that occurs.
+   * @param f     The function that reads the chars.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readChars(count: Int): IOResult.Input[CharBuffer] =
-    readBytes(count * 2) map (_.asCharBuffer())
+  final def readChars[T](count: Int)(f: CharBuffer => T): IOResult.Input[T] =
+    readBytes(count * 2)(f.compose(_.asCharBuffer()))
 
   /**
    * Reads the specified number of ints from the input, returning an underflow problem if there are not enough.
@@ -98,10 +104,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of ints to read.
-   * @return A buffer containing the requested ints or any problem that occurs.
+   * @param f     The function that reads the ints.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readInts(count: Int): IOResult.Input[IntBuffer] =
-    readBytes(count * 4) map (_.asIntBuffer())
+  final def readInts[T](count: Int)(f: IntBuffer => T): IOResult.Input[T] =
+    readBytes(count * 4)(f.compose(_.asIntBuffer()))
 
   /**
    * Reads the specified number of floats from the input, returning an underflow problem if there are not enough.
@@ -109,10 +117,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of floats to read.
-   * @return A buffer containing the requested floats or any problem that occurs.
+   * @param f     The function that reads the floats.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readFloats(count: Int): IOResult.Input[FloatBuffer] =
-    readBytes(count * 4) map (_.asFloatBuffer())
+  final def readFloats[T](count: Int)(f: FloatBuffer => T): IOResult.Input[T] =
+    readBytes(count * 4)(f.compose(_.asFloatBuffer()))
 
   /**
    * Reads the specified number of longs from the input, returning an underflow problem if there are not enough.
@@ -120,10 +130,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of longs to read.
-   * @return A buffer containing the requested longs or any problem that occurs.
+   * @param f     The function that reads the longs.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readLongs(count: Int): IOResult.Input[LongBuffer] =
-    readBytes(count * 8) map (_.asLongBuffer())
+  final def readLongs[T](count: Int)(f: LongBuffer => T): IOResult.Input[T] =
+    readBytes(count * 8)(f.compose(_.asLongBuffer()))
 
   /**
    * Reads the specified number of doubles from the input, returning an underflow problem if there are not enough.
@@ -131,10 +143,12 @@ trait BinaryInput extends BinaryContext {
    * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
    *
    * @param count The number of doubles to read.
-   * @return A buffer containing the requested doubles or any problem that occurs.
+   * @param f     The function that reads the doubles.
+   * @tparam T The type of value returned from this operation.
+   * @return The result of the specified function or any problem that occurs.
    */
-  final def readDoubles(count: Int): IOResult.Input[DoubleBuffer] =
-    readBytes(count * 8) map (_.asDoubleBuffer())
+  final def readDoubles[T](count: Int)(f: DoubleBuffer => T): IOResult.Input[T] =
+    readBytes(count * 8)(f.compose(_.asDoubleBuffer()))
 
 }
 
@@ -179,7 +193,7 @@ object BinaryInput {
    */
   @inline
   def apply(input: Array[Byte]): BinaryInput =
-    apply(input, 0)
+  apply(input, 0)
 
   /**
    * Creates a binary input implementation for the specified byte array.
@@ -189,7 +203,7 @@ object BinaryInput {
    */
   @inline
   def apply(input: Array[Byte], offset: Int): BinaryInput =
-    apply(input, offset, input.length - offset)
+  apply(input, offset, input.length - offset)
 
   /**
    * Creates a binary input implementation for the specified byte array.
@@ -200,7 +214,7 @@ object BinaryInput {
    */
   @inline
   def apply(input: Array[Byte], offset: Int, count: Int): BinaryInput =
-    apply(ByteBuffer.wrap(input, offset, count))
+  apply(ByteBuffer.wrap(input, offset, count))
 
   /**
    * Creates a binary input implementation for the specified byte buffer.

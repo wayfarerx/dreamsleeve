@@ -71,7 +71,7 @@ trait BinaryIO {
    * @return A reader for a single byte.
    */
   final def readByte(): BinaryReader[Byte] =
-    liftF[Read, Byte](_.readBytes(1) map (_.get()))
+    liftF[Read, Byte](_.readBytes(1)(_.get()))
 
   /**
    * Reads the specified number of bytes from a binary input.
@@ -80,11 +80,7 @@ trait BinaryIO {
    * @return A reader for the specified number of bytes.
    */
   final def readByteArray(count: Int): BinaryReader[Array[Byte]] =
-    liftF[Read, Array[Byte]](_.readBytes(count) map { buffer =>
-      val result = new Array[Byte](count)
-      ByteBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Byte]](_.readBytes(count)(ByteBuffer.wrap(new Array[Byte](count)).put(_).array()))
 
   /**
    * Reads the specified number of bytes as a buffer from a binary input.
@@ -93,12 +89,7 @@ trait BinaryIO {
    * @return A reader for the specified number of bytes as a buffer.
    */
   final def readByteBuffer(count: Int): BinaryReader[ByteBuffer] =
-    liftF[Read, ByteBuffer](_.readBytes(count) map { buffer =>
-      val result = ByteBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, ByteBuffer](_.readBytes(count)(b => rewind(ByteBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single short from a binary input.
@@ -106,7 +97,7 @@ trait BinaryIO {
    * @return A reader for a single short.
    */
   final def readShort(): BinaryReader[Short] =
-    liftF[Read, Short](_.readShorts(1) map (_.get()))
+    liftF[Read, Short](_.readShorts(1)(_.get()))
 
   /**
    * Reads the specified number of shorts from a binary input.
@@ -115,11 +106,7 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts.
    */
   final def readShortArray(count: Int): BinaryReader[Array[Short]] =
-    liftF[Read, Array[Short]](_.readShorts(count) map { buffer =>
-      val result = new Array[Short](count)
-      ShortBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Short]](_.readShorts(count)(ShortBuffer.wrap(new Array[Short](count)).put(_).array()))
 
   /**
    * Reads the specified number of shorts as a buffer from a binary input.
@@ -128,12 +115,7 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts as a buffer.
    */
   final def readShortBuffer(count: Int): BinaryReader[ShortBuffer] =
-    liftF[Read, ShortBuffer](_.readShorts(count) map { buffer =>
-      val result = ShortBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, ShortBuffer](_.readShorts(count)(b => rewind(ShortBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single char from a binary input.
@@ -141,7 +123,7 @@ trait BinaryIO {
    * @return A reader for a single char.
    */
   final def readChar(): BinaryReader[Char] =
-    liftF[Read, Char](_.readChars(1) map (_.get()))
+    liftF[Read, Char](_.readChars(1)(_.get()))
 
   /**
    * Reads the specified number of chars from a binary input.
@@ -150,11 +132,7 @@ trait BinaryIO {
    * @return A reader for the specified number of chars.
    */
   final def readCharArray(count: Int): BinaryReader[Array[Char]] =
-    liftF[Read, Array[Char]](_.readChars(count) map { buffer =>
-      val result = new Array[Char](count)
-      CharBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Char]](_.readChars(count)(CharBuffer.wrap(new Array[Char](count)).put(_).array()))
 
   /**
    * Reads the specified number of chars as a buffer from a binary input.
@@ -163,12 +141,7 @@ trait BinaryIO {
    * @return A reader for the specified number of chars as a buffer.
    */
   final def readCharBuffer(count: Int): BinaryReader[CharBuffer] =
-    liftF[Read, CharBuffer](_.readChars(count) map { buffer =>
-      val result = CharBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, CharBuffer](_.readChars(count)(b => rewind(CharBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single int from a binary input.
@@ -176,7 +149,7 @@ trait BinaryIO {
    * @return A reader for a single int.
    */
   final def readInt(): BinaryReader[Int] =
-    liftF[Read, Int](_.readInts(1) map (_.get()))
+    liftF[Read, Int](_.readInts(1)(_.get()))
 
   /**
    * Reads the specified number of ints from a binary input.
@@ -185,11 +158,7 @@ trait BinaryIO {
    * @return A reader for the specified number of ints.
    */
   final def readIntArray(count: Int): BinaryReader[Array[Int]] =
-    liftF[Read, Array[Int]](_.readInts(count) map { buffer =>
-      val result = new Array[Int](count)
-      IntBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Int]](_.readInts(count)(IntBuffer.wrap(new Array[Int](count)).put(_).array()))
 
   /**
    * Reads the specified number of ints as a buffer from a binary input.
@@ -198,12 +167,7 @@ trait BinaryIO {
    * @return A reader for the specified number of ints as a buffer.
    */
   final def readIntBuffer(count: Int): BinaryReader[IntBuffer] =
-    liftF[Read, IntBuffer](_.readInts(count) map { buffer =>
-      val result = IntBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, IntBuffer](_.readInts(count)(b => rewind(IntBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single float from a binary input.
@@ -211,7 +175,7 @@ trait BinaryIO {
    * @return A reader for a single float.
    */
   final def readFloat(): BinaryReader[Float] =
-    liftF[Read, Float](_.readFloats(1) map (_.get()))
+    liftF[Read, Float](_.readFloats(1)(_.get()))
 
   /**
    * Reads the specified number of floats from a binary input.
@@ -220,11 +184,7 @@ trait BinaryIO {
    * @return A reader for the specified number of floats.
    */
   final def readFloatArray(count: Int): BinaryReader[Array[Float]] =
-    liftF[Read, Array[Float]](_.readFloats(count) map { buffer =>
-      val result = new Array[Float](count)
-      FloatBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Float]](_.readFloats(count)(FloatBuffer.wrap(new Array[Float](count)).put(_).array()))
 
   /**
    * Reads the specified number of floats as a buffer from a binary input.
@@ -233,12 +193,7 @@ trait BinaryIO {
    * @return A reader for the specified number of floats as a buffer.
    */
   final def readFloatBuffer(count: Int): BinaryReader[FloatBuffer] =
-    liftF[Read, FloatBuffer](_.readFloats(count) map { buffer =>
-      val result = FloatBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, FloatBuffer](_.readFloats(count)(b => rewind(FloatBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single long from a binary input.
@@ -246,7 +201,7 @@ trait BinaryIO {
    * @return A reader for a single long.
    */
   final def readLong(): BinaryReader[Long] =
-    liftF[Read, Long](_.readLongs(1) map (_.get()))
+    liftF[Read, Long](_.readLongs(1)(_.get()))
 
   /**
    * Reads the specified number of longs from a binary input.
@@ -255,11 +210,7 @@ trait BinaryIO {
    * @return A reader for the specified number of longs.
    */
   final def readLongArray(count: Int): BinaryReader[Array[Long]] =
-    liftF[Read, Array[Long]](_.readLongs(count) map { buffer =>
-      val result = new Array[Long](count)
-      LongBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Long]](_.readLongs(count)(LongBuffer.wrap(new Array[Long](count)).put(_).array()))
 
   /**
    * Reads the specified number of longs as a buffer from a binary input.
@@ -268,12 +219,7 @@ trait BinaryIO {
    * @return A reader for the specified number of longs as a buffer.
    */
   final def readLongBuffer(count: Int): BinaryReader[LongBuffer] =
-    liftF[Read, LongBuffer](_.readLongs(count) map { buffer =>
-      val result = LongBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, LongBuffer](_.readLongs(count)(b => rewind(LongBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single double from a binary input.
@@ -281,7 +227,7 @@ trait BinaryIO {
    * @return A reader for a single double.
    */
   final def readDouble(): BinaryReader[Double] =
-    liftF[Read, Double](_.readDoubles(1) map (_.get()))
+    liftF[Read, Double](_.readDoubles(1)(_.get()))
 
   /**
    * Reads the specified number of doubles from a binary input.
@@ -290,11 +236,7 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles.
    */
   final def readDoubleArray(count: Int): BinaryReader[Array[Double]] =
-    liftF[Read, Array[Double]](_.readDoubles(count) map { buffer =>
-      val result = new Array[Double](count)
-      DoubleBuffer.wrap(result).put(buffer)
-      result
-    })
+    liftF[Read, Array[Double]](_.readDoubles(count)(DoubleBuffer.wrap(new Array[Double](count)).put(_).array()))
 
   /**
    * Reads the specified number of doubles as a buffer from a binary input.
@@ -303,12 +245,7 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles as a buffer.
    */
   final def readDoubleBuffer(count: Int): BinaryReader[DoubleBuffer] =
-    liftF[Read, DoubleBuffer](_.readDoubles(count) map { buffer =>
-      val result = DoubleBuffer.allocate(count)
-      result.put(buffer)
-      result.rewind()
-      result
-    })
+    liftF[Read, DoubleBuffer](_.readDoubles(count)(b => rewind(DoubleBuffer.allocate(count).put(b))))
 
   /**
    * Reads and encoded string as a character sequence from a binary input.
@@ -329,12 +266,24 @@ trait BinaryIO {
   final def readString(charset: Charset = StandardCharsets.UTF_8): BinaryReader[CharSequence] =
     liftF[Read, CharSequence] { input =>
       for {
-        count <- input.readInts(1)
-        buffer <- input.readBytes(count.get())
-        result <- Either.catchOnly[CharacterCodingException](charset.newDecoder().decode(buffer)).
-          left.map(IOProblem.Decoding)
+        count <- input.readInts(1)(_.get())
+        decoded <- input.readBytes(count)(b =>
+          Either.catchOnly[CharacterCodingException](charset.newDecoder().decode(b)).left.map(IOProblem.Decoding))
+        result <- decoded
       } yield result
     }
+
+  /**
+   * A utility that rewinds and returns the specified buffer.
+   *
+   * @param buffer The buffer to rewind and return.
+   * @tparam T The type of buffer to rewind and return.
+   * @return The specified buffer after it has been rewound.
+   */
+  private def rewind[T <: Buffer](buffer: T): T = {
+    buffer.rewind()
+    buffer
+  }
 
   //
   // Pure binary binaryOutput operations.
@@ -881,7 +830,7 @@ object BinaryIO extends BinaryIO {
      * @return The result of the transformed input.
      */
     def apply(input: BinaryInput): IOResult.Input[T] =
-      reader.foldMap(BinaryIO.Read(input))
+      reader.foldMap(Read(input))
 
   }
 
@@ -894,13 +843,13 @@ object BinaryIO extends BinaryIO {
   final class BinaryWriterExtensions[T](val writer: BinaryWriter[T]) extends AnyVal {
 
     /**
-     * Transforms a binary binaryOutput into an binaryOutput result.
+     * Transforms a binary output into an output result.
      *
-     * @param binaryOutput The binaryOutput to transform.
-     * @return The result of the transformed binaryOutput.
+     * @param output The output to transform.
+     * @return The result of the transformed output.
      */
-    def apply(binaryOutput: BinaryOutput): IOResult.Output[T] =
-      writer.foldMap(BinaryIO.Write(binaryOutput))
+    def apply(output: BinaryOutput): IOResult.Output[T] =
+      writer.foldMap(Write(output))
 
   }
 
