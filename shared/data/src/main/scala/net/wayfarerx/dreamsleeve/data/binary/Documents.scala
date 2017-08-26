@@ -19,67 +19,40 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
-import language.implicitConversions
-
-import cats.implicits._
-
 import net.wayfarerx.dreamsleeve.io._
-import Problems._
 
 /**
  * Mix in for the document factory that supports binary IO operations.
  */
-trait Documents {
+trait Documents extends Factory[Document] {
 
-  import Documents._
-
-  /**
-   * Wraps a document with extensions that support binary IO operations.
-   *
-   * @param document The document to extend.
-   * @return The specified document wrapped with extensions that support binary IO operations.
-   */
-  final implicit def documentToBinaryExtensions(document: Document): Extensions =
-    new Extensions(recordWriter(document))
-
-  /**
-   * Reads a document record from the specified binary input.
-   *
-   * @param input The binary input to read from.
-   * @return The document that was read or any problem that was encountered.
-   */
-  final def fromBytes(input: BinaryInput): Either[Problems.Reading, Document] =
-    RecordReader(input).left.map(Failure(_): Problems.Reading).flatten
+  /* Return the fragment binary support object. */
+  final override protected def binarySupport: Support[Document] = Documents
 
 }
 
 /**
  * Definitions associated with the document binary IO operations.
  */
-object Documents {
+object Documents extends Support[Document] {
 
   /** The monad for reading the content of a document record. */
-  val ContentReader: BinaryReader[Either[Problems.Reading, Document]] = for {
+  val contentReader: BinaryReader[Either[Problems.Reading, Document]] = for {
     t <- readString()
-    c <- Fragments.RecordReader
+    c <- Fragments.recordReader
   } yield for (cc <- c) yield Document(t.toString, cc)
 
-  /** The monad for reading an entire document record. */
-  val RecordReader: BinaryReader[Either[Problems.Reading, Document]] = for {
+  /* The monad for reading an entire document record. */
+  override val recordReader: BinaryReader[Either[Problems.Reading, Document]] = for {
     b <- readByte()
     r <- b match {
-      case Document.Header => ContentReader
-      case h => report[Document](InvalidHeader(Vector(Document.Header), h))
+      case Document.Header => contentReader
+      case h => report(Problems.InvalidHeader(Vector(Document.Header), h))
     }
   } yield r
 
-  /**
-   * Creates a monad for writing the entire record for the specified document.
-   *
-   * @param document The document to create a writer for.
-   * @return A monad for writing the entire record for the specified document.
-   */
-  def recordWriter(document: Document): BinaryWriter[Unit] = for {
+  /* Create a monad for writing the entire record for the specified document. */
+  override def recordWriter(document: Document): BinaryWriter[Unit] = for {
     _ <- writeByte(Document.Header)
     _ <- writeString(document.title)
     _ <- Fragments.recordWriter(document.content)

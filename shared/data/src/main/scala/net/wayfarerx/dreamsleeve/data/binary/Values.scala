@@ -19,63 +19,37 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
-import language.implicitConversions
-
-import cats.implicits._
-
 import net.wayfarerx.dreamsleeve.io._
-import Problems._
 
 /**
  * Mix in for the value factory that supports binary IO operations.
  */
-trait Values {
+trait Values extends Factory[Value] {
 
-  import Values._
-
-  /**
-   * Wraps a value with extensions that support binary IO operations.
-   *
-   * @param value The value to extend.
-   * @return The specified value wrapped with extensions that support binary IO operations.
-   */
-  final implicit def valueToBinaryExtensions(value: Value): Extensions =
-    new Extensions(recordWriter(value))
-
-  /**
-   * Reads a value record from the specified binary input.
-   *
-   * @param input The binary input to read from.
-   * @return The value that was read or any problem that was encountered.
-   */
-  final def fromBytes(input: BinaryInput): Either[Problems.Reading, Value] =
-    RecordReader(input).left.map(Failure(_): Problems.Reading).flatten
+  /* Return the string value binary support object. */
+  final override protected def binarySupport: Support[Value] = Values
 
 }
 
 /**
  * Definitions associated with the value binary IO operations.
  */
-object Values {
+object Values extends Support[Value] {
 
-  /** The monad for reading an entire value record. */
-  val RecordReader: BinaryReader[Either[Problems.Reading, Value]] = for {
+  /* The monad for reading an entire value record. */
+  override val recordReader: BinaryReader[Either[Problems.Reading, Value]] = for {
     b <- readByte()
     r <- b match {
-      case Value.Boolean.Header => Booleans.ContentReader
-      case Value.Number.Header => Numbers.ContentReader
-      case Value.String.Header => Strings.ContentReader
-      case h => report[Value](InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header), h))
+      case Value.Boolean.Header => Booleans.contentReader
+      case Value.Number.Header => Numbers.contentReader
+      case Value.String.Header => Strings.contentReader
+      case h => report(
+        Problems.InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header), h))
     }
   } yield r
 
-  /**
-   * Creates a monad for writing the entire record for the specified value.
-   *
-   * @param value The value to create a writer for.
-   * @return A monad for writing the entire record for the specified value.
-   */
-  def recordWriter(value: Value): BinaryWriter[Unit] = value match {
+  /* Create a monad for writing the entire record for the specified value. */
+  override def recordWriter(value: Value): BinaryWriter[Unit] = value match {
     case b@Value.Boolean(_) => Booleans.recordWriter(b)
     case n@Value.Number(_) => Numbers.recordWriter(n)
     case s@Value.String(_) => Strings.recordWriter(s)

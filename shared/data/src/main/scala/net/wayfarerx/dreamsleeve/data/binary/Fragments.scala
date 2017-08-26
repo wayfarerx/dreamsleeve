@@ -19,65 +19,38 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
-import language.implicitConversions
-
-import cats.implicits._
-
 import net.wayfarerx.dreamsleeve.io._
-import Problems._
 
 /**
  * Mix in for the fragment factory that supports binary IO operations.
  */
-trait Fragments {
+trait Fragments extends Factory[Fragment] {
 
-  import Fragments._
-
-  /**
-   * Wraps a fragment with extensions that support binary IO operations.
-   *
-   * @param fragment The value to extend.
-   * @return The specified fragment wrapped with extensions that support binary IO operations.
-   */
-  final implicit def fragmentToBinaryExtensions(fragment: Fragment): Extensions =
-    new Extensions(recordWriter(fragment))
-
-  /**
-   * Reads a fragment record from the specified binary input.
-   *
-   * @param input The binary input to read from.
-   * @return The fragment that was read or any problem that was encountered.
-   */
-  final def fromBytes(input: BinaryInput): Either[Problems.Reading, Fragment] =
-    RecordReader(input).left.map(Failure(_): Problems.Reading).flatten
+  /* Return the fragment binary support object. */
+  final override protected def binarySupport: Support[Fragment] = Fragments
 
 }
 
 /**
  * Definitions associated with the fragment binary IO operations.
  */
-object Fragments {
+object Fragments extends Support[Fragment] {
 
-  /** The monad for reading an entire fragment record. */
-  val RecordReader: BinaryReader[Either[Problems.Reading, Fragment]] = for {
+  /* The monad for reading an entire fragment record. */
+  override val recordReader: BinaryReader[Either[Problems.Reading, Fragment]] = for {
     b <- readByte()
     r <- b match {
-      case Value.Boolean.Header => Booleans.ContentReader
-      case Value.Number.Header => Numbers.ContentReader
-      case Value.String.Header => Strings.ContentReader
-      case Table.Header => Tables.ContentReader
-      case h => report[Fragment](
-        InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header, Table.Header), h))
+      case Value.Boolean.Header => Booleans.contentReader
+      case Value.Number.Header => Numbers.contentReader
+      case Value.String.Header => Strings.contentReader
+      case Table.Header => Tables.contentReader
+      case h => report(
+        Problems.InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header, Table.Header), h))
     }
   } yield r
 
-  /**
-   * Creates a monad for writing the entire record for the specified fragment.
-   *
-   * @param fragment The fragment to create a writer for.
-   * @return A monad for writing the entire record for the specified fragment.
-   */
-  def recordWriter(fragment: Fragment): BinaryWriter[Unit] = fragment match {
+  /* Create a monad for writing the entire record for the specified fragment. */
+  override def recordWriter(fragment: Fragment): BinaryWriter[Unit] = fragment match {
     case v@Value() => Values.recordWriter(v)
     case t@Table(_) => Tables.recordWriter(t)
   }
