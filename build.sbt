@@ -6,17 +6,7 @@ lazy val common = Seq(
   version := "0.1.0-SNAPSHOT"
 )
 
-lazy val core = (project in file("shared/core")).
-  settings(
-    common,
-    name := "dreamsleeve-core",
-    libraryDependencies += cats,
-    libraryDependencies += scalaTest % Test,
-    addCompilerPlugin(kinds)
-  )
-
 lazy val io = (project in file("shared/io")).
-  dependsOn(core).
   settings(
     common,
     name := "dreamsleeve-io",
@@ -25,7 +15,7 @@ lazy val io = (project in file("shared/io")).
   )
 
 lazy val data = (project in file("shared/data")).
-  dependsOn(core, io).
+  dependsOn(io).
   settings(
     common,
     name := "dreamsleeve-data",

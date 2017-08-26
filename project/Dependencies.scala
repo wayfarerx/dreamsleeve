@@ -6,6 +6,4 @@ object Dependencies {
   lazy val parboiled = "org.parboiled" %% "parboiled" % "2.1.4"
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1"
 
-  lazy val kinds = "org.spire-math" %% "kind-projector" % "0.9.4"
-
 }
