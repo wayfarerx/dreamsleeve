@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
+import language.implicitConversions
+
 import cats.implicits._
 
 import net.wayfarerx.dreamsleeve.io._
@@ -30,6 +32,15 @@ import Problems._
 trait Tables {
 
   import Tables._
+
+  /**
+   * Wraps a table with extensions that support binary IO operations.
+   *
+   * @param table The table to extend.
+   * @return The specified table wrapped with extensions that support binary IO operations.
+   */
+  final implicit def tableToBinaryExtensions(table: Table): Extensions =
+    new Extensions(recordWriter(table))
 
   /**
    * Reads a table record from the specified binary input.
@@ -50,7 +61,7 @@ object Tables {
   /** The monad for reading the content of a table record. */
   val ContentReader: BinaryReader[Either[Problems.Reading, Table]] = for {
     c <- readInt()
-    e <- (pureRead(Vector[(Value, Fragment)]()) /: (0 until c)) { (r, _) =>
+    e <- (readResult(Vector[(Value, Fragment)]()) /: (0 until c)) { (r, _) =>
       for {
         e <- r
         k <- Values.RecordReader
@@ -71,5 +82,24 @@ object Tables {
       case h => report[Table](InvalidHeader(Vector(Table.Header), h))
     }
   } yield r
+
+  /**
+   * Creates a monad for writing the entire record for the specified table.
+   *
+   * @param table The table to create a writer for.
+   * @return A monad for writing the entire record for the specified table.
+   */
+  def recordWriter(table: Table): BinaryWriter[Unit] = for {
+    _ <- writeByte(Table.Header)
+    _ <- writeInt(table.entries.size)
+    _ <- (WriteResult /: table.entries) { (p, e) =>
+      val (k, v) = e
+      for {
+        _ <- p
+        _ <- Values.recordWriter(k)
+        _ <- Fragments.recordWriter(v)
+      } yield ()
+    }
+  } yield ()
 
 }

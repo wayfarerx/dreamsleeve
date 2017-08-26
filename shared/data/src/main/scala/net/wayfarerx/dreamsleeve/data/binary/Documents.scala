@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
+import language.implicitConversions
+
 import cats.implicits._
 
 import net.wayfarerx.dreamsleeve.io._
@@ -30,6 +32,15 @@ import Problems._
 trait Documents {
 
   import Documents._
+
+  /**
+   * Wraps a document with extensions that support binary IO operations.
+   *
+   * @param document The document to extend.
+   * @return The specified document wrapped with extensions that support binary IO operations.
+   */
+  final implicit def documentToBinaryExtensions(document: Document): Extensions =
+    new Extensions(recordWriter(document))
 
   /**
    * Reads a document record from the specified binary input.
@@ -61,5 +72,17 @@ object Documents {
       case h => report[Document](InvalidHeader(Vector(Document.Header), h))
     }
   } yield r
+
+  /**
+   * Creates a monad for writing the entire record for the specified document.
+   *
+   * @param document The document to create a writer for.
+   * @return A monad for writing the entire record for the specified document.
+   */
+  def recordWriter(document: Document): BinaryWriter[Unit] = for {
+    _ <- writeByte(Document.Header)
+    _ <- writeString(document.title)
+    _ <- Fragments.recordWriter(document.content)
+  } yield ()
 
 }

@@ -30,6 +30,24 @@ package object binary {
   import binary.Problems._
 
   /**
+   * Constructs a binary writer monad that returns unit.
+   *
+   * @return A binary writer monad that returns unit.
+   */
+  private[binary] val WriteResult: BinaryWriter[Unit] =
+    Free.pure(Right(()))
+
+  /**
+   * Constructs a binary reader monad that returns a result.
+   *
+   * @param result The result to return.
+   * @tparam T The type of the expected result.
+   * @return A binary reader monad that returns a result.
+   */
+  private[binary] def readResult[T](result: T): BinaryReader[Either[Reading, T]] =
+    Free.pure(Right(result))
+
+  /**
    * Constructs a binary reader monad that returns a problem.
    *
    * @param problem The problem to return.
@@ -40,13 +58,21 @@ package object binary {
     Free.pure(Left(problem))
 
   /**
-   * Constructs a binary reader monad that returns a result.
+   * Extensions that add support for binary IO operations.
    *
-   * @param result The result to return.
-   * @tparam T The type of the expected result.
-   * @return A binary reader monad that returns a result.
+   * @param writer The writer to extend.
    */
-  private[binary] def pureRead[T](result: T): BinaryReader[Either[Reading, T]] =
-    Free.pure(Right(result))
+  final class Extensions private[binary](val writer: BinaryWriter[Unit]) extends AnyVal {
+
+    /**
+     * Writes the value record to the specified binary output.
+     *
+     * @param output The binary output to write to.
+     * @return Any problem that was encountered.
+     */
+    def toBytes(output: BinaryOutput): Either[binary.Problems.Writing, Unit] =
+      writer(output).left.map(Failure(_))
+
+  }
 
 }

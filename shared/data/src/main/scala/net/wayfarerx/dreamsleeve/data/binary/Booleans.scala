@@ -39,9 +39,8 @@ trait Booleans {
    * @param boolean The boolean value to extend.
    * @return The specified boolean value wrapped with extensions that support binary IO operations.
    */
-  @inline
   final implicit def booleanToBinaryExtensions(boolean: Value.Boolean): Extensions =
-  new Extensions(boolean)
+    new Extensions(recordWriter(boolean))
 
   /**
    * Reads a boolean value record from the specified binary input.
@@ -73,21 +72,14 @@ object Booleans {
   } yield r
 
   /**
-   * Extensions to the boolean value interface that adds support for binary IO operations.
+   * Creates a monad for writing the entire record for the specified boolean value.
    *
-   * @param boolean The boolean value to extend.
+   * @param boolean The boolean value to create a writer for.
+   * @return A monad for writing the entire record for the specified boolean value.
    */
-  final class Extensions(val boolean: Value.Boolean) extends AnyVal {
-
-    /**
-     * Writes the boolean value record to the specified binary output.
-     *
-     * @param output The binary output to write to.
-     * @return Any problem that was encountered.
-     */
-    def toBytes(output: BinaryOutput): Either[Problems.Writing, Unit] =
-      ???
-
-  }
+  def recordWriter(boolean: Value.Boolean): BinaryWriter[Unit] = for {
+    _ <- writeByte(Value.Boolean.Header)
+    _ <- writeByte(if (boolean.value) 1 else 0)
+  } yield ()
 
 }

@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package binary
 
+import language.implicitConversions
+
 import cats.implicits._
 
 import net.wayfarerx.dreamsleeve.io._
@@ -30,6 +32,15 @@ import Problems._
 trait Strings {
 
   import Strings._
+
+  /**
+   * Wraps a string value with extensions that support binary IO operations.
+   *
+   * @param string The string value to extend.
+   * @return The specified string value wrapped with extensions that support binary IO operations.
+   */
+  final implicit def stringToBinaryExtensions(string: Value.String): Extensions =
+    new Extensions(recordWriter(string))
 
   /**
    * Reads a string value record from the specified binary input.
@@ -59,5 +70,16 @@ object Strings {
       case h => report[Value.String](InvalidHeader(Vector(Value.String.Header), h))
     }
   } yield r
+
+  /**
+   * Creates a monad for writing the entire record for the specified string value.
+   *
+   * @param string The string value to create a writer for.
+   * @return A monad for writing the entire record for the specified string value.
+   */
+  def recordWriter(string: Value.String): BinaryWriter[Unit] = for {
+    _ <- writeByte(Value.String.Header)
+    _ <- writeString(string.value)
+  } yield ()
 
 }

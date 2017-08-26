@@ -37,7 +37,7 @@ case class Document(title: String, content: Fragment) extends Hashable {
 /**
  * Declarations associated with documents.
  */
-object Document extends TextualDocuments.Documents {
+object Document extends binary.Documents with TextualDocuments.Documents {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -52,7 +52,7 @@ sealed trait Fragment extends Hashable
 /**
  * Extractor for fragment implementations.
  */
-object Fragment extends TextualFragments.Fragments {
+object Fragment extends binary.Fragments with TextualFragments.Fragments {
 
   /**
    * Extracts any fragment implementation.
@@ -73,7 +73,7 @@ sealed trait Value extends Fragment with Comparable[Value]
 /**
  * Implementations of the value types.
  */
-object Value extends TextualValues.Values {
+object Value extends binary.Values with TextualValues.Values {
 
   /**
    * Extracts any value implementation.
@@ -106,7 +106,7 @@ object Value extends TextualValues.Values {
   /**
    * Declarations associated with booleans.
    */
-  object Boolean extends TextualValues.Booleans {
+  object Boolean extends binary.Booleans with TextualValues.Booleans {
 
     /** The header for booleans. */
     val Header: Byte = 0xC3.toByte
@@ -136,7 +136,7 @@ object Value extends TextualValues.Values {
   /**
    * Declarations associated with numbers.
    */
-  object Number extends TextualValues.Numbers {
+  object Number extends binary.Numbers with TextualValues.Numbers {
 
     /** The header for numbers. */
     val Header: Byte = 0xB4.toByte
@@ -165,7 +165,7 @@ object Value extends TextualValues.Values {
   /**
    * Declarations associated with strings.
    */
-  object String extends TextualValues.Strings {
+  object String extends binary.Strings with TextualValues.Strings {
 
     /** The header for strings. */
     val Header: Byte = 0xA5.toByte
@@ -214,7 +214,7 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
 /**
  * Factory for tables.
  */
-object Table extends TextualTables.Tables {
+object Table extends binary.Tables with TextualTables.Tables {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte
