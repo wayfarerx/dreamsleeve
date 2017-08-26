@@ -28,8 +28,6 @@ class PatchingDifferencesSpec extends FlatSpec with Matchers {
 
   import Difference._
 
-  implicit val ctx: Problem.Context = Problem.Context(Vector())
-
   "A create" should "patch the addition of a document" in {
     val d = Document("e", Table())
     Create(d).patch() shouldBe d

@@ -34,12 +34,12 @@ object IOProblem {
   /**
    * Marker trait for problems that can occur during input operations.
    */
-  trait Reading extends IOProblem
+  sealed trait Reading extends IOProblem
 
   /**
    * Marker trait for problems that can occur during output operations.
    */
-  trait Writing extends IOProblem
+  sealed trait Writing extends IOProblem
 
   /**
    * Problem returned when reaching end-of-file while reading.
@@ -92,8 +92,10 @@ object IOTEST {
     } yield (a, b, c, d)
 
     val baos = new java.io.ByteArrayOutputStream()
-    writer(baos)
-    println(reader(baos.toByteArray))
+    for {
+      _ <- writer(baos)
+      data <- reader(baos.toByteArray)
+    } println(data)
   }
 
 }

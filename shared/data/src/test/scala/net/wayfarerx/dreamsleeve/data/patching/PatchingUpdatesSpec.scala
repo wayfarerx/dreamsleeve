@@ -30,8 +30,6 @@ class PatchingUpdatesSpec extends FlatSpec with Matchers {
 
   import Update._
 
-  implicit val ctx: Problem.Context = Problem.Context(Vector())
-
   "An update" should "patch as the concrete type does" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Table(Value.String("a") -> Value.Number())

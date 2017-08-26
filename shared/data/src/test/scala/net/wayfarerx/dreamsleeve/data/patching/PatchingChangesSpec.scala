@@ -28,8 +28,6 @@ class PatchingChangesSpec extends FlatSpec with Matchers {
 
   import Change._
 
-  implicit val ctx: Problem.Context = Problem.Context(Vector())
-
   "An add" should "patch the addition of a fragment to a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
