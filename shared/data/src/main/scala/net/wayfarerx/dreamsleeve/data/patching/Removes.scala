@@ -24,8 +24,6 @@ import language.implicitConversions
 import cats.data._
 import Validated.{invalid, valid}
 
-import Problem.Context
-
 /**
  * Support for the removal factory object.
  */
@@ -63,17 +61,16 @@ object Removes {
      * @return The problems that were encountered removing the fragment, if any.
      */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Unit] =
-      patching(fromFragment)(hasher, Context(Vector()))
+      patching(fromFragment)(hasher)
 
     /**
      * Applies the change by verifying the removed fragment.
      *
      * @param fromFragment The fragment to verify the removal of.
      * @param hasher       The hasher to generate hashes with.
-     * @param ctx          The context of the remove application.
      * @return The problems that were encountered removing the fragment, if any.
      */
-    private[patching] def patching(fromFragment: Fragment)(implicit hasher: Hasher, ctx: Context): Attempt[Unit] =
+    private[patching] def patching(fromFragment: Fragment)(implicit hasher: Hasher): Attempt[Unit] =
       if (fromFragment.hash == remove.fromHash) valid(()) else
         invalid(Problems.List.of(Problems.HashMismatch(remove.fromHash, fromFragment.hash)))
 

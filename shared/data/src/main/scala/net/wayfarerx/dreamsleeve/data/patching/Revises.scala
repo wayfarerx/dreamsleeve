@@ -62,8 +62,8 @@ object Revises {
      */
     def patch(fromDocument: Document)(implicit hasher: Hasher): Result[Document] = {
       val hashCheck = Some(revise.fromHash) filter (_ != fromDocument.hash) map
-        (Problems.HashMismatch(_, fromDocument.hash)(Problem.Context(Vector())))
-      revise.update.patching(fromDocument.content)(hasher, Problem.Context(Vector(Value.String(revise.title))))
+        (Problems.HashMismatch(_, fromDocument.hash))
+      revise.update.patching(fromDocument.content)(hasher)
         .leftMap(e => hashCheck map (_ +: e.toList.toVector) getOrElse e.toList.toVector)
         .andThen(c => hashCheck map (p => invalid(Vector(p))) getOrElse valid(Document(revise.title, c)))
         .toEither

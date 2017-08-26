@@ -15,8 +15,6 @@ import org.parboiled2._
  */
 object TextualDocuments {
 
-  import Problem.Context
-
   /**
    * Support for the document factory object.
    */
@@ -42,7 +40,6 @@ object TextualDocuments {
      * @return Either the document that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Document] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Documents.run() match {
           case Success(document) => Right(document)
@@ -72,9 +69,7 @@ object TextualDocuments {
      */
     def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Attempt[Unit] = {
       val out = implicitly[TextualSupport.Output[T]]
-      implicit val ctx = Context(Vector.empty)
       out.write(output, document.title) flatMap (_ => out.write(output, " = ")) flatMap { _ =>
-        implicit val ctx = Context(Vector(Value.String(document.title)))
         document.content.writeText(output, indent)
       }
     }
@@ -87,8 +82,6 @@ object TextualDocuments {
  * Provides support for encoding and decoding fragments to and from text.
  */
 object TextualFragments {
-
-  import Problem.Context
 
   /**
    * Support for the fragment factory object.
@@ -115,7 +108,6 @@ object TextualFragments {
      * @return Either the fragment that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Fragment] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Fragments.run() match {
           case Success(fragment) => Right(fragment)
@@ -141,10 +133,9 @@ object TextualFragments {
      * @tparam T The type of the output object.
      * @param output The object to write to.
      * @param indent The number of times to indent new lines, defaults to zero.
-     * @param ctx    The context of the fragment writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] =
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Attempt[Unit] =
       fragment match {
         case v@Value() => v.writeText(output)
         case t@Table(_) => t.writeText(output, indent)
@@ -158,8 +149,6 @@ object TextualFragments {
  * Provides support for encoding and decoding values to and from text.
  */
 object TextualValues {
-
-  import Problem.Context
 
   /** The 16-bit bell character. */
   val Bell: Char = 0x00000007.toChar
@@ -192,7 +181,6 @@ object TextualValues {
      * @return Either the value that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Value] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Values.run() match {
           case Success(value) => Right(value)
@@ -228,7 +216,6 @@ object TextualValues {
      * @return Either the boolean that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Value.Boolean] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Booleans.run() match {
           case Success(boolean) => Right(boolean)
@@ -264,7 +251,6 @@ object TextualValues {
      * @return Either the number that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Value.Number] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Numbers.run() match {
           case Success(number) => Right(number)
@@ -300,7 +286,6 @@ object TextualValues {
      * @return Either the string that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Value.String] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Strings.run() match {
           case Success(string) => Right(string)
@@ -325,10 +310,9 @@ object TextualValues {
      *
      * @tparam T The type of the output object.
      * @param output The object to write to.
-     * @param ctx    The context of the value writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] =
+    def writeText[T: TextualSupport.Output](output: T): Attempt[Unit] =
       value match {
         case b@Value.Boolean(_) => b.writeText(output)
         case n@Value.Number(_) => n.writeText(output)
@@ -351,10 +335,9 @@ object TextualValues {
      *
      * @tparam T The type of the output object.
      * @param output The object to write to.
-     * @param ctx    The context of the boolean writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+    def writeText[T: TextualSupport.Output](output: T): Attempt[Unit] = {
       implicitly[TextualSupport.Output[T]].write(output, boolean.value.toString)
     }
 
@@ -374,10 +357,9 @@ object TextualValues {
      *
      * @tparam T The type of the output object.
      * @param output The object to write to.
-     * @param ctx    The context of the number writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+    def writeText[T: TextualSupport.Output](output: T): Attempt[Unit] = {
       val out = implicitly[TextualSupport.Output[T]]
       number.value match {
         case value if value.isNaN => out.write(output, '0')
@@ -404,10 +386,9 @@ object TextualValues {
      *
      * @tparam T The type of the output object.
      * @param output The object to write to.
-     * @param ctx    The context of the string writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T)(implicit ctx: Context): Attempt[Unit] = {
+    def writeText[T: TextualSupport.Output](output: T): Attempt[Unit] = {
       val out = implicitly[TextualSupport.Output[T]]
       (out.write(output, '"') /: string.value) { (previous, c) =>
         previous flatMap (_ => c match {
@@ -434,8 +415,6 @@ object TextualValues {
  * Provides support for encoding and decoding tables to and from text.
  */
 object TextualTables {
-
-  import Problem.Context
 
   /** The value that is used to indent nested lines. */
   val Indent: String = " " * 4
@@ -465,7 +444,6 @@ object TextualTables {
      * @return Either the table that was read or the first exception that was thrown.
      */
     final def readText[T: TextualSupport.Input](input: T): Attempt[Table] = {
-      implicit val ctx = Problem.Context(Vector.empty)
       implicitly[TextualSupport.Input[T]].toParserInput(input) flatMap { in =>
         new TextualSupport.TextParser(in).Tables.run() match {
           case Success(table) => Right(table)
@@ -491,15 +469,13 @@ object TextualTables {
      * @tparam T The type of the output object.
      * @param output The object to write to.
      * @param indent The number of times to indent new lines, defaults to zero.
-     * @param ctx    The context of the table writing operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0)(implicit ctx: Context): Attempt[Unit] = {
+    def writeText[T: TextualSupport.Output](output: T, indent: Int = 0): Attempt[Unit] = {
       val out = implicitly[TextualSupport.Output[T]]
       val deeper = indent + 1
       val short = Indent * indent
       val long = Indent * deeper
-      val _ctx = ctx
       ((out.writeln(output) flatMap
         (_ => out.write(output, short)) flatMap
         (_ => out.write(output, '{')) flatMap
@@ -511,7 +487,6 @@ object TextualTables {
           (_ => k.writeText(output)) flatMap
           (_ => out.write(output, ']')) flatMap
           (_ => out.write(output, " = ")) flatMap { _ =>
-          implicit val ctx = _ctx.push(k)
           v.writeText(output, deeper)
         } flatMap
           (_ => out.write(output, ',')) flatMap
@@ -530,8 +505,6 @@ object TextualTables {
  * Definition of the text input/output interface.
  */
 object TextualSupport {
-
-  import Problem.Context
 
   /** The bell character. */
   val Bell: String = 0x00000007.toChar.toString
@@ -598,7 +571,7 @@ object TextualSupport {
         }
         CharSequenceInput.toParserInput(result)
       } catch {
-        case e: IOException => Left(TextualProblem.IO(e)(Context(Vector.empty)))
+        case e: IOException => Left(TextualProblem.IO(e))
       }
     }
 
@@ -618,30 +591,27 @@ object TextualSupport {
      *
      * @param target The object to write to.
      * @param c      The character to write.
-     * @param ctx    The context of the write operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def write(target: T, c: Char)(implicit ctx: Context): Attempt[Unit]
+    def write(target: T, c: Char): Attempt[Unit]
 
     /**
      * Writes a string of characters to the target object.
      *
      * @param target The object to write to.
      * @param string The string of characters to write.
-     * @param ctx    The context of the write operation.
      * @return Either unit or the first exception that was thrown.
      */
-    def write(target: T, string: String)(implicit ctx: Context): Attempt[Unit]
+    def write(target: T, string: String): Attempt[Unit]
 
     /**
      * Writes a line break to the target object.
      *
      * @param target The object to write to.
-     * @param ctx    The context of the write operation.
      * @return Either unit or the first exception that was thrown.
      */
     @inline
-    final def writeln(target: T)(implicit ctx: Context): Attempt[Unit] =
+    final def writeln(target: T): Attempt[Unit] =
     write(target, LineBreak)
 
   }
@@ -656,10 +626,10 @@ object TextualSupport {
     /** The implicit output implementation for string builders. */
     implicit val StringBuilderOutput: Output[StringBuilder] = new Output[StringBuilder] {
 
-      override def write(target: StringBuilder, c: Char)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: StringBuilder, c: Char): Attempt[Unit] =
         Right(target.append(c))
 
-      override def write(target: StringBuilder, string: String)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: StringBuilder, string: String): Attempt[Unit] =
         Right(target.append(string))
 
     }
@@ -667,10 +637,10 @@ object TextualSupport {
     /** The implicit output implementation for Java string builders. */
     implicit val JStringBuilderOutput: Output[JStringBuilder] = new Output[JStringBuilder] {
 
-      override def write(target: JStringBuilder, c: Char)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: JStringBuilder, c: Char): Attempt[Unit] =
         Right(target.append(c))
 
-      override def write(target: JStringBuilder, string: String)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: JStringBuilder, string: String): Attempt[Unit] =
         Right(target.append(string))
 
     }
@@ -678,10 +648,10 @@ object TextualSupport {
     /** The implicit output implementation for string buffers. */
     implicit val StringBufferOutput: Output[StringBuffer] = new Output[StringBuffer] {
 
-      override def write(target: StringBuffer, c: Char)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: StringBuffer, c: Char): Attempt[Unit] =
         Right(target.append(c))
 
-      override def write(target: StringBuffer, string: String)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: StringBuffer, string: String): Attempt[Unit] =
         Right(target.append(string))
 
     }
@@ -689,13 +659,13 @@ object TextualSupport {
     /** The implicit output implementation for character buffers. */
     implicit val CharBufferOutput: Output[CharBuffer] = new Output[CharBuffer] {
 
-      override def write(target: CharBuffer, c: Char)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: CharBuffer, c: Char): Attempt[Unit] =
         try Right(target.append(c)) catch {
           case e: BufferOverflowException => Left(TextualProblem.Overflow(e))
           case e: ReadOnlyBufferException => Left(TextualProblem.ReadOnly(e))
         }
 
-      override def write(target: CharBuffer, string: String)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: CharBuffer, string: String): Attempt[Unit] =
         try Right(target.append(string)) catch {
           case e: BufferOverflowException => Left(TextualProblem.Overflow(e))
           case e: ReadOnlyBufferException => Left(TextualProblem.ReadOnly(e))
@@ -706,12 +676,12 @@ object TextualSupport {
     /** The implicit output implementation for writers. */
     implicit val WriterOutput: Output[Writer] = new Output[Writer] {
 
-      override def write(target: Writer, c: Char)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: Writer, c: Char): Attempt[Unit] =
         try Right(target.write(c)) catch {
           case e: IOException => Left(TextualProblem.IO(e))
         }
 
-      override def write(target: Writer, string: String)(implicit ctx: Context): Attempt[Unit] =
+      override def write(target: Writer, string: String): Attempt[Unit] =
         try Right(target.write(string)) catch {
           case e: IOException => Left(TextualProblem.IO(e))
         }
@@ -951,32 +921,28 @@ object TextualProblem extends Problem.Factory[TextualProblem] {
    * Problem returned when a syntax error is encountered while reading.
    *
    * @param exception The exception that was encountered.
-   * @param context   The context where the problem occurred.
    */
-  case class Syntax(exception: Throwable)(implicit val context: Context) extends Reading
+  case class Syntax(exception: Throwable) extends Reading
 
   /**
    * Problem returned when a buffer is overflowed while writing.
    *
    * @param exception The exception that was encountered.
-   * @param context   The context where the problem occurred.
    */
-  case class Overflow(exception: BufferOverflowException)(implicit val context: Context) extends Writing
+  case class Overflow(exception: BufferOverflowException) extends Writing
 
   /**
    * Problem returned when attempting to write to a read only buffer.
    *
    * @param exception The exception that was encountered.
-   * @param context   The context where the problem occurred.
    */
-  case class ReadOnly(exception: ReadOnlyBufferException)(implicit val context: Context) extends Writing
+  case class ReadOnly(exception: ReadOnlyBufferException) extends Writing
 
   /**
    * Problem returned when an IO exception is encountered.
    *
    * @param exception The exception that was encountered.
-   * @param context   The context where the problem occurred.
    */
-  case class IO(exception: IOException)(implicit val context: Context) extends Reading with Writing
+  case class IO(exception: IOException) extends Reading with Writing
 
 }

@@ -23,12 +23,7 @@ import cats.data._
 /**
  * Base class for all problems.
  */
-trait Problem {
-
-  /** The context where this problem occurred. */
-  def context: Problem.Context
-
-}
+trait Problem
 
 /**
  * Concrete problem implementations.
@@ -42,32 +37,11 @@ object Problem {
    */
   trait Factory[ProblemType] {
 
-    /** The context that all problems originate from. */
-    final type Context = Problem.Context
-
     /** The type of a list of problems. */
     final type List = NonEmptyList[ProblemType]
 
     /** The factory for lists of problems. */
     final val List = NonEmptyList
-
-  }
-
-  /**
-   * The context passed among operations that might encounter problems.
-   *
-   * @param location the current location in the document.
-   */
-  case class Context private(location: Vector[Value]) {
-
-    /**
-     * Returns a context with the specified element at the end of the location.
-     *
-     * @param element The element to append to the location.
-     * @return A context with the specified element at the end of the location.
-     */
-    private[data] def push(element: Value): Context =
-      copy(location = location :+ element)
 
   }
 

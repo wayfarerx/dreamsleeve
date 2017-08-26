@@ -25,7 +25,6 @@ import cats.data._
 import cats.implicits._
 import Validated.{invalid, valid}
 
-import Problem.Context
 import Problems._
 
 /**
@@ -40,7 +39,7 @@ trait Modifies {
    * @return The patching interface.
    */
   @inline
-  implicit def modifyToModifyPatch(modify: Update.Modify)(implicit ctx: Problem.Context): Modifies.ModifyPatch =
+  implicit def modifyToModifyPatch(modify: Update.Modify): Modifies.ModifyPatch =
   new Modifies.ModifyPatch(modify)
 
 }
@@ -65,17 +64,16 @@ object Modifies {
      * @return The resulting table or problems that were encountered modifying the fragment.
      */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher, Context(Vector()))
+      patching(fromFragment)(hasher)
 
     /**
      * Applies the update by verifying the original table, applying all changes and returning the resulting table.
      *
      * @param fromFragment The fragment that is being modified.
      * @param h            The hasher to generate hashes with.
-     * @param ctx          The context of the modify application.
      * @return The resulting table or problems that were encountered modifying the fragment.
      */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher, ctx: Context): Attempt[Fragment] = {
+    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] = {
       // Verify that the from table's hash matches.
       val hashCheck: Attempt[Vector[(Value, Fragment)]] =
         if (modify.fromHash == fromFragment.hash) valid(Vector())
@@ -88,9 +86,7 @@ object Modifies {
           val keyCheck = if ((fromTable.keys -- modify.changes.keys).isEmpty) valid(Vector()) else
             invalid(Problems.List.of(MissingChangeKeys(fromTable.keys -- modify.changes.keys)))
           // Apply all the changes.
-          val _ctx = ctx
           val entries = modify.changes map { case (k, v) =>
-            implicit val ctx: Context = _ctx.push(k)
             v match {
               case Change.Add(_) if fromTable.get(k).nonEmpty => invalid(Problems.List.of(UnexpectedEntry(k)))
               case add@Change.Add(_) => add.patching() map (v => Vector(k -> v))

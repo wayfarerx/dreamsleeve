@@ -36,40 +36,35 @@ object Problems extends Problem.Factory[Problems] {
    *
    * @param expected The value of the expected hash.
    * @param found    The value of the hash that was encountered.
-   * @param context  The context where the problem occurred.
    */
-  case class HashMismatch(expected: Hash, found: Hash)(implicit val context: Context) extends Problems
+  case class HashMismatch(expected: Hash, found: Hash) extends Problems
 
   /**
    * Problem returned when keys in a table have no matching keys in a modify.
    *
    * @param missing The keys in the table that did not have matching keys in a modify.
-   * @param context The context where the problem occurred.
    */
-  case class MissingChangeKeys(missing: SortedSet[Value])(implicit val context: Context) extends Problems
+  case class MissingChangeKeys(missing: SortedSet[Value]) extends Problems
 
   /**
    * Problem returned when a key in a modify has no matching key in a table.
    *
    * @param expected The key in the modify that did not have a matching key in a table.
-   * @param context  The context where the problem occurred.
    */
-  case class MissingEntry(expected: Value)(implicit val context: Context) extends Problems
+  case class MissingEntry(expected: Value) extends Problems
 
   /**
    * Problem returned when a key in a table was not expected to be there.
    *
    * @param found   The key in the table that was not expected to be there.
-   * @param context The context where the problem occurred.
    */
-  case class UnexpectedEntry(found: Value)(implicit val context: Context) extends Problems
+  case class UnexpectedEntry(found: Value) extends Problems
 
   /**
    * Problem returned when a fragment expected to be a table is a value instead.
    *
    * @param found   The value that was found where a table was expected.
-   * @param context The context where the problem occurred.
    */
-  case class TypeMismatch(found: Value)(implicit val context: Context) extends Problems
+  case class TypeMismatch(found: Value) extends Problems
 
 }

@@ -24,7 +24,6 @@ import language.implicitConversions
 import cats.data._
 import Validated.{invalid, valid}
 
-import Problem.Context
 import Problems._
 
 /**
@@ -64,17 +63,16 @@ object Replaces {
      * @return The resulting fragment or problems that were encountered replacing the fragment.
      */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher, Context(Vector()))
+      patching(fromFragment)(hasher)
 
     /**
      * Applies the update by verifying the original fragment and returning the resulting fragment.
      *
      * @param fromFragment The fragment that is being replaced.
      * @param h            The hasher to generate hashes with.
-     * @param c            The context of the replaced application.
      * @return The resulting fragment or problems that were encountered replacing the fragment.
      */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher, c: Context): Attempt[Fragment] =
+    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] =
       if (replace.fromHash == fromFragment.hash) valid(replace.toFragment) else
         invalid(Problems.List.of(HashMismatch(replace.fromHash, fromFragment.hash)))
 

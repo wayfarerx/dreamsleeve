@@ -21,8 +21,6 @@ package patching
 
 import language.implicitConversions
 
-import Problem.Context
-
 /**
  * Patching support for the update factory object.
  */
@@ -60,17 +58,16 @@ object Updates {
      * @return The resulting fragment or problems that were encountered updating the fragment.
      */
     def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher, Context(Vector()))
+      patching(fromFragment)(hasher)
 
     /**
      * Applies the change to the original fragment, creating the resulting fragment.
      *
      * @param fromFragment The fragment that is being updated.
      * @param h            The hasher to generate hashes with.
-     * @param c            The context of the update application.
      * @return The resulting fragment or problems that were encountered updating the fragment.
      */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher, c: Context): Attempt[Fragment] =
+    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] =
       update match {
         case uc@Update.Copy(_) => uc.patching(fromFragment)
         case ur@Update.Replace(_, _) => ur.patching(fromFragment)
