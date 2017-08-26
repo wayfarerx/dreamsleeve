@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve
-package io
+package net.wayfarerx.dreamsleeve.io
 
 import java.io.IOException
-
+import java.nio.charset.CharacterCodingException
 
 /**
  * Base type for all IO problems.
@@ -51,6 +50,20 @@ object IOProblem {
    * Problem returned when reaching end-of-file while writing.
    */
   case object Overflow extends Writing
+
+  /**
+   * Problem returned when character decoding operations fail.
+   *
+   * @param thrown The exception that was thrown.
+   */
+  case class Decoding(thrown: CharacterCodingException) extends Reading
+
+  /**
+   * Problem returned when character encoding operations fail.
+   *
+   * @param thrown The exception that was thrown.
+   */
+  case class Encoding(thrown: CharacterCodingException) extends Writing
 
   /**
    * Problem returned when IO operations fail.

@@ -18,8 +18,6 @@
 
 package net.wayfarerx.dreamsleeve
 
-import cats.Monad
-
 /**
  * The interface that enables functional & extensible IO operations.
  */
@@ -46,11 +44,5 @@ package object io extends io.BinaryIO {
     type Output[T] = IOResult[IOProblem.Writing, T]
 
   }
-
-  /** The monad used for merging the results of input operations. */
-  implicit val IOResultInputMonad: Monad[IOResult.Input] = new ProblematicMonad[IOProblem.Reading]
-
-  /** The monad used for merging the results of input operations. */
-  implicit val IOResultOutputMonad: Monad[IOResult.Output] = new ProblematicMonad[IOProblem.Writing]
 
 }

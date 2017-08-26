@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve
-package io
+package net.wayfarerx.dreamsleeve.io
 
+
+import annotation.tailrec
 import language.implicitConversions
 
 import java.io.{IOException, OutputStream}
-import java.nio.ByteBuffer
-import java.nio.channels.{Channels, WritableByteChannel}
+import java.nio._
+import channels.{Channels, WritableByteChannel}
 
 import cats.implicits._
 
@@ -31,7 +32,7 @@ import cats.implicits._
 /**
  * Base class for the binary output type.
  */
-trait BinaryOutput {
+trait BinaryOutput extends BinaryContext {
 
   /**
    * Attempts to write bytes to the output, emptying as much of the supplied buffer as possible.
@@ -39,7 +40,109 @@ trait BinaryOutput {
    * @param bytes The buffer to write bytes from.
    * @return The number of bytes written or any problem that was encountered.
    */
-  def write(bytes: ByteBuffer): IOResult.Output[Int]
+  def apply(bytes: ByteBuffer): IOResult.Output[Int]
+
+  /**
+   * Writes the specified number of bytes to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of bytes to write.
+   * @param f     The function that writes the bytes.
+   * @return Any problem that occurs.
+   */
+  final def writeBytes(count: Int)(f: ByteBuffer => Unit): IOResult.Output[Unit] = {
+
+    @inline
+    @tailrec
+    def writeFully(buffer: ByteBuffer): IOResult.Output[Unit] =
+      apply(buffer) map { outcome =>
+        if (outcome == 0) Some(Left(IOProblem.Overflow))
+        else if (buffer.hasRemaining) None
+        else Some(Right(()))
+      } match {
+        case Left(problem) => Left(problem)
+        case Right(Some(result)) => result
+        case Right(None) => writeFully(buffer)
+      }
+
+    val buffer = acquireBytes(count)
+    f(buffer)
+    buffer.rewind()
+    writeFully(buffer)
+  }
+
+  /**
+   * Writes the specified number of shorts to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of shorts to write.
+   * @param f     The function that writes the shorts.
+   * @return Any problem that occurs.
+   */
+  final def writeShorts(count: Int)(f: ShortBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 2)(f.compose(_.asShortBuffer()))
+
+  /**
+   * Writes the specified number of chars to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of chars to write.
+   * @param f     The function that writes the chars.
+   * @return Any problem that occurs.
+   */
+  final def writeChars(count: Int)(f: CharBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 2)(f.compose(_.asCharBuffer()))
+
+  /**
+   * Writes the specified number of ints to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of ints to write.
+   * @param f     The function that writes the ints.
+   * @return Any problem that occurs.
+   */
+  final def writeInts(count: Int)(f: IntBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 4)(f.compose(_.asIntBuffer()))
+
+  /**
+   * Writes the specified number of floats to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of floats to write.
+   * @param f     The function that writes the floats.
+   * @return Any problem that occurs.
+   */
+  final def writeFloats(count: Int)(f: FloatBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 4)(f.compose(_.asFloatBuffer()))
+
+  /**
+   * Writes the specified number of longs to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of longs to write.
+   * @param f     The function that writes the longs.
+   * @return Any problem that occurs.
+   */
+  final def writeLongs(count: Int)(f: LongBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 8)(f.compose(_.asLongBuffer()))
+
+  /**
+   * Writes the specified number of doubles to the output, returning an overflow problem if there are too many.
+   *
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
+   *
+   * @param count The number of doubles to write.
+   * @param f     The function that writes the doubles.
+   * @return Any problem that occurs.
+   */
+  final def writeDoubles(count: Int)(f: DoubleBuffer => Unit): IOResult.Output[Unit] =
+    writeBytes(count * 8)(f.compose(_.asDoubleBuffer()))
 
 }
 
@@ -77,8 +180,10 @@ object BinaryOutput {
    *
    * @param output The writable byte channel to wrap with the binary output type.
    */
-  def apply(output: WritableByteChannel): BinaryOutput = (bytes: ByteBuffer) =>
-    Either.catchOnly[IOException](output.write(bytes)).left.map(IOProblem.Failure)
+  def apply(output: WritableByteChannel): BinaryOutput = new BinaryContext.Support with BinaryOutput {
+    override def apply(bytes: ByteBuffer): IOResult.Output[Int] =
+      Either.catchOnly[IOException](output.write(bytes)).left.map(IOProblem.Failure)
+  }
 
   /**
    * Creates a binary output implementation for the specified byte array.
@@ -112,17 +217,19 @@ object BinaryOutput {
    *
    * @param output The byte buffer to wrap with the binary output type.
    */
-  def apply(output: ByteBuffer): BinaryOutput = (bytes: ByteBuffer) =>
-    if (!output.hasRemaining) Left(IOProblem.Overflow)
-    else {
-      val length = Math.min(bytes.remaining(), output.remaining())
-      if (bytes.remaining() <= length) output.put(bytes) else {
-        val old = bytes.limit()
-        bytes.limit(old - bytes.remaining() + length)
-        output.put(bytes)
-        bytes.limit(old)
+  def apply(output: ByteBuffer): BinaryOutput = new BinaryContext.Support with BinaryOutput {
+    override def apply(bytes: ByteBuffer): IOResult.Output[Int] =
+      if (!output.hasRemaining) Left(IOProblem.Overflow)
+      else {
+        val length = Math.min(bytes.remaining(), output.remaining())
+        if (bytes.remaining() <= length) output.put(bytes) else {
+          val old = bytes.limit()
+          bytes.limit(old - bytes.remaining() + length)
+          output.put(bytes)
+          bytes.limit(old)
+        }
+        Right(length)
       }
-      Right(length)
-    }
+  }
 
 }

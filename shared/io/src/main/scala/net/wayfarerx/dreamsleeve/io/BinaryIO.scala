@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve
-package io
+package net.wayfarerx.dreamsleeve.io
 
-import annotation.tailrec
 import language.implicitConversions
 
 import java.nio._
+import charset.{CharacterCodingException, Charset, StandardCharsets}
 
 import cats._
 import free.Free
 import Free.liftF
+import cats.implicits._
 
 /**
  * Implementations of the common binary IO behavior.
@@ -106,7 +106,7 @@ trait BinaryIO {
    * @return A reader for a single short.
    */
   final def readShort(): BinaryReader[Short] =
-    liftF[Read, Short](_.readBytes(2) map (_.asShortBuffer().get()))
+    liftF[Read, Short](_.readShorts(1) map (_.get()))
 
   /**
    * Reads the specified number of shorts from a binary input.
@@ -115,9 +115,9 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts.
    */
   final def readShortArray(count: Int): BinaryReader[Array[Short]] =
-    liftF[Read, Array[Short]](_.readBytes(count * 2) map { buffer =>
+    liftF[Read, Array[Short]](_.readShorts(count) map { buffer =>
       val result = new Array[Short](count)
-      ShortBuffer.wrap(result).put(buffer.asShortBuffer())
+      ShortBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -128,9 +128,9 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts as a buffer.
    */
   final def readShortBuffer(count: Int): BinaryReader[ShortBuffer] =
-    liftF[Read, ShortBuffer](_.readBytes(count * 2) map { buffer =>
+    liftF[Read, ShortBuffer](_.readShorts(count) map { buffer =>
       val result = ShortBuffer.allocate(count)
-      result.put(buffer.asShortBuffer())
+      result.put(buffer)
       result.rewind()
       result
     })
@@ -141,7 +141,7 @@ trait BinaryIO {
    * @return A reader for a single char.
    */
   final def readChar(): BinaryReader[Char] =
-    liftF[Read, Char](_.readBytes(2) map (_.asCharBuffer().get()))
+    liftF[Read, Char](_.readChars(1) map (_.get()))
 
   /**
    * Reads the specified number of chars from a binary input.
@@ -150,9 +150,9 @@ trait BinaryIO {
    * @return A reader for the specified number of chars.
    */
   final def readCharArray(count: Int): BinaryReader[Array[Char]] =
-    liftF[Read, Array[Char]](_.readBytes(count * 2) map { buffer =>
+    liftF[Read, Array[Char]](_.readChars(count) map { buffer =>
       val result = new Array[Char](count)
-      CharBuffer.wrap(result).put(buffer.asCharBuffer())
+      CharBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -163,9 +163,9 @@ trait BinaryIO {
    * @return A reader for the specified number of chars as a buffer.
    */
   final def readCharBuffer(count: Int): BinaryReader[CharBuffer] =
-    liftF[Read, CharBuffer](_.readBytes(count * 2) map { buffer =>
+    liftF[Read, CharBuffer](_.readChars(count) map { buffer =>
       val result = CharBuffer.allocate(count)
-      result.put(buffer.asCharBuffer)
+      result.put(buffer)
       result.rewind()
       result
     })
@@ -176,7 +176,7 @@ trait BinaryIO {
    * @return A reader for a single int.
    */
   final def readInt(): BinaryReader[Int] =
-    liftF[Read, Int](_.readBytes(4) map (_.asIntBuffer().get()))
+    liftF[Read, Int](_.readInts(1) map (_.get()))
 
   /**
    * Reads the specified number of ints from a binary input.
@@ -185,9 +185,9 @@ trait BinaryIO {
    * @return A reader for the specified number of ints.
    */
   final def readIntArray(count: Int): BinaryReader[Array[Int]] =
-    liftF[Read, Array[Int]](_.readBytes(count * 4) map { buffer =>
+    liftF[Read, Array[Int]](_.readInts(count) map { buffer =>
       val result = new Array[Int](count)
-      IntBuffer.wrap(result).put(buffer.asIntBuffer())
+      IntBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -198,9 +198,9 @@ trait BinaryIO {
    * @return A reader for the specified number of ints as a buffer.
    */
   final def readIntBuffer(count: Int): BinaryReader[IntBuffer] =
-    liftF[Read, IntBuffer](_.readBytes(count * 4) map { buffer =>
+    liftF[Read, IntBuffer](_.readInts(count) map { buffer =>
       val result = IntBuffer.allocate(count)
-      result.put(buffer.asIntBuffer())
+      result.put(buffer)
       result.rewind()
       result
     })
@@ -211,7 +211,7 @@ trait BinaryIO {
    * @return A reader for a single float.
    */
   final def readFloat(): BinaryReader[Float] =
-    liftF[Read, Float](_.readBytes(4) map (_.asFloatBuffer().get()))
+    liftF[Read, Float](_.readFloats(1) map (_.get()))
 
   /**
    * Reads the specified number of floats from a binary input.
@@ -220,9 +220,9 @@ trait BinaryIO {
    * @return A reader for the specified number of floats.
    */
   final def readFloatArray(count: Int): BinaryReader[Array[Float]] =
-    liftF[Read, Array[Float]](_.readBytes(count * 4) map { buffer =>
+    liftF[Read, Array[Float]](_.readFloats(count) map { buffer =>
       val result = new Array[Float](count)
-      FloatBuffer.wrap(result).put(buffer.asFloatBuffer())
+      FloatBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -233,9 +233,9 @@ trait BinaryIO {
    * @return A reader for the specified number of floats as a buffer.
    */
   final def readFloatBuffer(count: Int): BinaryReader[FloatBuffer] =
-    liftF[Read, FloatBuffer](_.readBytes(count * 4) map { buffer =>
+    liftF[Read, FloatBuffer](_.readFloats(count) map { buffer =>
       val result = FloatBuffer.allocate(count)
-      result.put(buffer.asFloatBuffer())
+      result.put(buffer)
       result.rewind()
       result
     })
@@ -246,7 +246,7 @@ trait BinaryIO {
    * @return A reader for a single long.
    */
   final def readLong(): BinaryReader[Long] =
-    liftF[Read, Long](_.readBytes(8) map (_.asLongBuffer().get()))
+    liftF[Read, Long](_.readLongs(1) map (_.get()))
 
   /**
    * Reads the specified number of longs from a binary input.
@@ -255,9 +255,9 @@ trait BinaryIO {
    * @return A reader for the specified number of longs.
    */
   final def readLongArray(count: Int): BinaryReader[Array[Long]] =
-    liftF[Read, Array[Long]](_.readBytes(count * 8) map { buffer =>
+    liftF[Read, Array[Long]](_.readLongs(count) map { buffer =>
       val result = new Array[Long](count)
-      LongBuffer.wrap(result).put(buffer.asLongBuffer())
+      LongBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -268,9 +268,9 @@ trait BinaryIO {
    * @return A reader for the specified number of longs as a buffer.
    */
   final def readLongBuffer(count: Int): BinaryReader[LongBuffer] =
-    liftF[Read, LongBuffer](_.readBytes(count * 8) map { buffer =>
+    liftF[Read, LongBuffer](_.readLongs(count) map { buffer =>
       val result = LongBuffer.allocate(count)
-      result.put(buffer.asLongBuffer())
+      result.put(buffer)
       result.rewind()
       result
     })
@@ -281,7 +281,7 @@ trait BinaryIO {
    * @return A reader for a single double.
    */
   final def readDouble(): BinaryReader[Double] =
-    liftF[Read, Double](_.readBytes(8) map (_.asDoubleBuffer().get()))
+    liftF[Read, Double](_.readDoubles(1) map (_.get()))
 
   /**
    * Reads the specified number of doubles from a binary input.
@@ -290,9 +290,9 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles.
    */
   final def readDoubleArray(count: Int): BinaryReader[Array[Double]] =
-    liftF[Read, Array[Double]](_.readBytes(count * 8) map { buffer =>
+    liftF[Read, Array[Double]](_.readDoubles(count) map { buffer =>
       val result = new Array[Double](count)
-      DoubleBuffer.wrap(result).put(buffer.asDoubleBuffer())
+      DoubleBuffer.wrap(result).put(buffer)
       result
     })
 
@@ -303,32 +303,54 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles as a buffer.
    */
   final def readDoubleBuffer(count: Int): BinaryReader[DoubleBuffer] =
-    liftF[Read, DoubleBuffer](_.readBytes(count * 8) map { buffer =>
+    liftF[Read, DoubleBuffer](_.readDoubles(count) map { buffer =>
       val result = DoubleBuffer.allocate(count)
-      result.put(buffer.asDoubleBuffer())
+      result.put(buffer)
       result.rewind()
       result
     })
 
+  /**
+   * Reads and encoded string as a character sequence from a binary input.
+   *
+   * @param charset The name of the character encoding to use when decoding the string.
+   * @return A reader for a string as a character sequence.
+   */
+  final def readString(charset: String): BinaryReader[CharSequence] =
+    readString(Charset.forName(charset))
+
+
+  /**
+   * Reads and encoded string as a character sequence from a binary input.
+   *
+   * @param charset The character encoding to use when decoding the string, defaults to UTF-8.
+   * @return A reader for a string as a character sequence.
+   */
+  final def readString(charset: Charset = StandardCharsets.UTF_8): BinaryReader[CharSequence] =
+    liftF[Read, CharSequence] { input =>
+      for {
+        count <- input.readInts(1)
+        buffer <- input.readBytes(count.get())
+        result <- Either.catchOnly[CharacterCodingException](charset.newDecoder().decode(buffer)).
+          left.map(IOProblem.Decoding)
+      } yield result
+    }
+
   //
-  // Pure binary output operations.
+  // Pure binary binaryOutput operations.
   //
 
   /**
-   * Writes a single byte to a binary output.
+   * Writes a single byte to a binary binaryOutput.
    *
    * @param byte The byte to write.
    * @return A writer for a single byte.
    */
   final def writeByte(byte: Byte): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(1)
-      buffer.put(0, byte)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeBytes(1)(_.put(byte)))
 
   /**
-   * Writes an array of bytes to a binary output.
+   * Writes an array of bytes to a binary binaryOutput.
    *
    * @param array The array of bytes to write.
    * @return A writer for an array of bytes.
@@ -338,7 +360,7 @@ trait BinaryIO {
   writeByteArray(array, 0)
 
   /**
-   * Writes an array of bytes to a binary output.
+   * Writes an array of bytes to a binary binaryOutput.
    *
    * @param array  The array of bytes to write.
    * @param offset The offset into the array to start writing from.
@@ -349,7 +371,7 @@ trait BinaryIO {
   writeByteArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of bytes to a binary output.
+   * Writes an array of bytes to a binary binaryOutput.
    *
    * @param array  The array of bytes to write.
    * @param offset The offset into the array to start writing from.
@@ -357,32 +379,28 @@ trait BinaryIO {
    * @return A writer for an array of bytes.
    */
   final def writeByteArray(array: Array[Byte], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeBytes(ByteBuffer.wrap(array, offset, count)))
+    liftF[Write, Unit](_.writeBytes(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a byte buffer to a binary output.
+   * Writes a byte buffer to a binary binaryOutput.
    *
    * @param buffer The byte buffer to write.
    * @return A writer for a byte buffer.
    */
   final def writeByteBuffer(buffer: ByteBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeBytes(buffer.duplicate()))
+    liftF[Write, Unit](_.writeBytes(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single short to a binary output.
+   * Writes a single short to a binary binaryOutput.
    *
    * @param short The short to write.
    * @return A writer for a single short.
    */
   final def writeShort(short: Short): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(2)
-      buffer.asShortBuffer().put(0, short)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeShorts(1)(_.put(short)))
 
   /**
-   * Writes an array of shorts to a binary output.
+   * Writes an array of shorts to a binary binaryOutput.
    *
    * @param array The array of shorts to write.
    * @return A writer for an array of shorts.
@@ -392,7 +410,7 @@ trait BinaryIO {
   writeShortArray(array, 0)
 
   /**
-   * Writes an array of shorts to a binary output.
+   * Writes an array of shorts to a binary binaryOutput.
    *
    * @param array  The array of shorts to write.
    * @param offset The offset into the array to start writing from.
@@ -403,7 +421,7 @@ trait BinaryIO {
   writeShortArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of shorts to a binary output.
+   * Writes an array of shorts to a binary binaryOutput.
    *
    * @param array  The array of shorts to write.
    * @param offset The offset into the array to start writing from.
@@ -411,42 +429,28 @@ trait BinaryIO {
    * @return A writer for an array of shorts.
    */
   final def writeShortArray(array: Array[Short], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 2)
-      tmp.asShortBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeShorts(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a short buffer to a binary output.
+   * Writes a short buffer to a binary binaryOutput.
    *
    * @param buffer The short buffer to write.
    * @return A writer for a short buffer.
    */
   final def writeShortBuffer(buffer: ShortBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 2)
-      tmp.asShortBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeShorts(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single char to a binary output.
+   * Writes a single char to a binary binaryOutput.
    *
    * @param char The char to write.
    * @return A writer for a single char.
    */
   final def writeChar(char: Char): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(2)
-      buffer.asCharBuffer().put(0, char)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeChars(1)(_.put(char)))
 
   /**
-   * Writes an array of chars to a binary output.
+   * Writes an array of chars to a binary binaryOutput.
    *
    * @param array The array of chars to write.
    * @return A writer for an array of chars.
@@ -456,7 +460,7 @@ trait BinaryIO {
   writeCharArray(array, 0)
 
   /**
-   * Writes an array of chars to a binary output.
+   * Writes an array of chars to a binary binaryOutput.
    *
    * @param array  The array of chars to write.
    * @param offset The offset into the array to start writing from.
@@ -467,7 +471,7 @@ trait BinaryIO {
   writeCharArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of chars to a binary output.
+   * Writes an array of chars to a binary binaryOutput.
    *
    * @param array  The array of chars to write.
    * @param offset The offset into the array to start writing from.
@@ -475,42 +479,28 @@ trait BinaryIO {
    * @return A writer for an array of chars.
    */
   final def writeCharArray(array: Array[Char], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 2)
-      tmp.asCharBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeChars(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a char buffer to a binary output.
+   * Writes a char buffer to a binary binaryOutput.
    *
    * @param buffer The char buffer to write.
    * @return A writer for a char buffer.
    */
   final def writeCharBuffer(buffer: CharBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 2)
-      tmp.asCharBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeChars(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single int to a binary output.
+   * Writes a single int to a binary binaryOutput.
    *
    * @param int The int to write.
    * @return A writer for a single int.
    */
   final def writeInt(int: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(4)
-      buffer.asIntBuffer().put(0, int)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeInts(1)(_.put(int)))
 
   /**
-   * Writes an array of ints to a binary output.
+   * Writes an array of ints to a binary binaryOutput.
    *
    * @param array The array of ints to write.
    * @return A writer for an array of ints.
@@ -520,7 +510,7 @@ trait BinaryIO {
   writeIntArray(array, 0)
 
   /**
-   * Writes an array of ints to a binary output.
+   * Writes an array of ints to a binary binaryOutput.
    *
    * @param array  The array of ints to write.
    * @param offset The offset into the array to start writing from.
@@ -531,7 +521,7 @@ trait BinaryIO {
   writeIntArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of ints to a binary output.
+   * Writes an array of ints to a binary binaryOutput.
    *
    * @param array  The array of ints to write.
    * @param offset The offset into the array to start writing from.
@@ -539,42 +529,28 @@ trait BinaryIO {
    * @return A writer for an array of ints.
    */
   final def writeIntArray(array: Array[Int], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 4)
-      tmp.asIntBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeInts(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a int buffer to a binary output.
+   * Writes a int buffer to a binary binaryOutput.
    *
    * @param buffer The int buffer to write.
    * @return A writer for a int buffer.
    */
   final def writeIntBuffer(buffer: IntBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 4)
-      tmp.asIntBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeInts(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single float to a binary output.
+   * Writes a single float to a binary binaryOutput.
    *
    * @param float The float to write.
    * @return A writer for a single float.
    */
   final def writeFloat(float: Float): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(4)
-      buffer.asFloatBuffer().put(0, float)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeFloats(1)(_.put(float)))
 
   /**
-   * Writes an array of floats to a binary output.
+   * Writes an array of floats to a binary binaryOutput.
    *
    * @param array The array of floats to write.
    * @return A writer for an array of floats.
@@ -584,7 +560,7 @@ trait BinaryIO {
   writeFloatArray(array, 0)
 
   /**
-   * Writes an array of floats to a binary output.
+   * Writes an array of floats to a binary binaryOutput.
    *
    * @param array  The array of floats to write.
    * @param offset The offset into the array to start writing from.
@@ -595,7 +571,7 @@ trait BinaryIO {
   writeFloatArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of floats to a binary output.
+   * Writes an array of floats to a binary binaryOutput.
    *
    * @param array  The array of floats to write.
    * @param offset The offset into the array to start writing from.
@@ -603,42 +579,28 @@ trait BinaryIO {
    * @return A writer for an array of floats.
    */
   final def writeFloatArray(array: Array[Float], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 4)
-      tmp.asFloatBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeFloats(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a float buffer to a binary output.
+   * Writes a float buffer to a binary binaryOutput.
    *
    * @param buffer The float buffer to write.
    * @return A writer for a float buffer.
    */
   final def writeFloatBuffer(buffer: FloatBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 4)
-      tmp.asFloatBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeFloats(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single long to a binary output.
+   * Writes a single long to a binary binaryOutput.
    *
    * @param long The long to write.
    * @return A writer for a single long.
    */
   final def writeLong(long: Long): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(8)
-      buffer.asLongBuffer().put(0, long)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeLongs(1)(_.put(long)))
 
   /**
-   * Writes an array of longs to a binary output.
+   * Writes an array of longs to a binary binaryOutput.
    *
    * @param array The array of longs to write.
    * @return A writer for an array of longs.
@@ -648,7 +610,7 @@ trait BinaryIO {
   writeLongArray(array, 0)
 
   /**
-   * Writes an array of longs to a binary output.
+   * Writes an array of longs to a binary binaryOutput.
    *
    * @param array  The array of longs to write.
    * @param offset The offset into the array to start writing from.
@@ -659,7 +621,7 @@ trait BinaryIO {
   writeLongArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of longs to a binary output.
+   * Writes an array of longs to a binary binaryOutput.
    *
    * @param array  The array of longs to write.
    * @param offset The offset into the array to start writing from.
@@ -667,42 +629,28 @@ trait BinaryIO {
    * @return A writer for an array of longs.
    */
   final def writeLongArray(array: Array[Long], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 8)
-      tmp.asLongBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeLongs(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a long buffer to a binary output.
+   * Writes a long buffer to a binary binaryOutput.
    *
    * @param buffer The long buffer to write.
    * @return A writer for a long buffer.
    */
   final def writeLongBuffer(buffer: LongBuffer): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 8)
-      tmp.asLongBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeLongs(buffer.remaining)(_.put(buffer.duplicate())))
 
   /**
-   * Writes a single double to a binary output.
+   * Writes a single double to a binary binaryOutput.
    *
    * @param double The double to write.
    * @return A writer for a single double.
    */
   final def writeDouble(double: Double): BinaryWriter[Unit] =
-    liftF[Write, Unit] { (output: BinaryIO.Output) =>
-      val buffer = output.acquireBuffer(8)
-      buffer.asDoubleBuffer().put(0, double)
-      output.writeBytes(buffer)
-    }
+    liftF[Write, Unit](_.writeDoubles(1)(_.put(double)))
 
   /**
-   * Writes an array of doubles to a binary output.
+   * Writes an array of doubles to a binary binaryOutput.
    *
    * @param array The array of doubles to write.
    * @return A writer for an array of doubles.
@@ -712,7 +660,7 @@ trait BinaryIO {
   writeDoubleArray(array, 0)
 
   /**
-   * Writes an array of doubles to a binary output.
+   * Writes an array of doubles to a binary binaryOutput.
    *
    * @param array  The array of doubles to write.
    * @param offset The offset into the array to start writing from.
@@ -723,7 +671,7 @@ trait BinaryIO {
   writeDoubleArray(array, offset, array.length - offset)
 
   /**
-   * Writes an array of doubles to a binary output.
+   * Writes an array of doubles to a binary binaryOutput.
    *
    * @param array  The array of doubles to write.
    * @param offset The offset into the array to start writing from.
@@ -731,25 +679,42 @@ trait BinaryIO {
    * @return A writer for an array of doubles.
    */
   final def writeDoubleArray(array: Array[Double], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(count * 8)
-      tmp.asDoubleBuffer().put(array, offset, count)
-      tmp.rewind()
-      output.writeBytes(tmp)
-    }
+    liftF[Write, Unit](_.writeDoubles(count)(_.put(array, offset, count)))
 
   /**
-   * Writes a double buffer to a binary output.
+   * Writes a double buffer to a binary binaryOutput.
    *
    * @param buffer The double buffer to write.
    * @return A writer for a double buffer.
    */
   final def writeDoubleBuffer(buffer: DoubleBuffer): BinaryWriter[Unit] =
+    liftF[Write, Unit](_.writeDoubles(buffer.remaining)(_.put(buffer.duplicate())))
+
+  /**
+   * Writes a string to a binary binaryOutput.
+   *
+   * @param string  The string to write.
+   * @param charset The name of the character encoding to use when encoding the string.
+   * @return A writer for a string.
+   */
+  final def writeString(string: CharSequence, charset: String): BinaryWriter[Unit] =
+    writeString(string, Charset.forName(charset))
+
+  /**
+   * Writes a string to a binary binaryOutput.
+   *
+   * @param string  The string to write.
+   * @param charset The character encoding to use when encoding the string, defaults to UTF-8.
+   * @return A writer for a string.
+   */
+  final def writeString(string: CharSequence, charset: Charset = StandardCharsets.UTF_8): BinaryWriter[Unit] =
     liftF[Write, Unit] { output =>
-      val tmp = output.acquireBuffer(buffer.remaining * 8)
-      tmp.asDoubleBuffer().put(buffer.duplicate())
-      tmp.rewind()
-      output.writeBytes(tmp)
+      for {
+        bytes <- Either.catchOnly[CharacterCodingException](charset.newEncoder().encode(CharBuffer.wrap(string))).
+          left.map(IOProblem.Encoding)
+        _ <- output.writeInts(1)(_.put(bytes.remaining))
+        _ <- output.writeBytes(bytes.remaining)(_.put(bytes))
+      } yield ()
     }
 
   //
@@ -801,10 +766,10 @@ trait BinaryIO {
    * @return A reader that reads into a byte buffer and returns the number of bytes read.
    */
   def readBinaryData(bytes: ByteBuffer): BinaryReader[Int] =
-    liftF[Read, Int](_.read(bytes))
+    liftF[Read, Int](_ (bytes))
 
   //
-  // Impure binary output operations.
+  // Impure binary binaryOutput operations.
   //
 
   /**
@@ -852,7 +817,7 @@ trait BinaryIO {
    * @return A writer that writes from a byte buffer and returns the number of bytes written.
    */
   def writeBinaryData(bytes: ByteBuffer): BinaryWriter[Int] =
-    liftF[Write, Int](_.write(bytes))
+    liftF[Write, Int](_ (bytes))
 
 }
 
@@ -861,8 +826,10 @@ trait BinaryIO {
  */
 object BinaryIO extends BinaryIO {
 
+  import net.wayfarerx.dreamsleeve.io
+
   //
-  // Publish binary inputs & outputs as well as IO problems & results.
+  // Publish binary inputs & binaryOutputs as well as IO problems & results.
   //
 
   /** Alias to the binary input type. */
@@ -871,10 +838,10 @@ object BinaryIO extends BinaryIO {
   /** Alias to the binary input companion. */
   final val BinaryInput = io.BinaryInput
 
-  /** Alias to the binary output type. */
+  /** Alias to the binary binaryOutput type. */
   type BinaryOutput = io.BinaryOutput
 
-  /** Alias to the binary output companion. */
+  /** Alias to the binary binaryOutput companion. */
   final val BinaryOutput = io.BinaryOutput
 
   /** Alias to the IO problem type. */
@@ -888,16 +855,6 @@ object BinaryIO extends BinaryIO {
 
   /** Alias to the IO result companion. */
   final val IOResult = io.IOResult
-
-  //
-  // Define the input & output types.
-  //
-
-  /** The contextual binary input type. */
-  type Input = Context with BinaryInput
-
-  /** The contextual binary output type. */
-  type Output = Context with BinaryOutput
 
   //
   // Define the reader & writer types, as well as their extensions.
@@ -929,7 +886,7 @@ object BinaryIO extends BinaryIO {
   }
 
   /**
-   * Extensions to the binary writer type that support transforming an output into a result.
+   * Extensions to the binary writer type that support transforming an binaryOutput into a result.
    *
    * @param writer The writer to extend.
    * @tparam T The type of the result of the writer.
@@ -937,141 +894,19 @@ object BinaryIO extends BinaryIO {
   final class BinaryWriterExtensions[T](val writer: BinaryWriter[T]) extends AnyVal {
 
     /**
-     * Transforms a binary output into an output result.
+     * Transforms a binary binaryOutput into an binaryOutput result.
      *
-     * @param output The output to transform.
-     * @return The result of the transformed output.
+     * @param binaryOutput The binaryOutput to transform.
+     * @return The result of the transformed binaryOutput.
      */
-    def apply(output: BinaryOutput): IOResult.Output[T] =
-      writer.foldMap(BinaryIO.Write(output))
+    def apply(binaryOutput: BinaryOutput): IOResult.Output[T] =
+      writer.foldMap(BinaryIO.Write(binaryOutput))
 
   }
 
   //
-  // Define the binary IO context.
+  // Define the binary IO operations.
   //
-
-  /**
-   * The context that is provided during binary IO operations.
-   */
-  trait Context {
-
-    /**
-     * Acquires a buffer from this context. NOTE: this method may return the same buffer on each invocation.
-     *
-     * @param size The number of bytes the buffer should contain.
-     * @return A buffer from this context.
-     */
-    def acquireBuffer(size: Int): ByteBuffer
-
-  }
-
-  /**
-   * Factory for contextual binary IO operations.
-   */
-  object Context {
-
-    /**
-     * Creates a contextual binary input object that wraps the specified input object.
-     *
-     * @param input The binary input to make contextual.
-     * @return A contextual binary input object that wraps the specified input object.
-     */
-    def apply(input: BinaryInput): Input = new Support with BinaryInput {
-      override def read(bytes: ByteBuffer): IOResult.Input[Int] = input.read(bytes)
-    }
-
-    /**
-     * Creates a contextual binary output object that wraps the specified output object.
-     *
-     * @param output The binary output to make contextual.
-     * @return A contextual binary output object that wraps the specified output object.
-     */
-    def apply(output: BinaryOutput): Output = new Support with BinaryOutput {
-      override def write(bytes: ByteBuffer): IOResult.Output[Int] = output.write(bytes)
-    }
-
-    /**
-     * Extensions to the binary input interface that support reading exact amounts of data.
-     *
-     * @param input The binary input to extend.
-     */
-    implicit final class InputExtensions(val input: Input) extends AnyVal {
-
-      /**
-       * Reads the specified number of bytes from the input, returning an underflow problem if there are not enough.
-       *
-       * @param count The number of bytes to read.
-       * @return A buffer containing the requested bytes or any problem that occurs.
-       */
-      def readBytes(count: Int): IOResult.Input[ByteBuffer] = {
-
-        @tailrec
-        def readFully(buffer: ByteBuffer): IOResult.Input[ByteBuffer] = {
-          input.read(buffer) map { outcome =>
-            if (outcome == 0) Some(Left(IOProblem.Underflow))
-            else if (buffer.hasRemaining) None
-            else Some(Right(buffer))
-          } match {
-            case Left(problem) => Left(problem)
-            case Right(Some(result)) => result
-            case Right(None) => readFully(buffer)
-          }
-        }
-
-        readFully(input.acquireBuffer(count)) map { buffer => buffer.rewind(); buffer }
-      }
-
-    }
-
-    /**
-     * Extensions to the binary output interface that support writing exact amounts of data.
-     *
-     * @param output The binary output to extend.
-     */
-    implicit final class OutputExtensions(val output: Output) extends AnyVal {
-
-      /**
-       * Writes all the supplied bytes to the output, returning an overflow problem if the bytes cannot be written.
-       *
-       * @param buffer The bytes to be written.
-       * @return Success or any problem that occurs.
-       */
-      @tailrec
-      def writeBytes(buffer: ByteBuffer): IOResult.Output[Unit] = {
-        output.write(buffer) map { outcome =>
-          if (outcome == 0) Some(Left(IOProblem.Overflow))
-          else if (buffer.hasRemaining) None
-          else Some(Right(()))
-        } match {
-          case Left(problem) => Left(problem)
-          case Right(Some(result)) => result
-          case Right(None) => writeBytes(buffer)
-        }
-      }
-
-    }
-
-    /**
-     * Support for the context interface.
-     */
-    private abstract class Support extends Context {
-
-      /** The most recently constructed buffer object. */
-      private var buffer = ByteBuffer.allocate(16)
-
-      /* Return the existing buffer if it is big enough, otherwise create a new buffer. */
-      final override def acquireBuffer(size: Int): ByteBuffer = {
-        if (buffer.capacity() < size) buffer = ByteBuffer.allocate(size) else {
-          buffer.position(0)
-          buffer.limit(size)
-        }
-        buffer
-      }
-
-    }
-
-  }
 
   /**
    * Base class for tasks that perform a binary read operation.
@@ -1086,7 +921,7 @@ object BinaryIO extends BinaryIO {
      * @param input The contextual input object to read from.
      * @return The result of this read task.
      */
-    def apply(input: Input): IOResult.Input[T]
+    def apply(input: BinaryInput): IOResult.Input[T]
 
   }
 
@@ -1101,11 +936,8 @@ object BinaryIO extends BinaryIO {
      * @param input The input object to read from.
      * @return An interpreter for read operations executed against the specified input object.
      */
-    def apply(input: BinaryInput): Read ~> IOResult.Input = {
-      val context = Context(input)
-      new (Read ~> IOResult.Input) {
-        override def apply[U](op: Read[U]): IOResult.Input[U] = op(context)
-      }
+    def apply(input: BinaryInput): Read ~> IOResult.Input = new (Read ~> IOResult.Input) {
+      override def apply[U](op: Read[U]): IOResult.Input[U] = op(input)
     }
 
   }
@@ -1118,12 +950,12 @@ object BinaryIO extends BinaryIO {
   trait Write[T] {
 
     /**
-     * Applies this task to the specified contextual output object.
+     * Applies this task to the specified contextual binaryOutput object.
      *
-     * @param output The contextual output object to write to.
+     * @param binaryOutput The contextual binaryOutput object to write to.
      * @return The result of this write task.
      */
-    def apply(output: Output): IOResult.Output[T]
+    def apply(binaryOutput: BinaryOutput): IOResult.Output[T]
 
   }
 
@@ -1133,16 +965,13 @@ object BinaryIO extends BinaryIO {
   object Write {
 
     /**
-     * Creates an interpreter for write operations executed against the specified output object.
+     * Creates an interpreter for write operations executed against the specified binaryOutput object.
      *
-     * @param output The output object to write to.
-     * @return An interpreter for write operations executed against the specified output object.
+     * @param binaryOutput The binaryOutput object to write to.
+     * @return An interpreter for write operations executed against the specified binaryOutput object.
      */
-    def apply(output: BinaryOutput): Write ~> IOResult.Output = {
-      val context = Context(output)
-      new (Write ~> IOResult.Output) {
-        override def apply[U](op: Write[U]): IOResult.Output[U] = op(context)
-      }
+    def apply(binaryOutput: BinaryOutput): Write ~> IOResult.Output = new (Write ~> IOResult.Output) {
+      override def apply[U](op: Write[U]): IOResult.Output[U] = op(binaryOutput)
     }
 
   }
