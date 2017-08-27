@@ -21,7 +21,7 @@ package net.wayfarerx.dreamsleeve.io
 import language.implicitConversions
 
 import java.nio._
-import charset.{CharacterCodingException, Charset, StandardCharsets}
+import charset.{Charset, StandardCharsets}
 
 import cats._
 import free.Free
@@ -80,7 +80,8 @@ trait BinaryIO {
    * @return A reader for the specified number of bytes.
    */
   final def readByteArray(count: Int): BinaryReader[Array[Byte]] =
-    liftF[Read, Array[Byte]](_.readBytes(count)(ByteBuffer.wrap(new Array[Byte](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Byte]](_.readBytes(count)(ByteBuffer.wrap(new Array[Byte](count)).put(_).array()))
 
   /**
    * Reads the specified number of bytes as a buffer from a binary input.
@@ -89,7 +90,8 @@ trait BinaryIO {
    * @return A reader for the specified number of bytes as a buffer.
    */
   final def readByteBuffer(count: Int): BinaryReader[ByteBuffer] =
-    liftF[Read, ByteBuffer](_.readBytes(count)(b => rewind(ByteBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, ByteBuffer](_.readBytes(count)(b => rewindBuffer(ByteBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single short from a binary input.
@@ -106,7 +108,8 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts.
    */
   final def readShortArray(count: Int): BinaryReader[Array[Short]] =
-    liftF[Read, Array[Short]](_.readShorts(count)(ShortBuffer.wrap(new Array[Short](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Short]](_.readShorts(count)(ShortBuffer.wrap(new Array[Short](count)).put(_).array()))
 
   /**
    * Reads the specified number of shorts as a buffer from a binary input.
@@ -115,7 +118,8 @@ trait BinaryIO {
    * @return A reader for the specified number of shorts as a buffer.
    */
   final def readShortBuffer(count: Int): BinaryReader[ShortBuffer] =
-    liftF[Read, ShortBuffer](_.readShorts(count)(b => rewind(ShortBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, ShortBuffer](_.readShorts(count)(b => rewindBuffer(ShortBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single char from a binary input.
@@ -132,7 +136,8 @@ trait BinaryIO {
    * @return A reader for the specified number of chars.
    */
   final def readCharArray(count: Int): BinaryReader[Array[Char]] =
-    liftF[Read, Array[Char]](_.readChars(count)(CharBuffer.wrap(new Array[Char](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Char]](_.readChars(count)(CharBuffer.wrap(new Array[Char](count)).put(_).array()))
 
   /**
    * Reads the specified number of chars as a buffer from a binary input.
@@ -141,7 +146,8 @@ trait BinaryIO {
    * @return A reader for the specified number of chars as a buffer.
    */
   final def readCharBuffer(count: Int): BinaryReader[CharBuffer] =
-    liftF[Read, CharBuffer](_.readChars(count)(b => rewind(CharBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, CharBuffer](_.readChars(count)(b => rewindBuffer(CharBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single int from a binary input.
@@ -158,7 +164,8 @@ trait BinaryIO {
    * @return A reader for the specified number of ints.
    */
   final def readIntArray(count: Int): BinaryReader[Array[Int]] =
-    liftF[Read, Array[Int]](_.readInts(count)(IntBuffer.wrap(new Array[Int](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Int]](_.readInts(count)(IntBuffer.wrap(new Array[Int](count)).put(_).array()))
 
   /**
    * Reads the specified number of ints as a buffer from a binary input.
@@ -167,7 +174,8 @@ trait BinaryIO {
    * @return A reader for the specified number of ints as a buffer.
    */
   final def readIntBuffer(count: Int): BinaryReader[IntBuffer] =
-    liftF[Read, IntBuffer](_.readInts(count)(b => rewind(IntBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, IntBuffer](_.readInts(count)(b => rewindBuffer(IntBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single float from a binary input.
@@ -184,7 +192,8 @@ trait BinaryIO {
    * @return A reader for the specified number of floats.
    */
   final def readFloatArray(count: Int): BinaryReader[Array[Float]] =
-    liftF[Read, Array[Float]](_.readFloats(count)(FloatBuffer.wrap(new Array[Float](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Float]](_.readFloats(count)(FloatBuffer.wrap(new Array[Float](count)).put(_).array()))
 
   /**
    * Reads the specified number of floats as a buffer from a binary input.
@@ -193,7 +202,8 @@ trait BinaryIO {
    * @return A reader for the specified number of floats as a buffer.
    */
   final def readFloatBuffer(count: Int): BinaryReader[FloatBuffer] =
-    liftF[Read, FloatBuffer](_.readFloats(count)(b => rewind(FloatBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, FloatBuffer](_.readFloats(count)(b => rewindBuffer(FloatBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single long from a binary input.
@@ -210,7 +220,8 @@ trait BinaryIO {
    * @return A reader for the specified number of longs.
    */
   final def readLongArray(count: Int): BinaryReader[Array[Long]] =
-    liftF[Read, Array[Long]](_.readLongs(count)(LongBuffer.wrap(new Array[Long](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Long]](_.readLongs(count)(LongBuffer.wrap(new Array[Long](count)).put(_).array()))
 
   /**
    * Reads the specified number of longs as a buffer from a binary input.
@@ -219,7 +230,8 @@ trait BinaryIO {
    * @return A reader for the specified number of longs as a buffer.
    */
   final def readLongBuffer(count: Int): BinaryReader[LongBuffer] =
-    liftF[Read, LongBuffer](_.readLongs(count)(b => rewind(LongBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, LongBuffer](_.readLongs(count)(b => rewindBuffer(LongBuffer.allocate(count).put(b))))
 
   /**
    * Reads a single double from a binary input.
@@ -236,7 +248,8 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles.
    */
   final def readDoubleArray(count: Int): BinaryReader[Array[Double]] =
-    liftF[Read, Array[Double]](_.readDoubles(count)(DoubleBuffer.wrap(new Array[Double](count)).put(_).array()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, Array[Double]](_.readDoubles(count)(DoubleBuffer.wrap(new Array[Double](count)).put(_).array()))
 
   /**
    * Reads the specified number of doubles as a buffer from a binary input.
@@ -245,7 +258,8 @@ trait BinaryIO {
    * @return A reader for the specified number of doubles as a buffer.
    */
   final def readDoubleBuffer(count: Int): BinaryReader[DoubleBuffer] =
-    liftF[Read, DoubleBuffer](_.readDoubles(count)(b => rewind(DoubleBuffer.allocate(count).put(b))))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else liftF[Read, DoubleBuffer](_.readDoubles(count)(b => rewindBuffer(DoubleBuffer.allocate(count).put(b))))
 
   /**
    * Reads and encoded string as a character sequence from a binary input.
@@ -264,26 +278,7 @@ trait BinaryIO {
    * @return A reader for a string as a character sequence.
    */
   final def readString(charset: Charset = StandardCharsets.UTF_8): BinaryReader[CharSequence] =
-    liftF[Read, CharSequence] { input =>
-      for {
-        count <- input.readInts(1)(_.get())
-        decoded <- input.readBytes(count)(b =>
-          Either.catchOnly[CharacterCodingException](charset.newDecoder().decode(b)).left.map(IOProblem.Decoding))
-        result <- decoded
-      } yield result
-    }
-
-  /**
-   * A utility that rewinds and returns the specified buffer.
-   *
-   * @param buffer The buffer to rewind and return.
-   * @tparam T The type of buffer to rewind and return.
-   * @return The specified buffer after it has been rewound.
-   */
-  private def rewind[T <: Buffer](buffer: T): T = {
-    buffer.rewind()
-    buffer
-  }
+    liftF[Read, CharSequence](_.readString(charset))
 
   //
   // Pure binary binaryOutput operations.
@@ -328,7 +323,7 @@ trait BinaryIO {
    * @return A writer for an array of bytes.
    */
   final def writeByteArray(array: Array[Byte], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeBytes(count)(_.put(array, offset, count)))
+    writeByteBuffer(ByteBuffer.wrap(array, offset, count))
 
   /**
    * Writes a byte buffer to a binary binaryOutput.
@@ -378,7 +373,7 @@ trait BinaryIO {
    * @return A writer for an array of shorts.
    */
   final def writeShortArray(array: Array[Short], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeShorts(count)(_.put(array, offset, count)))
+    writeShortBuffer(ShortBuffer.wrap(array, offset, count))
 
   /**
    * Writes a short buffer to a binary binaryOutput.
@@ -428,7 +423,7 @@ trait BinaryIO {
    * @return A writer for an array of chars.
    */
   final def writeCharArray(array: Array[Char], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeChars(count)(_.put(array, offset, count)))
+    writeCharBuffer(CharBuffer.wrap(array, offset, count))
 
   /**
    * Writes a char buffer to a binary binaryOutput.
@@ -478,7 +473,7 @@ trait BinaryIO {
    * @return A writer for an array of ints.
    */
   final def writeIntArray(array: Array[Int], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeInts(count)(_.put(array, offset, count)))
+    writeIntBuffer(IntBuffer.wrap(array, offset, count))
 
   /**
    * Writes a int buffer to a binary binaryOutput.
@@ -528,7 +523,7 @@ trait BinaryIO {
    * @return A writer for an array of floats.
    */
   final def writeFloatArray(array: Array[Float], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeFloats(count)(_.put(array, offset, count)))
+    writeFloatBuffer(FloatBuffer.wrap(array, offset, count))
 
   /**
    * Writes a float buffer to a binary binaryOutput.
@@ -578,7 +573,7 @@ trait BinaryIO {
    * @return A writer for an array of longs.
    */
   final def writeLongArray(array: Array[Long], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeLongs(count)(_.put(array, offset, count)))
+    writeLongBuffer(LongBuffer.wrap(array, offset, count))
 
   /**
    * Writes a long buffer to a binary binaryOutput.
@@ -628,7 +623,7 @@ trait BinaryIO {
    * @return A writer for an array of doubles.
    */
   final def writeDoubleArray(array: Array[Double], offset: Int, count: Int): BinaryWriter[Unit] =
-    liftF[Write, Unit](_.writeDoubles(count)(_.put(array, offset, count)))
+    writeDoubleBuffer(DoubleBuffer.wrap(array, offset, count))
 
   /**
    * Writes a double buffer to a binary binaryOutput.
@@ -657,14 +652,7 @@ trait BinaryIO {
    * @return A writer for a string.
    */
   final def writeString(string: CharSequence, charset: Charset = StandardCharsets.UTF_8): BinaryWriter[Unit] =
-    liftF[Write, Unit] { output =>
-      for {
-        bytes <- Either.catchOnly[CharacterCodingException](charset.newEncoder().encode(CharBuffer.wrap(string))).
-          left.map(IOProblem.Encoding)
-        _ <- output.writeInts(1)(_.put(bytes.remaining))
-        _ <- output.writeBytes(bytes.remaining)(_.put(bytes))
-      } yield ()
-    }
+    liftF[Write, Unit](_.writeString(string, charset))
 
   //
   // Impure binary input operations.
@@ -715,7 +703,7 @@ trait BinaryIO {
    * @return A reader that reads into a byte buffer and returns the number of bytes read.
    */
   def readBinaryData(bytes: ByteBuffer): BinaryReader[Int] =
-    liftF[Read, Int](_ (bytes))
+    liftF[Read, Int](_.read(bytes))
 
   //
   // Impure binary binaryOutput operations.
@@ -766,7 +754,7 @@ trait BinaryIO {
    * @return A writer that writes from a byte buffer and returns the number of bytes written.
    */
   def writeBinaryData(bytes: ByteBuffer): BinaryWriter[Int] =
-    liftF[Write, Int](_ (bytes))
+    liftF[Write, Int](_.write(bytes))
 
 }
 
@@ -821,7 +809,7 @@ object BinaryIO extends BinaryIO {
    * @param reader The reader to extend.
    * @tparam T The type of the result of the reader.
    */
-  final class BinaryReaderExtensions[T](val reader: BinaryReader[T]) extends AnyVal {
+  final class BinaryReaderExtensions[T](reader: BinaryReader[T]) {
 
     /**
      * Transforms a binary input into an input result.
@@ -840,7 +828,7 @@ object BinaryIO extends BinaryIO {
    * @param writer The writer to extend.
    * @tparam T The type of the result of the writer.
    */
-  final class BinaryWriterExtensions[T](val writer: BinaryWriter[T]) extends AnyVal {
+  final class BinaryWriterExtensions[T](writer: BinaryWriter[T]) {
 
     /**
      * Transforms a binary output into an output result.

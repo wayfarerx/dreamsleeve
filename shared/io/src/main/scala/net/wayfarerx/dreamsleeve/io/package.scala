@@ -18,6 +18,8 @@
 
 package net.wayfarerx.dreamsleeve
 
+import java.nio.Buffer
+
 /**
  * The interface that enables functional & extensible IO operations.
  */
@@ -43,6 +45,18 @@ package object io extends io.BinaryIO {
     /** The type of result returned from output operations. */
     type Output[T] = IOResult[IOProblem.Writing, T]
 
+  }
+
+  /**
+   * A utility that rewinds and returns the specified buffer.
+   *
+   * @param buffer The buffer to rewind and return.
+   * @tparam T The type of buffer to rewind and return.
+   * @return The specified buffer after it has been rewound.
+   */
+  private[io] def rewindBuffer[T <: Buffer](buffer: T): T = {
+    buffer.rewind()
+    buffer
   }
 
 }

@@ -20,10 +20,10 @@ package net.wayfarerx.dreamsleeve.io
 
 import annotation.tailrec
 import language.implicitConversions
-
 import java.io.{IOException, InputStream}
 import java.nio._
 import channels.{Channels, ReadableByteChannel}
+import charset.{CharacterCodingException, Charset}
 
 import cats.implicits._
 
@@ -41,12 +41,12 @@ trait BinaryInput extends BinaryContext {
    * @param bytes The buffer to read bytes into.
    * @return The number of bytes read or any problem that was encountered.
    */
-  def apply(bytes: ByteBuffer): IOResult.Input[Int]
+  def read(bytes: ByteBuffer): IOResult.Input[Int]
 
   /**
    * Reads the specified number of bytes from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of bytes to read.
    * @param f     The function that reads the bytes.
@@ -54,28 +54,15 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readBytes[T](count: Int)(f: ByteBuffer => T): IOResult.Input[T] = {
-
-    @inline
-    @tailrec
-    def readFully(buffer: ByteBuffer): IOResult.Input[ByteBuffer] = {
-      apply(buffer) map { outcome =>
-        if (outcome == 0) Some(Left(IOProblem.Underflow))
-        else if (buffer.hasRemaining) None
-        else Some(Right(buffer))
-      } match {
-        case Left(problem) => Left(problem)
-        case Right(Some(result)) => result
-        case Right(None) => readFully(buffer)
-      }
-    }
-
-    readFully(acquireBytes(count)) map { buffer => buffer.rewind(); f(buffer) }
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else if (count == 0) Right(f(acquireBytes(0)))
+    else readFully(acquireBytes(count)) map rewindBuffer map f
   }
 
   /**
    * Reads the specified number of shorts from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of shorts to read.
    * @param f     The function that reads the shorts.
@@ -83,12 +70,13 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readShorts[T](count: Int)(f: ShortBuffer => T): IOResult.Input[T] =
-    readBytes(count * 2)(f.compose(_.asShortBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 2)(f.compose(_.asShortBuffer()))
 
   /**
    * Reads the specified number of chars from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of chars to read.
    * @param f     The function that reads the chars.
@@ -96,12 +84,13 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readChars[T](count: Int)(f: CharBuffer => T): IOResult.Input[T] =
-    readBytes(count * 2)(f.compose(_.asCharBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 2)(f.compose(_.asCharBuffer()))
 
   /**
    * Reads the specified number of ints from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of ints to read.
    * @param f     The function that reads the ints.
@@ -109,12 +98,13 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readInts[T](count: Int)(f: IntBuffer => T): IOResult.Input[T] =
-    readBytes(count * 4)(f.compose(_.asIntBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 4)(f.compose(_.asIntBuffer()))
 
   /**
    * Reads the specified number of floats from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of floats to read.
    * @param f     The function that reads the floats.
@@ -122,12 +112,13 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readFloats[T](count: Int)(f: FloatBuffer => T): IOResult.Input[T] =
-    readBytes(count * 4)(f.compose(_.asFloatBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 4)(f.compose(_.asFloatBuffer()))
 
   /**
    * Reads the specified number of longs from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of longs to read.
    * @param f     The function that reads the longs.
@@ -135,12 +126,13 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readLongs[T](count: Int)(f: LongBuffer => T): IOResult.Input[T] =
-    readBytes(count * 8)(f.compose(_.asLongBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 8)(f.compose(_.asLongBuffer()))
 
   /**
    * Reads the specified number of doubles from the input, returning an underflow problem if there are not enough.
    *
-   * WARNING: The buffer returned by this method may be overwritten in subsequent calls to this object.
+   * WARNING: The buffer passed to the supplied function may be overwritten in subsequent calls to this object.
    *
    * @param count The number of doubles to read.
    * @param f     The function that reads the doubles.
@@ -148,7 +140,41 @@ trait BinaryInput extends BinaryContext {
    * @return The result of the specified function or any problem that occurs.
    */
   final def readDoubles[T](count: Int)(f: DoubleBuffer => T): IOResult.Input[T] =
-    readBytes(count * 8)(f.compose(_.asDoubleBuffer()))
+    if (count < 0) throw new IllegalArgumentException(count.toString)
+    else readBytes(count * 8)(f.compose(_.asDoubleBuffer()))
+
+  /**
+   * Reads an entire string from this input using the specified character set.
+   *
+   * @param charset The character set to decode the string with.
+   * @return The string that was read or any problem that occurs.
+   */
+  final def readString(charset: Charset): IOResult.Input[CharSequence] = for {
+    count <- readFully(acquireBytes(2)) map rewindBuffer map (_.asShortBuffer().get(0) & 0x0000FFFF)
+    result <- if (count == 0) Right("") else for {
+      bytes <- readFully(acquireBytes(count)) map rewindBuffer
+      string <- Either.catchOnly[CharacterCodingException](charset.newDecoder().decode(bytes))
+        .left.map(IOProblem.Decoding)
+    } yield string
+  } yield result
+
+  /**
+   * Fills the entire buffer from this input, returning an underflow problem if it cannot be done.
+   *
+   * @param buffer The buffer to fill from this input,
+   * @return The supplied buffer or any problem that occurs.
+   */
+  @tailrec
+  private final def readFully(buffer: ByteBuffer): IOResult.Input[ByteBuffer] =
+  read(buffer) map { outcome =>
+    if (outcome == 0) Some(Left(IOProblem.Underflow))
+    else if (buffer.hasRemaining) None
+    else Some(Right(buffer))
+  } match {
+    case Left(problem) => Left(problem)
+    case Right(Some(result)) => result
+    case Right(None) => readFully(buffer)
+  }
 
 }
 
@@ -156,10 +182,6 @@ trait BinaryInput extends BinaryContext {
  * Common implementations of the binary input type.
  */
 object BinaryInput {
-
-  /** Implicit binary input support for bytes. */
-  @inline
-  implicit def byteToBinaryInput(input: Byte): BinaryInput = apply(input)
 
   /** Implicit binary input support for byte arrays. */
   @inline
@@ -178,22 +200,12 @@ object BinaryInput {
   implicit def readableByteChannelToBinaryInput(input: ReadableByteChannel): BinaryInput = apply(input)
 
   /**
-   * Creates a binary input implementation for the specified byte.
-   *
-   * @param input The byte to wrap with the binary input type.
-   */
-  @inline
-  def apply(input: Byte): BinaryInput =
-  apply(Array[Byte](input))
-
-  /**
    * Creates a binary input implementation for the specified byte array.
    *
    * @param input The byte array to wrap with the binary input type.
    */
-  @inline
   def apply(input: Array[Byte]): BinaryInput =
-  apply(input, 0)
+    apply(input, 0)
 
   /**
    * Creates a binary input implementation for the specified byte array.
@@ -201,9 +213,8 @@ object BinaryInput {
    * @param input  The byte array to wrap with the binary input type.
    * @param offset The offset into the array to start reading at.
    */
-  @inline
   def apply(input: Array[Byte], offset: Int): BinaryInput =
-  apply(input, offset, input.length - offset)
+    apply(input, offset, input.length - offset)
 
   /**
    * Creates a binary input implementation for the specified byte array.
@@ -212,9 +223,8 @@ object BinaryInput {
    * @param offset The offset into the array to start reading at.
    * @param count  The maximum number of bytes that can be read.
    */
-  @inline
   def apply(input: Array[Byte], offset: Int, count: Int): BinaryInput =
-  apply(ByteBuffer.wrap(input, offset, count))
+    apply(ByteBuffer.wrap(input, offset, count))
 
   /**
    * Creates a binary input implementation for the specified byte buffer.
@@ -222,7 +232,7 @@ object BinaryInput {
    * @param input The byte buffer to wrap with the binary input type.
    */
   def apply(input: ByteBuffer): BinaryInput = new BinaryContext.Support with BinaryInput {
-    override def apply(bytes: ByteBuffer): IOResult.Input[Int] =
+    override def read(bytes: ByteBuffer): IOResult.Input[Int] =
       if (!input.hasRemaining) Left(IOProblem.Underflow)
       else {
         val length = Math.min(bytes.remaining(), input.remaining())
@@ -241,9 +251,8 @@ object BinaryInput {
    *
    * @param input The input stream to wrap with the binary input type.
    */
-  @inline
   def apply(input: InputStream): BinaryInput =
-  apply(Channels.newChannel(input))
+    apply(Channels.newChannel(input))
 
   /**
    * Creates a binary input implementation for the specified readable byte channel.
@@ -251,7 +260,7 @@ object BinaryInput {
    * @param input The readable byte channel to wrap with the binary input type.
    */
   def apply(input: ReadableByteChannel): BinaryInput = new BinaryContext.Support with BinaryInput {
-    override def apply(bytes: ByteBuffer): IOResult.Input[Int] =
+    override def read(bytes: ByteBuffer): IOResult.Input[Int] =
       Either.catchOnly[IOException](input.read(bytes)).left.map(IOProblem.Failure) flatMap
         (length => if (length < 0) Left(IOProblem.Underflow) else Right(length))
   }

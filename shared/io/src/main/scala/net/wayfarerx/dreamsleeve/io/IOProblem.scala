@@ -52,6 +52,13 @@ object IOProblem {
   case object Overflow extends Writing
 
   /**
+   * Problem returned when an attempt is made to write a string that is too large.
+   *
+   * @param value The size of the encoded string that was encountered.
+   */
+  case class Unsupported(value: Int) extends Writing
+
+  /**
    * Problem returned when character decoding operations fail.
    *
    * @param thrown The exception that was thrown.
@@ -71,31 +78,5 @@ object IOProblem {
    * @param thrown The exception that was thrown.
    */
   case class Failure(thrown: IOException) extends Reading with Writing
-
-}
-
-object IOTEST {
-
-  def main(args: Array[String]): Unit = {
-    val writer = for {
-      _ <- writeByte(3)
-      _ <- writeShort(5)
-      _ <- writeInt(7)
-      _ <- writeLong(11)
-    } yield ()
-
-    val reader = for {
-      a <- readByte()
-      b <- readShort()
-      c <- readInt()
-      d <- readLong()
-    } yield (a, b, c, d)
-
-    val baos = new java.io.ByteArrayOutputStream()
-    for {
-      _ <- writer(baos)
-      data <- reader(baos.toByteArray)
-    } println(data)
-  }
 
 }
