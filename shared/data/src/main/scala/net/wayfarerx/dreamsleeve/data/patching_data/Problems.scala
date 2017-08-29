@@ -17,19 +17,19 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import collection.immutable.SortedSet
 
 /**
  * Base class for problems that occur while patching differences or changes.
  */
-sealed trait Problems extends Problem
+sealed trait Problems extends DataProblem
 
 /**
  * Concrete problem implementations.
  */
-object Problems extends Problem.Factory[Problems] {
+object Problems {
 
   /**
    * Problem returned when hashes that are expected to match do not.

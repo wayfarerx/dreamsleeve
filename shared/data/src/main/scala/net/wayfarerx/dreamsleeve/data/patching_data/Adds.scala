@@ -17,12 +17,9 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
-
-import cats.data._
-import Validated.valid
 
 /**
  * Support for the addition factory object.
@@ -58,16 +55,8 @@ object Adds {
      *
      * @return The fragment to add or problems that were encountered adding the fragment.
      */
-    def patch(): Result[Fragment] =
-      patching()
-
-    /**
-     * Applies the change by returning the fragment to add.
-     *
-     * @return The fragment to add or problems that were encountered adding the fragment.
-     */
-    private[patching] def patching(): Attempt[Fragment] =
-      valid(add.toFragment)
+    def patch(): Either[Problems, Fragment] =
+      Right(add.toFragment)
 
   }
 

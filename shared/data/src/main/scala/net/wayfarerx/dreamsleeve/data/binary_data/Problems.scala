@@ -17,19 +17,19 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package binary
+package binary_data
 
 import net.wayfarerx.dreamsleeve.io._
 
 /**
  * Base type for all binary data problems.
  */
-sealed trait Problems extends Problem
+sealed trait Problems extends DataProblem
 
 /**
  * Definitions of the possible binary data problems.
  */
-object Problems extends Problem.Factory[Problems] {
+object Problems {
 
   /**
    * Marker trait for problems that can occur during binary data input operations.

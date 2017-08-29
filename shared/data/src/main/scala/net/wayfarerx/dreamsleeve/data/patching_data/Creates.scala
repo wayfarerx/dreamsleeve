@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
 
@@ -33,7 +33,7 @@ trait Creates {
    * @return The patching interface.
    */
   @inline
-  implicit def createToPatch(create: Difference.Create): Creates.Patch =
+  implicit def createToCreatePatch(create: Difference.Create): Creates.Patch =
   new Creates.Patch(create)
 
 }
@@ -55,9 +55,8 @@ object Creates {
      *
      * @return The created document.
      */
-    @inline
-    def patch(): Document =
-    create.document
+    def patch(): Either[Problems, Document] =
+      Right(create.document)
 
   }
 

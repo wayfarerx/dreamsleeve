@@ -17,14 +17,9 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
-
-import cats.data._
-import Validated.{invalid, valid}
-
-import Problems._
 
 /**
  * Support for the copies factory object.
@@ -38,7 +33,7 @@ trait Copies {
    * @return The patching interface.
    */
   @inline
-  implicit def copyToPatch(copy: Update.Copy): Copies.Patch =
+  implicit def copyToCopiesPatch(copy: Update.Copy): Copies.Patch =
   new Copies.Patch(copy)
 
 }
@@ -60,21 +55,11 @@ object Copies {
      *
      * @param fromFragment The fragment that is being copied.
      * @param hasher       The hasher to generate hashes with.
-     * @return The original fragment or problems that were encountered copying the fragment.
+     * @return The original fragment or any problem that was encountered copying the fragment.
      */
-    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher)
-
-    /**
-     * Applies the update by verifying and returning the fragment.
-     *
-     * @param fromFragment The fragment that is being copied.
-     * @param h            The hasher to generate hashes with.
-     * @return The original fragment or problems that were encountered copying the fragment.
-     */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] =
-      if (copy.theHash == fromFragment.hash) valid(fromFragment) else
-        invalid(Problems.List.of(HashMismatch(copy.theHash, fromFragment.hash)))
+    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Either[Problems, Fragment] =
+      if (copy.theHash == fromFragment.hash) Right(fromFragment) else
+        Left(Problems.HashMismatch(copy.theHash, fromFragment.hash))
 
   }
 

@@ -17,12 +17,9 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
-
-import cats.data._
-import Validated.{invalid, valid}
 
 /**
  * Support for the removal factory object.
@@ -58,21 +55,11 @@ object Removes {
      *
      * @param fromFragment The fragment to verify the removal of.
      * @param hasher       The hasher to generate hashes with.
-     * @return The problems that were encountered removing the fragment, if any.
+     * @return Any problem that was encountered removing the fragment, if any.
      */
-    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Unit] =
-      patching(fromFragment)(hasher)
-
-    /**
-     * Applies the change by verifying the removed fragment.
-     *
-     * @param fromFragment The fragment to verify the removal of.
-     * @param hasher       The hasher to generate hashes with.
-     * @return The problems that were encountered removing the fragment, if any.
-     */
-    private[patching] def patching(fromFragment: Fragment)(implicit hasher: Hasher): Attempt[Unit] =
-      if (fromFragment.hash == remove.fromHash) valid(()) else
-        invalid(Problems.List.of(Problems.HashMismatch(remove.fromHash, fromFragment.hash)))
+    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Either[Problems, Unit] =
+      if (fromFragment.hash == remove.fromHash) Right(()) else
+        Left(Problems.HashMismatch(remove.fromHash, fromFragment.hash))
 
   }
 

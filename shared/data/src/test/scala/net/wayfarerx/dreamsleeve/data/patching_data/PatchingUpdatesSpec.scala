@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve.data.patching
+package net.wayfarerx.dreamsleeve.data.patching_data
 
 import net.wayfarerx.dreamsleeve.data._
 import org.scalatest._
@@ -47,8 +47,8 @@ class PatchingUpdatesSpec extends FlatSpec with Matchers {
     val a = Copy(fa)
     val b = Copy(fb.hash)
     a.patch(fa) shouldBe Right(fa)
-    a.patch(fb) shouldBe Left(Vector(Problems.HashMismatch(fa.hash, fb.hash)))
-    b.patch(fa) shouldBe Left(Vector(Problems.HashMismatch(fb.hash, fa.hash)))
+    a.patch(fb) shouldBe Left(Problems.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(Problems.HashMismatch(fb.hash, fa.hash))
     b.patch(fb) shouldBe Right(fb)
   }
 
@@ -58,8 +58,8 @@ class PatchingUpdatesSpec extends FlatSpec with Matchers {
     val a = Replace(fa, fb)
     val b = Replace(fb.hash, fa)
     a.patch(fa) shouldBe Right(fb)
-    a.patch(fb) shouldBe Left(Vector(Problems.HashMismatch(fa.hash, fb.hash)))
-    b.patch(fa) shouldBe Left(Vector(Problems.HashMismatch(fb.hash, fa.hash)))
+    a.patch(fb) shouldBe Left(Problems.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(Problems.HashMismatch(fb.hash, fa.hash))
     b.patch(fb) shouldBe Right(fa)
   }
 
@@ -68,27 +68,27 @@ class PatchingUpdatesSpec extends FlatSpec with Matchers {
     val ft = Table(Value.String("a") -> Value.Number())
     val tt = Table(Value.String("a") -> Value.Number(1.1))
     val a = Modify(ft, ft.keys.head -> Replace(tt.values.head, ft.values.head))
-    a.patch(tt) shouldBe Left(Vector(Problems.HashMismatch(ft.hash, tt.hash)))
+    a.patch(tt) shouldBe Left(Problems.HashMismatch(ft.hash, tt.hash))
     // Type mismatch
     val fv = Value.String("a")
     val b = Modify(fv.hash)
-    b.patch(fv) shouldBe Left(Vector(Problems.TypeMismatch(fv)))
+    b.patch(fv) shouldBe Left(Problems.TypeMismatch(fv))
     // Hash & type mismatch
     val c = Modify(ft.hash)
-    c.patch(fv) shouldBe Left(Vector(Problems.HashMismatch(ft.hash, fv.hash), Problems.TypeMismatch(fv)))
+    c.patch(fv) shouldBe Left(Problems.HashMismatch(ft.hash, fv.hash))
     // Missing change keys
     val et = Table()
     val d = Modify(ft)
-    d.patch(ft) shouldBe Left(Vector(Problems.MissingChangeKeys(SortedSet(ft.keys.head))))
+    d.patch(ft) shouldBe Left(Problems.MissingChangeKeys(SortedSet(ft.keys.head)))
     // Unexpected entry
     val e = Modify(ft, ft.keys.head -> Change.Add(tt.values.head))
-    e.patch(ft) shouldBe Left(Vector(Problems.UnexpectedEntry(ft.keys.head)))
+    e.patch(ft) shouldBe Left(Problems.UnexpectedEntry(ft.keys.head))
     // Add an entry
     val f = Modify(et, tt.keys.head -> Change.Add(tt.values.head))
     f.patch(et) shouldBe Right(tt)
     // Missing entry
     val g = Modify(et, tt.keys.head -> Change.Remove(tt.values.head))
-    g.patch(et) shouldBe Left(Vector(Problems.MissingEntry(tt.keys.head)))
+    g.patch(et) shouldBe Left(Problems.MissingEntry(tt.keys.head))
     // Remove an entry
     val h = Modify(ft, ft.keys.head -> Change.Remove(ft.values.head))
     h.patch(ft) shouldBe Right(et)
@@ -109,12 +109,7 @@ class PatchingUpdatesSpec extends FlatSpec with Matchers {
     val l = Modify(et.hash,
       Value.String("a") -> Change.Add(ft.values.head),
       Value.String("b") -> Change.Remove(ft.values.head))
-    l.patch(ft2) shouldBe Left(Vector(
-      Problems.HashMismatch(et.hash, ft2.hash),
-      Problems.MissingChangeKeys(SortedSet(Value.String("c"))),
-      Problems.UnexpectedEntry(Value.String("a")),
-      Problems.MissingEntry(Value.String("b"))
-    ))
+    l.patch(ft2) shouldBe Left(Problems.HashMismatch(et.hash, ft2.hash))
   }
 
 }

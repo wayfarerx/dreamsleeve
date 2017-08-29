@@ -28,12 +28,12 @@ import net.wayfarerx.dreamsleeve.io._
 /**
  * Global definitions for the binary data package.
  */
-package object binary {
+package object binary_data {
 
-  import binary.Problems._
+  import binary_data.Problems._
 
   /** A binary writer monad that returns unit. */
-  private[binary] val writing: BinaryWriter[Unit] =
+  private[binary_data] val writing: BinaryWriter[Unit] =
     Free.pure(Right(()))
 
   /**
@@ -43,7 +43,7 @@ package object binary {
    * @tparam T The type of the expected result.
    * @return A binary reader monad that returns a result.
    */
-  private[binary] def reading[T](result: T): BinaryReader[Either[Reading, T]] =
+  private[binary_data] def reading[T](result: T): BinaryReader[Either[Reading, T]] =
     Free.pure(Right(result))
 
   /**
@@ -53,7 +53,7 @@ package object binary {
    * @tparam T The type of the expected result.
    * @return A binary reader monad that returns a problem.
    */
-  private[binary] def report[T](problem: Reading): BinaryReader[Either[Reading, T]] =
+  private[binary_data] def report[T](problem: Reading): BinaryReader[Either[Reading, T]] =
     Free.pure(Left(problem))
 
   /**
@@ -119,7 +119,7 @@ package object binary {
    *
    * @param writer The writer to extend.
    */
-  final class Extensions private[binary](val writer: BinaryWriter[Unit]) extends AnyVal {
+  final class Extensions private[binary_data](val writer: BinaryWriter[Unit]) extends AnyVal {
 
     /**
      * Writes the value record to the specified binary output.

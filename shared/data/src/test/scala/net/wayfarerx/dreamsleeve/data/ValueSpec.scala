@@ -28,8 +28,8 @@ class ValueSpec extends FlatSpec with Matchers {
   "A boolean value" should "act as a hashable, comparable value" in {
     val f = Value.Boolean()
     val t = Value.Boolean(true)
-    f.hash shouldBe implicitly[Hasher].hashBoolean(false)
-    t.hash shouldBe implicitly[Hasher].hashBoolean(true)
+    f.hash shouldBe Hasher()(Value.Boolean.Header, false)
+    t.hash shouldBe Hasher()(Value.Boolean.Header, true)
     f.compareTo(f) shouldBe 0
     f.compareTo(t) should be < 0
     t.compareTo(f) should be > 0
@@ -44,9 +44,9 @@ class ValueSpec extends FlatSpec with Matchers {
     val n = Value.Number(-1.0)
     val z = Value.Number()
     val p = Value.Number(Math.PI)
-    n.hash shouldBe implicitly[Hasher].hashNumber(-1.0)
-    z.hash shouldBe implicitly[Hasher].hashNumber(0.0)
-    p.hash shouldBe implicitly[Hasher].hashNumber(Math.PI)
+    n.hash shouldBe Hasher()(Value.Number.Header, -1.0)
+    z.hash shouldBe Hasher()(Value.Number.Header, 0.0)
+    p.hash shouldBe Hasher()(Value.Number.Header, Math.PI)
     n.compareTo(n) shouldBe 0
     n.compareTo(z) should be < 0
     n.compareTo(p) should be < 0
@@ -69,9 +69,9 @@ class ValueSpec extends FlatSpec with Matchers {
     val e = Value.String()
     val a = Value.String("a")
     val z = Value.String("z")
-    e.hash shouldBe implicitly[Hasher].hashString("")
-    a.hash shouldBe implicitly[Hasher].hashString("a")
-    z.hash shouldBe implicitly[Hasher].hashString("z")
+    e.hash shouldBe Hasher()(Value.String.Header, "")
+    a.hash shouldBe Hasher()(Value.String.Header, "a")
+    z.hash shouldBe Hasher()(Value.String.Header, "z")
     e.compareTo(e) shouldBe 0
     e.compareTo(a) should be < 0
     e.compareTo(z) should be < 0

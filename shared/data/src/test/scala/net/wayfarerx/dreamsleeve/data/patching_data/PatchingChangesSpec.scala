@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve.data.patching
+package net.wayfarerx.dreamsleeve.data
+package patching_data
 
-import net.wayfarerx.dreamsleeve.data._
 import org.scalatest._
 
 /**
@@ -43,8 +43,8 @@ class PatchingChangesSpec extends FlatSpec with Matchers {
     val a = Remove(fa)
     val b = Remove(fb.hash)
     a.patch(fa) shouldBe Right(())
-    a.patch(fb) shouldBe Left(Vector(Problems.HashMismatch(fa.hash, fb.hash)))
-    b.patch(fa) shouldBe Left(Vector(Problems.HashMismatch(fb.hash, fa.hash)))
+    a.patch(fb) shouldBe Left(Problems.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(Problems.HashMismatch(fb.hash, fa.hash))
     b.patch(fb) shouldBe Right(())
   }
 

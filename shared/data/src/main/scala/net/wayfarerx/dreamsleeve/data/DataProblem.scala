@@ -1,5 +1,5 @@
 /*
- * problems.scala
+ * DataProblem.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -21,48 +21,32 @@ package net.wayfarerx.dreamsleeve.data
 import cats.data._
 
 /**
- * Base class for all problems.
+ * Base class for all data problems.
  */
-trait Problem
+trait DataProblem
 
 /**
- * Concrete problem implementations.
+ * Concrete data problem implementations.
  */
-object Problem {
-
-  /**
-   * Base class for problem factory objects.
-   *
-   * @tparam ProblemType The type of problem managed by this factory.
-   */
-  trait Factory[ProblemType] {
-
-    /** The type of a list of problems. */
-    final type List = NonEmptyList[ProblemType]
-
-    /** The factory for lists of problems. */
-    final val List = NonEmptyList
-
-  }
-
-}
-
-/**
- * Problem implementations and factories.
- */
-object Problems {
+object DataProblem {
 
   /** The base class of patching problems. */
-  type Patching = patching.Problems
+  type Patching = patching_data.Problems
 
   /** The factory for patching problems. */
-  val Patching = patching.Problems
+  val Patching = patching_data.Problems
 
   /** The base class of textual problems. */
-  type Textual = TextualProblem
+  type Binary = binary_data.Problems
 
   /** The factory for textual problems. */
-  val Textual = TextualProblem
+  val Binary = binary_data.Problems
+
+  /** The base class of textual problems. */
+  type Textual = textual_data.TextualProblem
+
+  /** The factory for textual problems. */
+  val Textual = textual_data.TextualProblem
 
 }
 

@@ -18,30 +18,9 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import language.implicitConversions
-
-import cats.data.Validated
-
 /**
  * Global definitions for the patching package.
  */
-package object patching {
-
-  /** The type that represents the result of error-prone patching operations. */
-  type Result[T] = Either[Vector[Problems], T]
-
-  /** The internal representation of the result of error-prone patching operations. */
-  private[patching] type Attempt[T] = Validated[patching.Problems.List, T]
-
-  /**
-   * Implicitly converts any attempt into a result.
-   *
-   * @tparam T The type of the underlying result.
-   * @param attempt The attempt to convert.
-   * @return The converted attempt.
-   */
-  @inline
-  implicit private[patching] def attemptToResult[T](attempt: Attempt[T]): Result[T] =
-  attempt.leftMap(_.toList.toVector).toEither
+package object patching_data {
 
 }

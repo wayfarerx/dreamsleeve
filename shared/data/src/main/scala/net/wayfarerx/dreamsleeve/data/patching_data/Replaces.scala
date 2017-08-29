@@ -17,14 +17,9 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
-
-import cats.data._
-import Validated.{invalid, valid}
-
-import Problems._
 
 /**
  * Support for the replacement factory object.
@@ -38,7 +33,7 @@ trait Replaces {
    * @return The patching interface.
    */
   @inline
-  implicit def replaceToPatch(replace: Update.Replace): Replaces.Patch =
+  implicit def replaceToReplacesPatch(replace: Update.Replace): Replaces.Patch =
   new Replaces.Patch(replace)
 
 }
@@ -60,21 +55,11 @@ object Replaces {
      *
      * @param fromFragment The fragment that is being replaced.
      * @param hasher       The hasher to generate hashes with.
-     * @return The resulting fragment or problems that were encountered replacing the fragment.
+     * @return The resulting fragment or any problem that was encountered replacing the fragment.
      */
-    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher)
-
-    /**
-     * Applies the update by verifying the original fragment and returning the resulting fragment.
-     *
-     * @param fromFragment The fragment that is being replaced.
-     * @param h            The hasher to generate hashes with.
-     * @return The resulting fragment or problems that were encountered replacing the fragment.
-     */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] =
-      if (replace.fromHash == fromFragment.hash) valid(replace.toFragment) else
-        invalid(Problems.List.of(HashMismatch(replace.fromHash, fromFragment.hash)))
+    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Either[Problems, Fragment] =
+      if (replace.fromHash == fromFragment.hash) Right(replace.toFragment) else
+        Left(Problems.HashMismatch(replace.fromHash, fromFragment.hash))
 
   }
 

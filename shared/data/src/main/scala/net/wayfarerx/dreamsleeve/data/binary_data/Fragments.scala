@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package binary
+package binary_data
 
 import net.wayfarerx.dreamsleeve.io._
 

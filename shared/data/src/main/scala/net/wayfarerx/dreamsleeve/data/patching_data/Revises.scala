@@ -17,11 +17,9 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import scala.language.implicitConversions
-
-import cats.data.Validated.{invalid, valid}
 
 /**
  * Patching support for the revise factory object.
@@ -35,7 +33,7 @@ trait Revises {
    * @return The patching interface.
    */
   @inline
-  implicit def reviseToPatch(revise: Difference.Revise): Revises.Patch =
+  implicit def reviseToRevisePatch(revise: Difference.Revise): Revises.Patch =
   new Revises.Patch(revise)
 
 }
@@ -60,14 +58,9 @@ object Revises {
      * @return Either the resulting document after applying changes to the original document or any problems that were
      *         encountered.
      */
-    def patch(fromDocument: Document)(implicit hasher: Hasher): Result[Document] = {
-      val hashCheck = Some(revise.fromHash) filter (_ != fromDocument.hash) map
-        (Problems.HashMismatch(_, fromDocument.hash))
-      revise.update.patching(fromDocument.content)(hasher)
-        .leftMap(e => hashCheck map (_ +: e.toList.toVector) getOrElse e.toList.toVector)
-        .andThen(c => hashCheck map (p => invalid(Vector(p))) getOrElse valid(Document(revise.title, c)))
-        .toEither
-    }
+    def patch(fromDocument: Document)(implicit hasher: Hasher): Either[Problems, Document] =
+      if (revise.fromHash != fromDocument.hash) Left(Problems.HashMismatch(revise.fromHash, fromDocument.hash)) else
+        revise.update.patch(fromDocument.content)(hasher).right.map(Document(revise.title, _))
 
   }
 

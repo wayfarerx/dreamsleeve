@@ -29,19 +29,25 @@ class DifferenceSpec extends FlatSpec with Matchers {
 
   "A create" should "act as a hashable creation of a document" in {
     val d = Document("e", Table())
-    Create(d).hash shouldBe implicitly[Hasher].hashCreate(d.hash)
+    Create(d).hash shouldBe Hasher()(Create.Header, d.hash)
+    Create.unapply(Create(d)) shouldBe Some(d)
+    Difference.unapply(Create(d)) shouldBe true
   }
 
   "A revise" should "verify the hash of a document and apply a change" in {
     val d1 = Document("e", Table(Value.String("a") -> Value.Number(1)))
     val d3 = Document("g", Table(Value.String("a") -> Value.Number(2)))
     val a = Revise(d1, d3)
-    a.hash shouldBe implicitly[Hasher].hashRevise(d1.hash, d3.title, a.update.hash)
+    a.hash shouldBe Hasher()(Revise.Header, d1.hash, d3.title, a.update.hash)
+    Revise.unapply(a) shouldBe Some((d1.hash, d3.title, a.update))
+    Difference.unapply(a) shouldBe true
   }
 
   "A delete" should "verify the hash of a document" in {
     val d = Document("e", Table())
-    Delete(d).hash shouldBe implicitly[Hasher].hashDelete(d.hash)
+    Delete(d).hash shouldBe Hasher()(Delete.Header, d.hash)
+    Delete.unapply(Delete(d)) shouldBe Some(d.hash)
+    Difference.unapply(Delete(d)) shouldBe true
   }
 
 }

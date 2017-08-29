@@ -26,18 +26,18 @@ import collection.immutable.{SortedMap, SortedSet}
  * @param title   The title of the document.
  * @param content The content of the document.
  */
-case class Document(title: String, content: Fragment) extends Hashable {
+case class Document(title: String, content: Fragment) extends Hashable.Support {
 
   /* Generate the hash for this document. */
-  override private[data] def generateHash(implicit hasher: Hasher): Hash =
-    hasher.hashDocument(title, content.hash)
+  override protected def generateHash(hasher: Hasher): Hash =
+    hasher(Document.Header, title, content.hash(hasher))
 
 }
 
 /**
  * Declarations associated with documents.
  */
-object Document extends binary.Documents with TextualDocuments.Documents {
+object Document extends binary_data.Documents with textual_data.TextualDocuments.Documents {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -52,7 +52,7 @@ sealed trait Fragment extends Hashable
 /**
  * Extractor for fragment implementations.
  */
-object Fragment extends binary.Fragments with TextualFragments.Fragments {
+object Fragment extends binary_data.Fragments with textual_data.TextualFragments.Fragments {
 
   /**
    * Extracts any fragment implementation.
@@ -73,7 +73,7 @@ sealed trait Value extends Fragment with Comparable[Value]
 /**
  * Implementations of the value types.
  */
-object Value extends binary.Values with TextualValues.Values {
+object Value extends binary_data.Values with textual_data.TextualValues.Values {
 
   /**
    * Extracts any value implementation.
@@ -89,11 +89,11 @@ object Value extends binary.Values with TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class Boolean(value: scala.Boolean = false) extends Value {
+  case class Boolean(value: scala.Boolean = false) extends Hashable.Support with Value {
 
     /* Generate the hash for this boolean value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashBoolean(value)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Boolean.Header, value)
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -106,7 +106,7 @@ object Value extends binary.Values with TextualValues.Values {
   /**
    * Declarations associated with booleans.
    */
-  object Boolean extends binary.Booleans with TextualValues.Booleans {
+  object Boolean extends binary_data.Booleans with textual_data.TextualValues.Booleans {
 
     /** The header for booleans. */
     val Header: Byte = 0xC3.toByte
@@ -118,11 +118,11 @@ object Value extends binary.Values with TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class Number(value: Double = 0.0) extends Value {
+  case class Number(value: Double = 0.0) extends Hashable.Support with Value {
 
     /* Generate the hash for this number value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashNumber(value)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Number.Header, value)
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -136,7 +136,7 @@ object Value extends binary.Values with TextualValues.Values {
   /**
    * Declarations associated with numbers.
    */
-  object Number extends binary.Numbers with TextualValues.Numbers {
+  object Number extends binary_data.Numbers with textual_data.TextualValues.Numbers {
 
     /** The header for numbers. */
     val Header: Byte = 0xB4.toByte
@@ -148,11 +148,11 @@ object Value extends binary.Values with TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class String(value: java.lang.String = "") extends Value {
+  case class String(value: java.lang.String = "") extends Hashable.Support with Value {
 
     /* Generate the hash for this string value. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashString(value)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(String.Header, value)
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -165,7 +165,7 @@ object Value extends binary.Values with TextualValues.Values {
   /**
    * Declarations associated with strings.
    */
-  object String extends binary.Strings with TextualValues.Strings {
+  object String extends binary_data.Strings with textual_data.TextualValues.Strings {
 
     /** The header for strings. */
     val Header: Byte = 0xA5.toByte
@@ -179,7 +179,7 @@ object Value extends binary.Values with TextualValues.Values {
  *
  * @param entries The entries in the underlying table.
  */
-case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
+case class Table(entries: SortedMap[Value, Fragment]) extends Hashable.Support with Fragment {
 
   /** The set of keys in this table. */
   lazy val keys: SortedSet[Value] = entries.keySet
@@ -206,15 +206,15 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
     entries get key
 
   /* Generate the hash for this table. */
-  override private[data] def generateHash(implicit hasher: Hasher): Hash =
-    hasher.hashTable(entries flatMap { case (k, v) => Seq(k.hash, v.hash) })
+  override protected def generateHash(hasher: Hasher): Hash =
+    hasher(Table.Header, entries flatMap { case (k, v) => Seq(k.hash(hasher), v.hash(hasher)) })
 
 }
 
 /**
  * Factory for tables.
  */
-object Table extends binary.Tables with TextualTables.Tables {
+object Table extends binary_data.Tables with textual_data.TextualTables.Tables {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte

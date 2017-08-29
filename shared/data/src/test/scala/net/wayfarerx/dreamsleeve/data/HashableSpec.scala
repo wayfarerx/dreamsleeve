@@ -21,19 +21,20 @@ package net.wayfarerx.dreamsleeve.data
 import org.scalatest._
 
 /**
- * Test case for the hashable implementation.
+ * Test case for the hashable support implementation.
  */
 class HashableSpec extends FlatSpec with Matchers {
 
   "A hashable" should "always return the same hash" in {
-    Hashable.hash == Hashable.hash
+    TestHashable.hash == TestHashable.hash
+    Hashable.toString
   }
 
   /**
    * The hashable to test.
    */
-  object Hashable extends Hashable {
-    override private[data] def generateHash(implicit hasher: Hasher) =
+  object TestHashable extends Hashable.Support {
+    override protected def generateHash(hasher: Hasher) =
       Hash(Array[Byte](
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
         11, 12, 13, 14, 15, 16, 17, 18, 19, 20,

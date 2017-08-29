@@ -34,12 +34,13 @@ class TableSpec extends FlatSpec with Matchers {
       Value.Number(1) -> Value.String("1"),
       Value.Number(2) -> Value.String("2"),
       Value.Number(3) -> Value.String("3"))
-    e.hash shouldBe implicitly[Hasher].hashTable(Iterable.empty)
-    o.hash shouldBe implicitly[Hasher].hashTable(Seq(Value.Number(1).hash, Value.String("1").hash))
-    t.hash shouldBe implicitly[Hasher].hashTable(Seq(
+    e.hash shouldBe Hasher()(Table.Header, Iterable.empty[Hash])
+    o.hash shouldBe Hasher()(Table.Header, Seq(Value.Number(1).hash, Value.String("1").hash))
+    t.hash shouldBe Hasher()(Table.Header, Seq(
       Value.Number(1).hash, Value.String("1").hash,
       Value.Number(2).hash, Value.String("2").hash,
       Value.Number(3).hash, Value.String("3").hash))
+    Table.unapply(o) shouldBe Some(SortedMap[Value, Fragment](Value.Number(1) -> Value.String("1")))
   }
 
   it should "publish a subset of the underlying map interface" in {
@@ -48,6 +49,7 @@ class TableSpec extends FlatSpec with Matchers {
       Value.Number(2) -> Value.String("2"),
       Value.Number(3) -> Value.String("3")))
     t.keys shouldBe SortedSet[Value](Value.Number(1), Value.Number(2), Value.Number(3))
+    t.values.toVector shouldBe Vector[Fragment](Value.String("1"), Value.String("2"), Value.String("3"))
     t(Value.Number(2)) shouldBe Value.String("2")
     t.get(Value.Number(3)) shouldBe Some(Value.String("3"))
     t.get(Value.Number(4)) shouldBe None

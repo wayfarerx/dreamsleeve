@@ -1,13 +1,14 @@
-package net.wayfarerx.dreamsleeve.data
+package net.wayfarerx.dreamsleeve.data.textual_data
 
-import language.implicitConversions
-import util.{Failure, Success}
-
-import java.lang.{StringBuilder => JStringBuilder}
 import java.io.{IOException, Reader, Writer}
+import java.lang.{StringBuilder => JStringBuilder}
 import java.nio.{BufferOverflowException, CharBuffer, ReadOnlyBufferException}
 
+import net.wayfarerx.dreamsleeve.data._
 import org.parboiled2._
+
+import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
 
 /**
@@ -880,17 +881,17 @@ object TextualSupport {
 /**
  * Base class for problems that occur while reading or writing text.
  */
-sealed trait TextualProblem extends Problem
+sealed trait TextualProblem extends DataProblem
 
 /**
  * Concrete problem implementations.
  */
-object TextualProblem extends Problem.Factory[TextualProblem] {
+object TextualProblem extends DataProblem {
 
   /**
    * Marker trait for problems that can occur during input operations.
    */
-  trait Reading extends Problem
+  trait Reading extends DataProblem
 
   /**
    * Definitions associated with input problems.
@@ -905,7 +906,7 @@ object TextualProblem extends Problem.Factory[TextualProblem] {
   /**
    * Marker trait for problems that can occur during output operations.
    */
-  trait Writing extends Problem
+  trait Writing extends DataProblem
 
   /**
    * Definitions associated with output problems.

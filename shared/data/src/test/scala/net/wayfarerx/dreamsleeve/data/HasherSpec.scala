@@ -29,118 +29,94 @@ class HasherSpec extends FlatSpec with Matchers {
 
   private val digest = MessageDigest.getInstance("SHA-256")
 
-  //
-  // Various expected document and fragment hashes.
-  //
-  private val boolean = {
-    digest.update(Value.Boolean.Header)
+  private val booleans = {
     digest.update(0xFF.toByte)
     Hash(digest.digest())
   }
-  private val number = {
-    digest.update(Value.Number.Header)
+  private val bytes = {
+    digest.update(42.toByte)
+    Hash(digest.digest())
+  }
+  private val shorts = {
+    for (i <- 0 to 1) digest.update((42.toShort >>> (1 - i) * 8 & 0x000000FF).toByte)
+    Hash(digest.digest())
+  }
+  private val chars = {
+    for (i <- 0 to 1) digest.update(('x' >>> (1 - i) * 8 & 0x000000FF).toByte)
+    Hash(digest.digest())
+  }
+  private val ints = {
+    for (i <- 0 to 3) digest.update((42 >>> (3 - i) * 8 & 0x000000FF).toByte)
+    Hash(digest.digest())
+  }
+  private val floats = {
+    val value = java.lang.Float.floatToIntBits(Math.PI.toFloat)
+    for (i <- 0 to 3) digest.update((value >>> (3 - i) * 8 & 0x000000FF).toByte)
+    Hash(digest.digest())
+  }
+  private val longs = {
+    for (i <- 0 to 7) digest.update((42L >>> (7 - i) * 8 & 0x00000000000000FF).toByte)
+    Hash(digest.digest())
+  }
+  private val doubles = {
     val value = java.lang.Double.doubleToRawLongBits(Math.PI)
     for (i <- 0 to 7) digest.update((value >>> (7 - i) * 8 & 0x00000000000000FF).toByte)
     Hash(digest.digest())
   }
-  private val string = {
-    digest.update(Value.String.Header)
+  private val strings = {
     digest.update("hello".getBytes("UTF-8"))
     Hash(digest.digest())
   }
-  private val table = {
-    val inner = {
-      digest.update(Table.Header)
-      digest.update(boolean.toBytes)
-      digest.update(boolean.toBytes)
-      digest.update(number.toBytes)
-      digest.update(number.toBytes)
-      digest.update(string.toBytes)
-      digest.update(string.toBytes)
-      Hash(digest.digest())
-    }
-    digest.update(Table.Header)
-    digest.update(string.toBytes)
-    digest.update(inner.toBytes)
+  private val hashes = {
+    digest.update(strings.toBytes)
     Hash(digest.digest())
   }
-  private val document = {
-    digest.update(Document.Header)
-    digest.update("doc".getBytes("UTF-8"))
-    digest.update(table.toBytes)
+  private val collections = {
+    for (c <- "hello") for (i <- 0 to 1) digest.update((c >>> (1 - i) * 8 & 0x000000FF).toByte)
     Hash(digest.digest())
   }
 
-  //
-  // Various expected difference and change hashes.
-  //
-  private val add = {
-    digest.update(Change.Add.Header)
-    digest.update(string.toBytes)
-    Hash(digest.digest())
-  }
-  private val remove = {
-    digest.update(Change.Remove.Header)
-    digest.update(string.toBytes)
-    Hash(digest.digest())
-  }
-  private val copy = {
-    digest.update(Update.Copy.Header)
-    digest.update(string.toBytes)
-    Hash(digest.digest())
-  }
-  private val replace = {
-    digest.update(Update.Replace.Header)
-    digest.update(table.toBytes)
-    digest.update(string.toBytes)
-    Hash(digest.digest())
-  }
-  private val modify = {
-    digest.update(Update.Modify.Header)
-    digest.update(table.toBytes)
-    digest.update(string.toBytes)
-    digest.update(replace.toBytes)
-    Hash(digest.digest())
-  }
-  private val create = {
-    digest.update(Difference.Create.Header)
-    digest.update(document.toBytes)
-    Hash(digest.digest())
-  }
-  private val revise = {
-    digest.update(Difference.Revise.Header)
-    digest.update(document.toBytes)
-    digest.update("doc".getBytes("UTF-8"))
-    digest.update(modify.toBytes)
-    Hash(digest.digest())
-  }
-  private val delete = {
-    digest.update(Difference.Delete.Header)
-    digest.update(document.toBytes)
+  private val twoComponents = {
+    digest.update(0.toByte)
+    digest.update(42.toByte)
     Hash(digest.digest())
   }
 
-  "A hasher" should "consistently hash documents and fragments" in {
+  private val threeComponents = {
+    digest.update(0.toByte)
+    digest.update(42.toByte)
+    digest.update("hello".getBytes("UTF-8"))
+    Hash(digest.digest())
+  }
+
+  private val fourComponents = {
+    digest.update(0.toByte)
+    digest.update(42.toByte)
+    digest.update("hello".getBytes("UTF-8"))
+    digest.update(strings.toBytes)
+    Hash(digest.digest())
+  }
+
+  "A hasher" should "consistently hash individual components" in {
+    val hasher = Hasher()
+    hasher(true) shouldBe booleans
+    hasher(42.toByte) shouldBe bytes
+    hasher(42.toShort) shouldBe shorts
+    hasher('x') shouldBe chars
+    hasher(42) shouldBe ints
+    hasher(Math.PI.toFloat) shouldBe floats
+    hasher(42L) shouldBe longs
+    hasher(Math.PI) shouldBe doubles
+    hasher("hello") shouldBe strings
+    hasher(strings) shouldBe hashes
+    hasher("hello".toVector) shouldBe collections
+  }
+
+  "A hasher" should "consistently hash heterogeneous components" in {
     val hasher = implicitly[Hasher]
-    hasher.hashBoolean(true) shouldBe boolean
-    hasher.hashNumber(Math.PI) shouldBe number
-    hasher.hashString("hello") shouldBe string
-    hasher.hashTable(
-      Seq(string, hasher.hashTable(Seq(boolean, boolean, number, number, string, string)))
-    ) shouldBe table
-    hasher.hashDocument("doc", table) shouldBe document
-  }
-
-  it should "consistently hash differences and changes" in {
-    val hasher = implicitly[Hasher]
-    hasher.hashAdd(string) shouldBe add
-    hasher.hashRemove(string) shouldBe remove
-    hasher.hashCopy(string) shouldBe copy
-    hasher.hashReplace(table, string) shouldBe replace
-    hasher.hashModify(table, Seq(string, replace)) shouldBe modify
-    hasher.hashCreate(document) shouldBe create
-    hasher.hashRevise(document, "doc", modify) shouldBe revise
-    hasher.hashDelete(document) shouldBe delete
+    hasher(false, 42.toByte) shouldBe twoComponents
+    hasher(false, 42.toByte, "hello") shouldBe threeComponents
+    hasher(false, 42.toByte, "hello", strings) shouldBe fourComponents
   }
 
 }

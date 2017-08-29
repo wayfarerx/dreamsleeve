@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package net.wayfarerx.dreamsleeve.data.patching
+package net.wayfarerx.dreamsleeve.data
+package patching_data
 
-import net.wayfarerx.dreamsleeve.data._
 import org.scalatest._
 
 /**
@@ -30,7 +30,7 @@ class PatchingDifferencesSpec extends FlatSpec with Matchers {
 
   "A create" should "patch the addition of a document" in {
     val d = Document("e", Table())
-    Create(d).patch() shouldBe d
+    Create(d).patch() shouldBe Right(d)
   }
 
   "A revise" should "patch a revision of a document" in {
@@ -39,17 +39,14 @@ class PatchingDifferencesSpec extends FlatSpec with Matchers {
     val d3 = Document("g", Table(Value.String("a") -> Value.Number(2)))
     val d4 = Document("h", Table(Value.String("a") -> Value.Number(3)))
     Revise(d1, d3).patch(d1) shouldBe Right(d3)
-    Revise(d1, d2).patch(d2) shouldBe Left(Vector(Problems.HashMismatch(d1.hash, d2.hash)))
-    Revise(d1, d3).patch(d4) shouldBe
-      Left(Vector(Problems.HashMismatch(d1.hash, d4.hash),
-        Problems.HashMismatch(d1.content.hash, d4.content.hash),
-        Problems.HashMismatch(Value.Number(1).hash, Value.Number(3).hash)))
+    Revise(d1, d2).patch(d2) shouldBe Left(Problems.HashMismatch(d1.hash, d2.hash))
+    Revise(d1, d3).patch(d4) shouldBe Left(Problems.HashMismatch(d1.hash, d4.hash))
   }
 
   "A delete" should "patch the removal of a document" in {
     val d = Document("e", Table())
-    Delete(d).patch(d) shouldBe true
-    Delete(d).patch(Document("f", Table())) shouldBe false
+    Delete(d).patch(d) shouldBe Right(())
+    Delete(d).patch(Document("f", Table())) shouldBe Left(Problems.HashMismatch(d.hash, Document("f", Table()).hash))
   }
 
 }

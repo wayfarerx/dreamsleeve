@@ -23,18 +23,18 @@ import org.scalatest._
 /**
  * Test case for the hash implementation.
  */
-class HashSpec extends FlatSpec with Matchers with Hash.Access {
+class HashSpec extends FlatSpec with Matchers {
 
   /** The first hash to test with. */
-  private val hash1 = createHash(Array[Byte](
+  private val hash1 = Hash.setInternalRepresentation(Array[Byte](
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
     21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
     31, 32))
   /** The second hash to test with. */
-  private val hash2 = createHash(internalBytes(hash1).clone())
+  private val hash2 = Hash.setInternalRepresentation(hash1.toBytes)
   /** The third hash to test with. */
-  private val hash3 = createHash(internalBytes(hash1).reverse)
+  private val hash3 = Hash.setInternalRepresentation(Hash.getInternalRepresentation(hash1).reverse)
 
   "A Hash" should "implement object identity rules like a value" in {
     hash1.equals(5: Any) shouldBe false
@@ -53,11 +53,11 @@ class HashSpec extends FlatSpec with Matchers with Hash.Access {
     hash1.toBytes sameElements hash3.toBytes shouldBe false
     hash3.toBytes sameElements hash2.toBytes shouldBe false
     val bytes = hash3.toBytes
-    bytes sameElements internalBytes(hash3) shouldBe true
-    bytes eq internalBytes(hash3) shouldBe false
+    bytes sameElements Hash.getInternalRepresentation(hash3) shouldBe true
+    bytes eq Hash.getInternalRepresentation(hash3) shouldBe false
     val hash4 = Hash(bytes)
-    bytes sameElements internalBytes(hash4) shouldBe true
-    bytes eq internalBytes(hash4) shouldBe false
+    bytes sameElements Hash.getInternalRepresentation(hash4) shouldBe true
+    bytes eq Hash.getInternalRepresentation(hash4) shouldBe false
     hash3 == hash4 shouldBe true
     an[IllegalArgumentException] should be thrownBy Hash(Array[Byte]())
     an[IllegalArgumentException] should be thrownBy Hash(Array[Byte](7, 14, 21))
@@ -77,7 +77,7 @@ class HashSpec extends FlatSpec with Matchers with Hash.Access {
     string == hash5.toString shouldBe true
     hash3 == hash5 shouldBe true
     an[IllegalArgumentException] should be thrownBy Hash("")
-    an[IllegalArgumentException] should be thrownBy Hash("070e15")
+    an[IllegalArgumentException] should be thrownBy Hash("070e15".toCharArray)
     an[IllegalArgumentException] should be thrownBy Hash("21" + string)
     an[IllegalArgumentException] should be thrownBy Hash(string.replace('1', 'q'))
     an[IllegalArgumentException] should be thrownBy Hash(string.replace('f', 'q'))

@@ -31,22 +31,31 @@ sealed trait Difference extends Hashable
 object Difference {
 
   /**
+   * Extracts any difference implementation.
+   *
+   * @param difference The difference to extract.
+   * @return True for every difference.
+   */
+  def unapply(difference: Difference): Boolean =
+    true
+
+  /**
    * Represents when a document is first created.
    *
    * @param document The document to create.
    */
-  case class Create(document: Document) extends Difference {
+  case class Create(document: Document) extends Hashable.Support with Difference {
 
     /* Generate the hash for this create. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashCreate(document.hash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Create.Header, document.hash(hasher))
 
   }
 
   /**
    * Declarations associated with creates.
    */
-  object Create extends patching.Creates {
+  object Create extends patching_data.Creates {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -60,18 +69,18 @@ object Difference {
    * @param title    The title of the resulting document.
    * @param update   The change to apply to the original document's content.
    */
-  case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
+  case class Revise(fromHash: Hash, title: String, update: Update) extends Hashable.Support with Difference {
 
     /* Generate the hash for this revise. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashRevise(fromHash, title, update.hash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Revise.Header, fromHash, title, update.hash(hasher))
 
   }
 
   /**
    * Factory for revises.
    */
-  object Revise extends patching.Revises {
+  object Revise extends patching_data.Revises {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -106,19 +115,19 @@ object Difference {
    *
    * @param fromHash The hash of the document to delete.
    */
-  case class Delete(fromHash: Hash) extends Difference {
+  case class Delete(fromHash: Hash) extends Hashable.Support with Difference {
 
 
     /* Generate the hash for this delete. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashDelete(fromHash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Delete.Header, fromHash)
 
   }
 
   /**
    * Factory for deletes.
    */
-  object Delete extends patching.Deletes {
+  object Delete extends patching_data.Deletes {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -148,22 +157,31 @@ sealed trait Change extends Hashable
 object Change {
 
   /**
+   * Extracts any change implementation.
+   *
+   * @param change The change to extract.
+   * @return True for every change.
+   */
+  def unapply(change: Change): Boolean =
+    true
+
+  /**
    * Add a fragment into a table where there was none before.
    *
    * @param toFragment The fragment to add into a table.
    */
-  case class Add(toFragment: Fragment) extends Change {
+  case class Add(toFragment: Fragment) extends Hashable.Support with Change {
 
     /* Generate the hash for this add. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashAdd(toFragment.hash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Add.Header, toFragment.hash(hasher))
 
   }
 
   /**
    * Declarations associated with adds.
    */
-  object Add extends patching.Adds {
+  object Add extends patching_data.Adds {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -175,18 +193,18 @@ object Change {
    *
    * @param fromHash The hash of the fragment to remove from a table.
    */
-  case class Remove(fromHash: Hash) extends Change {
+  case class Remove(fromHash: Hash) extends Hashable.Support with Change {
 
     /* Generate the hash for this remove. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashRemove(fromHash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Remove.Header, fromHash)
 
   }
 
   /**
    * Factory for removes.
    */
-  object Remove extends patching.Removes {
+  object Remove extends patching_data.Removes {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -213,7 +231,7 @@ sealed trait Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends patching.Updates {
+object Update extends patching_data.Updates {
 
   /**
    * Creates an update by collecting the differences between two fragments.
@@ -240,7 +258,7 @@ object Update extends patching.Updates {
    * @param update The update to extract.
    * @return True for every update.
    */
-  def unapply(update: Update): scala.Boolean =
+  def unapply(update: Update): Boolean =
     true
 
   /**
@@ -248,18 +266,18 @@ object Update extends patching.Updates {
    *
    * @param theHash The hash of both fragments.
    */
-  case class Copy(theHash: Hash) extends Update {
+  case class Copy(theHash: Hash) extends Hashable.Support with Update {
 
     /* Generate the theHash for this copy. */
-    override private[data] def generateHash(implicit theHasher: Hasher): Hash =
-      theHasher.hashCopy(theHash)
+    override protected def generateHash(theHasher: Hasher): Hash =
+      theHasher(Copy.Header, theHash)
 
   }
 
   /**
    * Factory for copies.
    */
-  object Copy extends patching.Copies {
+  object Copy extends patching_data.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -282,18 +300,18 @@ object Update extends patching.Updates {
    * @param fromHash   The hash of the original fragment.
    * @param toFragment The fragment to replace the original fragment with.
    */
-  case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
+  case class Replace(fromHash: Hash, toFragment: Fragment) extends Hashable.Support with Update {
 
     /* Generate the hash for this replace. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashReplace(fromHash, toFragment.hash)
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Replace.Header, fromHash, toFragment.hash(hasher))
 
   }
 
   /**
    * Factory for replaces.
    */
-  object Replace extends patching.Replaces {
+  object Replace extends patching_data.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -317,18 +335,18 @@ object Update extends patching.Updates {
    * @param fromHash The hash of the original table.
    * @param changes  The changes to be applied to the table.
    */
-  case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
+  case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Hashable.Support with Update {
 
     /* Generate the hash for this modify. */
-    override private[data] def generateHash(implicit hasher: Hasher): Hash =
-      hasher.hashModify(fromHash, changes flatMap { case (k, v) => Seq(k.hash, v.hash) })
+    override protected def generateHash(hasher: Hasher): Hash =
+      hasher(Modify.Header, fromHash, changes flatMap { case (k, v) => Seq(k.hash(hasher), v.hash(hasher)) })
 
   }
 
   /**
    * Factory for modifies.
    */
-  object Modify extends patching.Modifies {
+  object Modify extends patching_data.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

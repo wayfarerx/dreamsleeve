@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import scala.language.implicitConversions
 
@@ -33,7 +33,7 @@ trait Deletes {
    * @return The patching interface.
    */
   @inline
-  implicit def deleteToPatch(delete: Difference.Delete): Deletes.Patch =
+  implicit def deleteToDeletePatch(delete: Difference.Delete): Deletes.Patch =
   new Deletes.Patch(delete)
 
 }
@@ -57,9 +57,8 @@ object Deletes {
      * @param hasher   The hasher to generate hashes with.
      * @return True if the deleted document was verified, false otherwise.
      */
-    @inline
-    def patch(document: Document)(implicit hasher: Hasher): Boolean =
-    document.hash == delete.fromHash
+    def patch(document: Document)(implicit hasher: Hasher): Either[Problems, Unit] =
+      if (document.hash != delete.fromHash) Left(Problems.HashMismatch(delete.fromHash, document.hash)) else Right(())
 
   }
 

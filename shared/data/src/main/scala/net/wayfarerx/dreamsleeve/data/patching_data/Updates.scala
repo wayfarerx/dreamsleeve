@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching
+package patching_data
 
 import language.implicitConversions
 
@@ -33,7 +33,7 @@ trait Updates {
    * @return The patching interface.
    */
   @inline
-  implicit def updateToPatch(update: Update): Updates.Patch =
+  implicit def updateToUpdatePatch(update: Update): Updates.Patch =
   new Updates.Patch(update)
 
 }
@@ -55,23 +55,12 @@ object Updates {
      *
      * @param fromFragment The fragment that is being updated.
      * @param hasher       The hasher to generate hashes with.
-     * @return The resulting fragment or problems that were encountered updating the fragment.
+     * @return The resulting fragment or any problem that was encountered updating the fragment.
      */
-    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Result[Fragment] =
-      patching(fromFragment)(hasher)
-
-    /**
-     * Applies the change to the original fragment, creating the resulting fragment.
-     *
-     * @param fromFragment The fragment that is being updated.
-     * @param h            The hasher to generate hashes with.
-     * @return The resulting fragment or problems that were encountered updating the fragment.
-     */
-    private[patching] def patching(fromFragment: Fragment)(implicit h: Hasher): Attempt[Fragment] =
-      update match {
-        case uc@Update.Copy(_) => uc.patching(fromFragment)
-        case ur@Update.Replace(_, _) => ur.patching(fromFragment)
-        case um@Update.Modify(_, _) => um.patching(fromFragment)
+    def patch(fromFragment: Fragment)(implicit hasher: Hasher): Either[Problems, Fragment] = update match {
+      case c@Update.Copy(_) => c.patch(fromFragment)
+      case r@Update.Replace(_, _) => r.patch(fromFragment)
+      case m@Update.Modify(_, _) => m.patch(fromFragment)
       }
 
   }
