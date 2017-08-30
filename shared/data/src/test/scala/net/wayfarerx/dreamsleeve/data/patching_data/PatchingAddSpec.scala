@@ -1,5 +1,5 @@
 /*
- * PatchingChangesSpec.scala
+ * PatchingAddSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,30 +22,17 @@ package patching_data
 import org.scalatest._
 
 /**
- * Test case for the change patching implementations.
+ * Test case for the add patching implementation.
  */
-class PatchingChangesSpec extends FlatSpec with Matchers {
-
-  import Change._
+class PatchingAddSpec extends FlatSpec with Matchers {
 
   "An add" should "patch the addition of a fragment to a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    val a = Add(fa)
-    val b = Add(fb)
+    val a = Change.Add(fa)
+    val b = Change.Add(fb)
     a.patch() shouldBe Right(fa)
     b.patch() shouldBe Right(fb)
-  }
-
-  "A remove" should "patch the removal of a fragment from a table" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    val a = Remove(fa)
-    val b = Remove(fb.hash)
-    a.patch(fa) shouldBe Right(())
-    a.patch(fb) shouldBe Left(Problems.HashMismatch(fa.hash, fb.hash))
-    b.patch(fa) shouldBe Left(Problems.HashMismatch(fb.hash, fa.hash))
-    b.patch(fb) shouldBe Right(())
   }
 
 }

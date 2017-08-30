@@ -1,5 +1,5 @@
 /*
- * Creates.scala
+ * PatchingCreate.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -19,45 +19,23 @@
 package net.wayfarerx.dreamsleeve.data
 package patching_data
 
-import language.implicitConversions
-
 /**
  * Patching support for the create factory object.
  */
-trait Creates {
+trait PatchingCreate extends PatchingFactory[Difference.Create, Unit, Document] {
 
-  /**
-   * Wraps any creation with the patching interface.
-   *
-   * @param create The creation to wrap.
-   * @return The patching interface.
-   */
-  @inline
-  implicit def createToCreatePatch(create: Difference.Create): Creates.Patch =
-  new Creates.Patch(create)
+  /* Return the add support object. */
+  override protected def patchingSupport: PatchingSupport = PatchingCreate
 
 }
 
 /**
  * Definitions associated with create patching.
  */
-object Creates {
+object PatchingCreate extends PatchingSupport[Difference.Create, Unit, Document] {
 
-  /**
-   * The patching interface for creations.
-   *
-   * @param create The creation to provide the patching interface for.
-   */
-  final class Patch(val create: Difference.Create) extends AnyVal {
-
-    /**
-     * Patches the difference by returning the created document.
-     *
-     * @return The created document.
-     */
-    def patch(): Either[Problems, Document] =
-      Right(create.document)
-
-  }
+  /* Construct a patcher for the specified action and data. */
+  override def apply(action: Difference.Create, data: Unit): Patching[Document] =
+    pure(action.document)
 
 }

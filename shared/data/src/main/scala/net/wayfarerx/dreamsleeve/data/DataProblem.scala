@@ -18,8 +18,6 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import cats.data._
-
 /**
  * Base class for all data problems.
  */
@@ -31,22 +29,22 @@ trait DataProblem
 object DataProblem {
 
   /** The base class of patching problems. */
-  type Patching = patching_data.Problems
+  type Patching = patching_data.PatchingProblem
 
   /** The factory for patching problems. */
-  val Patching = patching_data.Problems
+  val Patching: patching_data.PatchingProblem.type = patching_data.PatchingProblem
 
   /** The base class of textual problems. */
   type Binary = binary_data.Problems
 
   /** The factory for textual problems. */
-  val Binary = binary_data.Problems
+  val Binary: binary_data.Problems.type = binary_data.Problems
 
   /** The base class of textual problems. */
   type Textual = textual_data.TextualProblem
 
   /** The factory for textual problems. */
-  val Textual = textual_data.TextualProblem
+  val Textual: textual_data.TextualProblem.type = textual_data.TextualProblem
 
 }
 

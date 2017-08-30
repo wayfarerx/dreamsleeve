@@ -55,7 +55,7 @@ object Difference {
   /**
    * Declarations associated with creates.
    */
-  object Create extends patching_data.Creates {
+  object Create extends patching_data.PatchingCreate {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -80,7 +80,7 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise extends patching_data.Revises {
+  object Revise extends patching_data.PatchingRevise {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -127,7 +127,7 @@ object Difference {
   /**
    * Factory for deletes.
    */
-  object Delete extends patching_data.Deletes {
+  object Delete extends patching_data.PatchingDelete {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -181,7 +181,7 @@ object Change {
   /**
    * Declarations associated with adds.
    */
-  object Add extends patching_data.Adds {
+  object Add extends patching_data.PatchingAdd {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -204,7 +204,7 @@ object Change {
   /**
    * Factory for removes.
    */
-  object Remove extends patching_data.Removes {
+  object Remove extends patching_data.PatchingRemove {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -231,7 +231,7 @@ sealed trait Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends patching_data.Updates {
+object Update extends patching_data.PatchingUpdate {
 
   /**
    * Creates an update by collecting the differences between two fragments.
@@ -277,7 +277,7 @@ object Update extends patching_data.Updates {
   /**
    * Factory for copies.
    */
-  object Copy extends patching_data.Copies {
+  object Copy extends patching_data.PatchingCopy {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -311,7 +311,7 @@ object Update extends patching_data.Updates {
   /**
    * Factory for replaces.
    */
-  object Replace extends patching_data.Replaces {
+  object Replace extends patching_data.PatchingReplace {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -346,7 +346,7 @@ object Update extends patching_data.Updates {
   /**
    * Factory for modifies.
    */
-  object Modify extends patching_data.Modifies {
+  object Modify extends patching_data.PatchingModify {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte
