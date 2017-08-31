@@ -24,8 +24,8 @@ package patching_data
  */
 trait PatchingRemove extends PatchingFactory[Change.Remove, Fragment, Unit] {
 
-  /* Return the add support object. */
-  override protected def patchingSupport: PatchingSupport = PatchingRemove
+  /* Return the remove support object. */
+  final override protected def patchingSupport: PatchingSupport = PatchingRemove
 
 }
 

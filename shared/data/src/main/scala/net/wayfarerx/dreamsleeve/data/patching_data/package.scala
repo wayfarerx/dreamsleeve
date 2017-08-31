@@ -32,10 +32,10 @@ import cats.implicits._
 package object patching_data {
 
   /** The type of operations that apply patches to data. */
-  type Patching[T] = Free[PatchingOperation, T]
+  type Patching[R] = Free[PatchingOperation, R]
 
   /** The type of result returned from patching operations. */
-  type PatchingResult[T] = Either[PatchingProblem, T]
+  type PatchingResult[R] = Either[PatchingProblem, R]
 
   /**
    * Base class for factory mix ins that support patching operations.
@@ -47,7 +47,7 @@ package object patching_data {
   trait PatchingFactory[A, D, R] {
 
     /** The type of support object used by this factory. */
-    final type PatchingSupport = patching_data.PatchingSupport[A, D, R]
+    final protected type PatchingSupport = patching_data.PatchingSupport[A, D, R]
 
     /**
      * Wraps an action with extensions that support patching operations.

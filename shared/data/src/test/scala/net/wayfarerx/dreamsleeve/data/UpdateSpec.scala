@@ -29,25 +29,6 @@ class UpdateSpec extends FlatSpec with Matchers {
 
   import Update._
 
-  "Update" should "create updates for specified from and to states" in {
-    val b: Value = Value.Boolean(true)
-    val n: Value = Value.Number(Math.PI)
-    val s: Value = Value.String("hello")
-    val t1: Fragment = Table(b -> n)
-    val t2: Fragment = Table(b -> s)
-    val t3: Fragment = Table(n -> b, s -> b)
-    Update(b, b) shouldBe Copy(b)
-    Update(n, n) shouldBe Copy(n)
-    Update(s, s) shouldBe Copy(s)
-    Update(t1, t1) shouldBe Copy(t1)
-    Update(b, t1) shouldBe Replace(b, t1)
-    Update(t2, n) shouldBe Replace(t2, n)
-    Update(n, s) shouldBe Replace(n, s)
-    Update(t1, t2) shouldBe Modify(t1.hash, b -> Replace(n, s))
-    Update(t2, t3) shouldBe Modify(t2.hash, b -> Change.Remove(s), n -> Change.Add(b), s -> Change.Add(b))
-    Update(t3, t1) shouldBe Modify(t3.hash, n -> Change.Remove(b), s -> Change.Remove(b), b -> Change.Add(n))
-  }
-
   "A copy" should "act as a hashable copy of a fragment between tables" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")

@@ -1,5 +1,5 @@
 /*
- * PatchingDelete.scala
+ * DiffingReviseSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,26 +17,22 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package diffing_data
+
+import org.scalatest._
 
 /**
- * Patching support for the delete factory object.
+ * Test case for the revise diffing implementation.
  */
-trait PatchingDelete extends PatchingFactory[Difference.Delete, Document, Unit] {
+class DiffingReviseSpec extends FlatSpec with Matchers {
 
-  /* Return the delete support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingDelete
+  "Revise" should "detect the differences between tables" in {
+    val t1 = Table(Value.String("a") -> Value.Number(1))
+    val t2 = Table(Value.String("a") -> Value.Number(2))
+    val d1 = Document("e", t1)
+    val d2 = Document("g", t2)
+    Difference.Revise(d1, d2) shouldBe Difference.Revise(d1.hash, d2.title, Update(t1, t2))
+
+  }
 
 }
-
-/**
- * Definitions associated with delete patching.
- */
-object PatchingDelete extends PatchingSupport[Difference.Delete, Document, Unit] {
-
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Difference.Delete, data: Document): Patching[Unit] =
-    validateHash(action.fromHash, data)
-
-}
-

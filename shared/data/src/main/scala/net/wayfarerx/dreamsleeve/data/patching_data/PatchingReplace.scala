@@ -24,8 +24,8 @@ package patching_data
  */
 trait PatchingReplace extends PatchingFactory[Update.Replace, Fragment, Fragment] {
 
-  /* Return the add support object. */
-  override protected def patchingSupport: PatchingSupport = PatchingReplace
+  /* Return the replace support object. */
+  final override protected def patchingSupport: PatchingSupport = PatchingReplace
 
 }
 

@@ -24,8 +24,8 @@ package patching_data
  */
 trait PatchingCreate extends PatchingFactory[Difference.Create, Unit, Document] {
 
-  /* Return the add support object. */
-  override protected def patchingSupport: PatchingSupport = PatchingCreate
+  /* Return the create support object. */
+  final override protected def patchingSupport: PatchingSupport = PatchingCreate
 
 }
 

@@ -1,5 +1,5 @@
 /*
- * PatchingRevise.scala
+ * DiffingRevise.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,28 +17,27 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package diffing_data
 
 /**
- * Patching support for the revise factory object.
+ * Diffing support for the revise factory object.
  */
-trait PatchingRevise extends PatchingFactory[Difference.Revise, Document, Document] {
+trait DiffingRevise extends DiffingFactory[Document, Difference.Revise] {
 
   /* Return the revise support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingRevise
+  final override protected def diffingSupport: DiffingSupport = DiffingRevise
 
 }
 
 /**
- * Definitions associated with revise patching.
+ * Definitions associated with revise diffing.
  */
-object PatchingRevise extends PatchingSupport[Difference.Revise, Document, Document] {
+object DiffingRevise extends DiffingSupport[Document, Difference.Revise] {
 
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Difference.Revise, data: Document): Patching[Document] = for {
-    _ <- validateHash(action.fromHash, data)
-    content <- PatchingUpdate(action.update, data.content)
-  } yield Document(action.title, content)
+  /* Construct a differ for the specified original and resulting data. */
+  override def apply(fromData: Document, toData: Document): Diffing[Difference.Revise] = for {
+    update <- DiffingUpdate(fromData.content, toData.content)
+    result <- createRevise(fromData, toData.title, update)
+  } yield result
 
 }
-

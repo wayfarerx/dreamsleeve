@@ -35,11 +35,13 @@ class DifferenceSpec extends FlatSpec with Matchers {
   }
 
   "A revise" should "verify the hash of a document and apply a change" in {
-    val d1 = Document("e", Table(Value.String("a") -> Value.Number(1)))
-    val d3 = Document("g", Table(Value.String("a") -> Value.Number(2)))
-    val a = Revise(d1, d3)
-    a.hash shouldBe Hasher()(Revise.Header, d1.hash, d3.title, a.update.hash)
-    Revise.unapply(a) shouldBe Some((d1.hash, d3.title, a.update))
+    val t1 = Table(Value.String("a") -> Value.Number(1))
+    val t2 = Table(Value.String("a") -> Value.Number(2))
+    val d1 = Document("e", t1)
+    val d2 = Document("g", t2)
+    val a = Revise(d1, d2.title, Update(t1, t2))
+    a.hash shouldBe Hasher()(Revise.Header, d1.hash, d2.title, a.update.hash)
+    Revise.unapply(a) shouldBe Some((d1.hash, d2.title, a.update))
     Difference.unapply(a) shouldBe true
   }
 

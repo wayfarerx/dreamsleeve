@@ -80,7 +80,7 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise extends patching_data.PatchingRevise {
+  object Revise extends diffing_data.DiffingRevise with patching_data.PatchingRevise {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -96,17 +96,6 @@ object Difference {
      */
     def apply(from: Document, title: String, update: Update)(implicit hasher: Hasher): Revise =
       Revise(from.hash, title, update)
-
-    /**
-     * Creates a revise by collecting the differences between two documents.
-     *
-     * @param from   The document that is being revised.
-     * @param to     The document that is a result of the revision.
-     * @param hasher The hasher to generate hashes with.
-     * @return A revise collecting the differences between two documents.
-     */
-    def apply(from: Document, to: Document)(implicit hasher: Hasher): Revise =
-      Revise(from, to.title, Update(from.content, to.content))
 
   }
 
@@ -231,26 +220,7 @@ sealed trait Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends patching_data.PatchingUpdate {
-
-  /**
-   * Creates an update by collecting the differences between two fragments.
-   *
-   * @param from   The fragment that is being updated.
-   * @param to     The fragment that is a result of the update.
-   * @param hasher The hasher to generate hashes with.
-   * @return An update collecting the differences between two fragments.
-   */
-  def apply(from: Fragment, to: Fragment)(implicit hasher: Hasher): Update = (from, to) match {
-    case (f, t) if f == t => Copy(f)
-    case ((Value(), _) | (_, Value())) => Replace(from, to)
-    case (fromTable@Table(_), toTable@Table(_)) => Modify(fromTable, (
-      (toTable.keys -- fromTable.keys map (k => k -> Change.Add(toTable(k)))) ++
-        fromTable.keys.map { k =>
-          (k, toTable get k map (apply(fromTable(k), _)) getOrElse Change.Remove(fromTable(k)))
-        }
-      ).toSeq: _*)
-  }
+object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpdate {
 
   /**
    * Extracts any update implementation.

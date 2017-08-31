@@ -24,8 +24,8 @@ package patching_data
  */
 trait PatchingUpdate extends PatchingFactory[Update, Fragment, Fragment] {
 
-  /* Return the add support object. */
-  override protected def patchingSupport: PatchingSupport = PatchingUpdate
+  /* Return the update support object. */
+  final override protected def patchingSupport: PatchingSupport = PatchingUpdate
 
 }
 
