@@ -32,8 +32,8 @@ class UpdateSpec extends FlatSpec with Matchers {
   "A copy" should "act as a hashable copy of a fragment between tables" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Copy(fa).hash shouldBe Hasher()(Update.Copy.Header, fa.hash)
-    Copy(fb.hash).hash shouldBe Hasher()(Update.Copy.Header, fb.hash)
+    Copy(fa).hash shouldBe TestHashing(Update.Copy.Header, fa.hash)
+    Copy(fb.hash).hash shouldBe TestHashing(Update.Copy.Header, fb.hash)
     Copy.unapply(Copy(fa)) shouldBe Some(fa.hash)
     Update.unapply(Copy(fb)) shouldBe true
   }
@@ -41,8 +41,8 @@ class UpdateSpec extends FlatSpec with Matchers {
   "A replace" should "act as a hashable replacement of a fragment in a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Replace(fa, fb).hash shouldBe Hasher()(Update.Replace.Header, fa.hash, fb.hash)
-    Replace(fb.hash, fa).hash shouldBe Hasher()(Update.Replace.Header, fb.hash, fa.hash)
+    Replace(fa, fb).hash shouldBe TestHashing(Update.Replace.Header, fa.hash, fb.hash)
+    Replace(fb.hash, fa).hash shouldBe TestHashing(Update.Replace.Header, fb.hash, fa.hash)
     Replace.unapply(Replace(fa, fb)) shouldBe Some((fa.hash, fb))
     Update.unapply(Replace(fb.hash, fa)) shouldBe true
   }
@@ -51,8 +51,8 @@ class UpdateSpec extends FlatSpec with Matchers {
     val ft = Table(Value.String("a") -> Value.Number())
     val tt = Table(Value.String("a") -> Value.Number(1.1))
     val r = Replace(tt.values.head, ft.values.head)
-    Modify(tt.hash).hash shouldBe Hasher()(Update.Modify.Header, tt.hash, Iterable.empty[Hash])
-    Modify(ft, ft.keys.head -> r).hash shouldBe Hasher()(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash))
+    Modify(tt.hash).hash shouldBe TestHashing(Update.Modify.Header, tt.hash, Iterable.empty[Hash])
+    Modify(ft, ft.keys.head -> r).hash shouldBe TestHashing(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash))
     Modify.unapply(Modify(ft, ft.keys.head -> r)) shouldBe Some((ft.hash, SortedMap(ft.keys.head -> r)))
     Update.unapply(Modify(tt.hash)) shouldBe true
   }

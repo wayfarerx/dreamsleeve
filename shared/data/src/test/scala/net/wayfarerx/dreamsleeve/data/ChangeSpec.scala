@@ -30,8 +30,8 @@ class ChangeSpec extends FlatSpec with Matchers {
   "An add" should "act as a hashable addition of a fragment to a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Add(fa).hash shouldBe Hasher()(Add.Header, fa.hash)
-    Add(fb).hash shouldBe Hasher()(Add.Header, fb.hash)
+    Add(fa).hash shouldBe TestHashing(Add.Header, fa.hash)
+    Add(fb).hash shouldBe TestHashing(Add.Header, fb.hash)
     Add.unapply(Add(fa)) shouldBe Some(fa)
     Change.unapply(Add(fb)) shouldBe true
   }
@@ -39,8 +39,8 @@ class ChangeSpec extends FlatSpec with Matchers {
   "A remove" should "act as a hashable removal of a fragment from a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Remove(fa).hash shouldBe Hasher()(Remove.Header, fa.hash)
-    Remove(fb.hash).hash shouldBe Hasher()(Remove.Header, fb.hash)
+    Remove(fa).hash shouldBe TestHashing(Remove.Header, fa.hash)
+    Remove(fb.hash).hash shouldBe TestHashing(Remove.Header, fb.hash)
     Remove.unapply(Remove(fa)) shouldBe Some(fa.hash)
     Change.unapply(Remove(fb)) shouldBe true
   }

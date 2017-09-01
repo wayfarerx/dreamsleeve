@@ -26,11 +26,15 @@ import collection.immutable.{SortedMap, SortedSet}
  * @param title   The title of the document.
  * @param content The content of the document.
  */
-case class Document(title: String, content: Fragment) extends Hashable.Support {
+case class Document(title: String, content: Fragment) extends Hashable {
 
   /* Generate the hash for this document. */
-  override protected def generateHash(hasher: Hasher): Hash =
-    hasher(Document.Header, title, content.hash(hasher))
+  override protected def generateHash(): Hashing[Unit] = for {
+    c <- content.hashed
+    _ <- hashing(Document.Header)
+    _ <- hashing(title)
+    _ <- hashing(c)
+  } yield ()
 
 }
 
@@ -47,7 +51,7 @@ object Document extends binary_data.Documents with textual_data.TextualDocuments
 /**
  * The base type of all document fragments.
  */
-sealed trait Fragment extends Hashable
+sealed abstract class Fragment extends Hashable
 
 /**
  * Extractor for fragment implementations.
@@ -68,7 +72,7 @@ object Fragment extends binary_data.Fragments with textual_data.TextualFragments
 /**
  * The base type of all fragments that represent a single value.
  */
-sealed trait Value extends Fragment with Comparable[Value]
+sealed abstract class Value extends Fragment with Comparable[Value]
 
 /**
  * Implementations of the value types.
@@ -89,11 +93,13 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class Boolean(value: scala.Boolean = false) extends Hashable.Support with Value {
+  case class Boolean(value: scala.Boolean = false) extends Value {
 
     /* Generate the hash for this boolean value. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Boolean.Header, value)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(Boolean.Header)
+      _ <- hashing(value)
+    } yield ()
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -118,11 +124,13 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class Number(value: Double = 0.0) extends Hashable.Support with Value {
+  case class Number(value: Double = 0.0) extends Value {
 
     /* Generate the hash for this number value. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Number.Header, value)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(Number.Header)
+      _ <- hashing(value)
+    } yield ()
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -148,11 +156,13 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    *
    * @param value The underlying value.
    */
-  case class String(value: java.lang.String = "") extends Hashable.Support with Value {
+  case class String(value: java.lang.String = "") extends Value {
 
     /* Generate the hash for this string value. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(String.Header, value)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(String.Header)
+      _ <- hashing(value)
+    } yield ()
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -179,7 +189,7 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
  *
  * @param entries The entries in the underlying table.
  */
-case class Table(entries: SortedMap[Value, Fragment]) extends Hashable.Support with Fragment {
+case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
 
   /** The set of keys in this table. */
   lazy val keys: SortedSet[Value] = entries.keySet
@@ -206,8 +216,18 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Hashable.Support w
     entries get key
 
   /* Generate the hash for this table. */
-  override protected def generateHash(hasher: Hasher): Hash =
-    hasher(Table.Header, entries flatMap { case (k, v) => Seq(k.hash(hasher), v.hash(hasher)) })
+  override protected def generateHash(): Hashing[Unit] = for {
+    e <- (hashed(Vector[Hash]()) /: entries) { (r, e) =>
+      for {
+        rr <- r
+        (k, v) = e
+        kk <- k.hashed
+        vv <- v.hashed
+      } yield rr ++ Vector(kk, vv)
+    }
+    _ <- hashing(Table.Header)
+    _ <- hashing(e)
+  } yield ()
 
 }
 

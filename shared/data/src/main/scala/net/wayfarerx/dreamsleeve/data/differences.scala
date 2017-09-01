@@ -23,7 +23,7 @@ import collection.immutable.SortedMap
 /**
  * Base class for all differences between documents.
  */
-sealed trait Difference extends Hashable
+sealed abstract class Difference extends Hashable
 
 /**
  * Implementations of differences.
@@ -44,11 +44,14 @@ object Difference {
    *
    * @param document The document to create.
    */
-  case class Create(document: Document) extends Hashable.Support with Difference {
+  case class Create(document: Document) extends Difference {
 
     /* Generate the hash for this create. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Create.Header, document.hash(hasher))
+    override protected def generateHash(): Hashing[Unit] = for {
+      h <- document.hashed
+      _ <- hashing(Create.Header)
+      _ <- hashing(h)
+    } yield ()
 
   }
 
@@ -69,11 +72,16 @@ object Difference {
    * @param title    The title of the resulting document.
    * @param update   The change to apply to the original document's content.
    */
-  case class Revise(fromHash: Hash, title: String, update: Update) extends Hashable.Support with Difference {
+  case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
 
     /* Generate the hash for this revise. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Revise.Header, fromHash, title, update.hash(hasher))
+    override protected def generateHash(): Hashing[Unit] = for {
+      h <- update.hashed
+      _ <- hashing(Revise.Header)
+      _ <- hashing(fromHash)
+      _ <- hashing(title)
+      _ <- hashing(h)
+    } yield ()
 
   }
 
@@ -92,9 +100,8 @@ object Difference {
      * @param from   The the original document.
      * @param title  The title of the resulting document.
      * @param update The change to apply to the original document's content.
-     * @param hasher The hasher to generate hashes with.
      */
-    def apply(from: Document, title: String, update: Update)(implicit hasher: Hasher): Revise =
+    def apply(from: Document, title: String, update: Update): Revise =
       Revise(from.hash, title, update)
 
   }
@@ -104,12 +111,14 @@ object Difference {
    *
    * @param fromHash The hash of the document to delete.
    */
-  case class Delete(fromHash: Hash) extends Hashable.Support with Difference {
+  case class Delete(fromHash: Hash) extends Difference {
 
 
     /* Generate the hash for this delete. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Delete.Header, fromHash)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(Delete.Header)
+      _ <- hashing(fromHash)
+    } yield ()
 
   }
 
@@ -125,10 +134,9 @@ object Difference {
      * Creates a delete for the specified document.
      *
      * @param document The document to create the delete for.
-     * @param hasher   The hasher to generate hashes with.
      * @return A delete for the specified document.
      */
-    def apply(document: Document)(implicit hasher: Hasher): Delete =
+    def apply(document: Document): Delete =
       Delete(document.hash)
 
   }
@@ -138,7 +146,7 @@ object Difference {
 /**
  * Base type for all changes applied to fragments in a table or document.
  */
-sealed trait Change extends Hashable
+sealed abstract class Change extends Hashable
 
 /**
  * Implementations of changes.
@@ -159,11 +167,14 @@ object Change {
    *
    * @param toFragment The fragment to add into a table.
    */
-  case class Add(toFragment: Fragment) extends Hashable.Support with Change {
+  case class Add(toFragment: Fragment) extends Change {
 
     /* Generate the hash for this add. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Add.Header, toFragment.hash(hasher))
+    override protected def generateHash(): Hashing[Unit] = for {
+      h <- toFragment.hashed
+      _ <- hashing(Add.Header)
+      _ <- hashing(h)
+    } yield ()
 
   }
 
@@ -182,11 +193,13 @@ object Change {
    *
    * @param fromHash The hash of the fragment to remove from a table.
    */
-  case class Remove(fromHash: Hash) extends Hashable.Support with Change {
+  case class Remove(fromHash: Hash) extends Change {
 
     /* Generate the hash for this remove. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Remove.Header, fromHash)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(Remove.Header)
+      _ <- hashing(fromHash)
+    } yield ()
 
   }
 
@@ -202,10 +215,9 @@ object Change {
      * Creates a remove for the specified fragment.
      *
      * @param fromFragment The fragment that is being removed.
-     * @param hasher       The hasher to generate hashes with.
      * @return A remove for the specified fragment.
      */
-    def apply(fromFragment: Fragment)(implicit hasher: Hasher): Remove =
+    def apply(fromFragment: Fragment): Remove =
       Remove(fromFragment.hash)
 
   }
@@ -215,7 +227,7 @@ object Change {
 /**
  * Base type for all changes that update existing fragments.
  */
-sealed trait Update extends Change
+sealed abstract class Update extends Change
 
 /**
  * Factory for updates.
@@ -236,11 +248,13 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    *
    * @param theHash The hash of both fragments.
    */
-  case class Copy(theHash: Hash) extends Hashable.Support with Update {
+  case class Copy(theHash: Hash) extends Update {
 
     /* Generate the theHash for this copy. */
-    override protected def generateHash(theHasher: Hasher): Hash =
-      theHasher(Copy.Header, theHash)
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- hashing(Copy.Header)
+      _ <- hashing(theHash)
+    } yield ()
 
   }
 
@@ -256,10 +270,9 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
      * Creates a copy for the specified fragment.
      *
      * @param fragment The fragment that is being copied.
-     * @param hasher   The hasher to generate hashes with.
      * @return A copy for the specified fragment.
      */
-    def apply(fragment: Fragment)(implicit hasher: Hasher): Copy =
+    def apply(fragment: Fragment): Copy =
       Copy(fragment.hash)
 
   }
@@ -270,11 +283,15 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    * @param fromHash   The hash of the original fragment.
    * @param toFragment The fragment to replace the original fragment with.
    */
-  case class Replace(fromHash: Hash, toFragment: Fragment) extends Hashable.Support with Update {
+  case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
 
     /* Generate the hash for this replace. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Replace.Header, fromHash, toFragment.hash(hasher))
+    override protected def generateHash(): Hashing[Unit] = for {
+      h <- toFragment.hashed
+      _ <- hashing(Replace.Header)
+      _ <- hashing(fromHash)
+      _ <- hashing(h)
+    } yield ()
 
   }
 
@@ -291,10 +308,9 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
      *
      * @param from   The fragment that is being replaced
      * @param to     The fragment that is doing the replacing.
-     * @param hasher The hasher to generate hashes with.
      * @return A replace for the specified fragments.
      */
-    def apply(from: Fragment, to: Fragment)(implicit hasher: Hasher): Replace =
+    def apply(from: Fragment, to: Fragment): Replace =
       Replace(from.hash, to)
 
   }
@@ -305,11 +321,22 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    * @param fromHash The hash of the original table.
    * @param changes  The changes to be applied to the table.
    */
-  case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Hashable.Support with Update {
+  case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
     /* Generate the hash for this modify. */
-    override protected def generateHash(hasher: Hasher): Hash =
-      hasher(Modify.Header, fromHash, changes flatMap { case (k, v) => Seq(k.hash(hasher), v.hash(hasher)) })
+    override protected def generateHash(): Hashing[Unit] = for {
+      e <- (hashed(Vector[Hash]()) /: changes) { (r, c) =>
+        for {
+          rr <- r
+          (k, v) = c
+          kk <- k.hashed
+          vv <- v.hashed
+        } yield rr ++ Vector(kk, vv)
+      }
+      _ <- hashing(Modify.Header)
+      _ <- hashing(fromHash)
+      _ <- hashing(e)
+    } yield ()
 
   }
 
@@ -337,10 +364,9 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
      *
      * @param from    The original table.
      * @param changes The changes to be applied to the table.
-     * @param hasher  The hasher to generate hashes with.
      * @return A new modify for the specified table and changes.
      */
-    def apply(from: Table, changes: (Value, Change)*)(implicit hasher: Hasher): Modify =
+    def apply(from: Table, changes: (Value, Change)*): Modify =
       apply(from.hash, changes: _*)
 
   }

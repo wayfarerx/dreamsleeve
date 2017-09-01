@@ -1,31 +1,8 @@
-/*
- * Hasher.scala
- *
- * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package net.wayfarerx.dreamsleeve.data
 
 import java.security.MessageDigest
 
-/**
- * Utility that generates hashes for a specific set of hash components.
- */
-final class Hasher private {
-
-  import Hasher._
+object TestHashing {
 
   /** The message digest to use. */
   private val digest = MessageDigest.getInstance("SHA-256")
@@ -96,27 +73,6 @@ final class Hasher private {
     Hash.setInternalRepresentation(digest.digest())
   }
 
-}
-
-/**
- * Factory for creating hash builders.
- */
-object Hasher {
-
-  /**
-   * Implicitly creates a new hasher.
-   *
-   * @return A new hasher.
-   */
-  implicit def newImplicitHasher: Hasher = apply()
-
-  /**
-   * Creates a new hasher.
-   *
-   * @return A new hasher.
-   */
-  def apply(): Hasher = new Hasher
-
   /**
    * Base class for hashed component type classes.
    *
@@ -130,7 +86,7 @@ object Hasher {
      * @param component The hashed component to append.
      * @param digest    The message digest to append to.
      */
-    private[Hasher] def apply(component: T, digest: MessageDigest): Unit
+    def apply(component: T, digest: MessageDigest): Unit
 
   }
 
@@ -141,89 +97,68 @@ object Hasher {
 
     /** Support for booleans as hashed components. */
     implicit val Booleans: Component[Boolean] = new Component[Boolean] {
-      override private[Hasher] def apply(c: Boolean, d: MessageDigest): Unit =
+      override def apply(c: Boolean, d: MessageDigest): Unit =
         d.update(if (c) 0xFF.toByte else 0x00.toByte)
     }
 
     /** Support for bytes as hashed components. */
     implicit val Bytes: Component[Byte] = new Component[Byte] {
-      override private[Hasher] def apply(c: Byte, d: MessageDigest): Unit =
+      override def apply(c: Byte, d: MessageDigest): Unit =
         d.update(c)
     }
 
     /** Support for shorts as hashed components. */
     implicit val Shorts: Component[Short] = new Component[Short] {
-      override private[Hasher] def apply(c: Short, d: MessageDigest): Unit = {
-        d.update((c >>> 8 & 0x00FF).toByte)
-        d.update((c & 0x00FF).toByte)
-      }
+      override def apply(c: Short, d: MessageDigest): Unit =
+        for (i <- 0 to 1) d.update((c >>> (1 - i) * 8 & 0x00FF).toByte)
     }
 
     /** Support for chars as hashed components. */
     implicit val Chars: Component[Char] = new Component[Char] {
-      override private[Hasher] def apply(c: Char, d: MessageDigest): Unit = {
-        d.update((c >>> 8 & 0x00FF).toByte)
-        d.update((c & 0x00FF).toByte)
-      }
+      override def apply(c: Char, d: MessageDigest): Unit =
+        for (i <- 0 to 1) d.update((c >>> (1 - i) * 8 & 0x00FF).toByte)
     }
 
     /** Support for ints as hashed components. */
     implicit val Ints: Component[Int] = new Component[Int] {
-      override private[Hasher] def apply(c: Int, d: MessageDigest): Unit = {
-        d.update((c >>> 24 & 0x000000FF).toByte)
-        d.update((c >>> 16 & 0x000000FF).toByte)
-        d.update((c >>> 8 & 0x000000FF).toByte)
-        d.update((c & 0x000000FF).toByte)
-      }
+      override def apply(c: Int, d: MessageDigest): Unit =
+        for (i <- 0 to 3) d.update((c >>> (3 - i) * 8 & 0x000000FF).toByte)
     }
 
     /** Support for floats as hashed components. */
     implicit val Floats: Component[Float] = new Component[Float] {
-      override private[Hasher] def apply(c: Float, d: MessageDigest): Unit =
+      override def apply(c: Float, d: MessageDigest): Unit =
         Ints(java.lang.Float.floatToIntBits(c), d)
     }
 
     /** Support for longs as hashed components. */
     implicit val Longs: Component[Long] = new Component[Long] {
-      override private[Hasher] def apply(c: Long, d: MessageDigest): Unit = {
-        d.update((c >>> 56 & 0x00000000000000FF).toByte)
-        d.update((c >>> 48 & 0x00000000000000FF).toByte)
-        d.update((c >>> 40 & 0x00000000000000FF).toByte)
-        d.update((c >>> 32 & 0x00000000000000FF).toByte)
-        d.update((c >>> 24 & 0x00000000000000FF).toByte)
-        d.update((c >>> 16 & 0x00000000000000FF).toByte)
-        d.update((c >>> 8 & 0x00000000000000FF).toByte)
-        d.update((c & 0x00000000000000FF).toByte)
-      }
+      override def apply(c: Long, d: MessageDigest): Unit =
+        for (i <- 0 to 7) d.update((c >>> (7 - i) * 8 & 0x00000000000000FF).toByte)
     }
 
     /** Support for doubles as hashed components. */
     implicit val Doubles: Component[Double] = new Component[Double] {
-      override private[Hasher] def apply(c: Double, d: MessageDigest): Unit =
+      override def apply(c: Double, d: MessageDigest): Unit =
         Longs(java.lang.Double.doubleToLongBits(c), d)
     }
 
     /** Support for strings as hashed components. */
     implicit val Strings: Component[String] = new Component[String] {
-      override private[Hasher] def apply(c: String, d: MessageDigest): Unit =
+      override def apply(c: String, d: MessageDigest): Unit =
         d.update(c.getBytes(java.nio.charset.StandardCharsets.UTF_8))
     }
 
     /** Support for hashes as hashed components. */
     implicit val Hashes: Component[Hash] = new Component[Hash] {
-      override private[Hasher] def apply(c: Hash, d: MessageDigest): Unit =
+      override def apply(c: Hash, d: MessageDigest): Unit =
         d.update(Hash.getInternalRepresentation(c))
     }
 
-    /**
-     * Support for collections of hashed components as hashed components.
-     *
-     * @tparam T The type of hashed component being collected.
-     * @return Support for collections of hashed components as hashed components.
-     */
-    implicit def collections[T: Component]: Component[Iterable[T]] = new Component[Iterable[T]] {
-      override private[Hasher] def apply(c: Iterable[T], d: MessageDigest): Unit =
-        for (i <- c) implicitly[Component[T]].apply(i, d)
+    /** Support for collections of hashes. */
+    implicit val MultipleHashes: Component[Iterable[Hash]] = new Component[Iterable[Hash]] {
+      override def apply(c: Iterable[Hash], d: MessageDigest): Unit =
+        for (i <- c) implicitly[Component[Hash]].apply(i, d)
     }
 
   }

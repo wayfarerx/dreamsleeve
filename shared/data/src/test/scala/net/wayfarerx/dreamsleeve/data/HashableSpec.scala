@@ -18,6 +18,9 @@
 
 package net.wayfarerx.dreamsleeve.data
 
+import java.security.MessageDigest
+
+import cats.free.Free.liftF
 import org.scalatest._
 
 /**
@@ -25,21 +28,43 @@ import org.scalatest._
  */
 class HashableSpec extends FlatSpec with Matchers {
 
-  "A hashable" should "always return the same hash" in {
-    TestHashable.hash == TestHashable.hash
+  import Hashable._
+
+  "A hashable" should "always return the same hash from supported components" in {
+    TestHashable.hash eq TestHashable.hash shouldBe true
     Hashable.toString
   }
 
   /**
    * The hashable to test.
    */
-  object TestHashable extends Hashable.Support {
-    override protected def generateHash(hasher: Hasher) =
-      Hash(Array[Byte](
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-        21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-        31, 32))
+  object TestHashable extends Hashable {
+
+    override protected def generateHash(): Hashing[Unit] = for {
+      _ <- validate(false)(hashing)
+      boolean <- validate(true)(hashing)
+      byte <- validate(0x7D.toByte)(hashing)
+      short <- validate(0x7D6C.toShort)(hashing)
+      char <- validate('x')(hashing)
+      int <- validate(0x7D6C5B4A)(hashing)
+      float <- validate(Math.PI.toFloat)(hashing)
+      long <- validate(0x7D6C5B4A39281706L)(hashing)
+      double <- validate(Math.PI)(hashing)
+      string <- validate("hello")(hashing)
+      collection <- validate(Seq(boolean, byte, short, char, int, float, long, double, string))(hashing)
+      hash <- validate(collection)(hashing)
+    } yield hashing(hash)
+
+    private def validate[T: TestHashing.Component](c: T)(f: T => Hashing[Unit]): Hashing[Hash] = {
+      val x = for {
+        _ <- f(c)
+        h <- liftF[HashOperation, Hash](d => Hash.setInternalRepresentation(d.digest()))
+      } yield h
+      val h = x.foldMap(HashOperation(MessageDigest.getInstance("SHA-256")))
+      h shouldBe TestHashing(c)
+      hashed(h)
+    }
+
   }
 
 }

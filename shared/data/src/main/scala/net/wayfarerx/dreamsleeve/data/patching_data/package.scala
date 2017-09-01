@@ -93,7 +93,7 @@ package object patching_data {
      * @return A patcher that returns the specified result.
      */
     final protected def pure[T](result: T): Patching[T] =
-      liftF[PatchingOperation, T](_ => Right(result))
+      liftF[PatchingOperation, T](() => Right(result))
 
     /**
      * Creates a patcher that fails with the specified problem.
@@ -103,7 +103,7 @@ package object patching_data {
      * @return A patcher that fails with the specified problem.
      */
     final protected def report[T](problem: PatchingProblem): Patching[T] =
-      liftF[PatchingOperation, T](_ => Left(problem))
+      liftF[PatchingOperation, T](() => Left(problem))
 
     /**
      * Creates a patcher that validates that two hashes are the same.
@@ -113,8 +113,8 @@ package object patching_data {
      * @return A patcher that validates that two hashes are the same.
      */
     final protected def validateHash(expected: Hash, found: Hashable): Patching[Unit] =
-      liftF[PatchingOperation, Unit] { hasher =>
-        val foundHash = found.hash(hasher)
+      liftF[PatchingOperation, Unit] { () =>
+        val foundHash = found.hash
         if (expected == foundHash) Right(())
         else Left(PatchingProblem.HashMismatch(expected, foundHash))
       }
@@ -127,7 +127,7 @@ package object patching_data {
      * @return A patcher that validates that two collections of keys are the same.
      */
     final protected def validateKeys(expected: SortedSet[Value], found: SortedSet[Value]): Patching[Unit] =
-      liftF[PatchingOperation, Unit] { _ =>
+      liftF[PatchingOperation, Unit] { () =>
         if ((found -- expected).nonEmpty) Left(PatchingProblem.MismatchedEntries(found -- expected))
         else Right(())
       }
@@ -145,11 +145,10 @@ package object patching_data {
      * Patches the supplied data with the underlying action.
      *
      * @param data   The data item to patch.
-     * @param hasher The hasher to use during the patching operation.
      * @return The result of patching the supplied data with the underlying action.
      */
-    def patch(data: D)(implicit hasher: Hasher): PatchingResult[R] =
-      dataToPatching(data).foldMap(PatchingOperation(hasher))
+    def patch(data: D)(): PatchingResult[R] =
+      dataToPatching(data).foldMap(PatchingOperation.interpereter)
 
   }
 
@@ -161,12 +160,11 @@ package object patching_data {
   trait PatchingOperation[R] {
 
     /**
-     * Applies this operation using the specified hasher.
+     * Applies this operation.
      *
-     * @param hasher The hasher to use while patching.
      * @return The result of this patching operation.
      */
-    def apply(hasher: Hasher): PatchingResult[R]
+    def apply(): PatchingResult[R]
 
   }
 
@@ -175,14 +173,9 @@ package object patching_data {
    */
   object PatchingOperation {
 
-    /**
-     * Creates an interpreter for patching operations.
-     *
-     * @param hasher The hasher to use while patching.
-     * @return A new interpreter for patching operations.
-     */
-    def apply(hasher: Hasher): PatchingOperation ~> PatchingResult = new (PatchingOperation ~> PatchingResult) {
-      override def apply[R](op: PatchingOperation[R]): PatchingResult[R] = op(hasher)
+    /** The interpreter for patching operations. */
+    val interpereter: PatchingOperation ~> PatchingResult = new (PatchingOperation ~> PatchingResult) {
+      override def apply[R](op: PatchingOperation[R]): PatchingResult[R] = op()
     }
 
   }

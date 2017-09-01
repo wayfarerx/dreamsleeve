@@ -114,6 +114,14 @@ object Hash {
     }
 
   /**
+   * Returns the internal byte array of the specified hash.
+   *
+   * @return The internal byte array of the specified hash.
+   */
+  private[data] def getInternalRepresentation(hash: Hash): Array[Byte] =
+    hash.bytes
+
+  /**
    * Creates a new hash without cloning the byte array.
    *
    * @param bytes The bytes to use as the internal byte array for the new hash.
@@ -121,13 +129,5 @@ object Hash {
    */
   private[data] def setInternalRepresentation(bytes: Array[Byte]): Hash =
     new Hash(bytes)
-
-  /**
-   * Returns the internal byte array of the specified hash.
-   *
-   * @return The internal byte array of the specified hash.
-   */
-  private[data] def getInternalRepresentation(hash: Hash): Array[Byte] =
-    hash.bytes
 
 }

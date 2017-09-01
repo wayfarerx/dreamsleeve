@@ -47,11 +47,10 @@ package object diffing_data {
      *
      * @param from   The fragment that is being updated.
      * @param to     The fragment that is a result of the update.
-     * @param hasher The hasher to generate hashes with.
      * @return An update collecting the differences between two fragments.
      */
-    final def apply(from: D, to: D)(implicit hasher: Hasher): R =
-      diffingSupport(from, to).foldMap(DiffingOperation(hasher))
+    final def apply(from: D, to: D): R =
+      diffingSupport(from, to).foldMap(DiffingOperation.interpereter)
 
     /**
      * Returns the support interface for this factory.
@@ -87,7 +86,7 @@ package object diffing_data {
      * @return A differ that returns the specified result.
      */
     final protected def pure[T](result: T): Diffing[T] =
-      liftF[DiffingOperation, T](_ => result)
+      liftF[DiffingOperation, T](() => result)
 
     /**
      * Creates a differ that returns an add operation.
@@ -97,7 +96,7 @@ package object diffing_data {
      * @return A differ that returns an add operation.
      */
     final protected def createAdd[T >: Change.Add](to: Fragment): Diffing[T] =
-      liftF[DiffingOperation, T](_ => Change.Add(to))
+      liftF[DiffingOperation, T](() => Change.Add(to))
 
     /**
      * Creates a differ that returns a remove operation.
@@ -107,7 +106,7 @@ package object diffing_data {
      * @return A differ that returns a remove operation.
      */
     final protected def createRemove[T >: Change.Remove](from: Fragment): Diffing[T] =
-      liftF[DiffingOperation, T](hasher => Change.Remove(from)(hasher))
+      liftF[DiffingOperation, T](() => Change.Remove(from))
 
     /**
      * Creates a differ that returns a copy operation.
@@ -117,7 +116,7 @@ package object diffing_data {
      * @return A differ that returns a copy operation.
      */
     final protected def createCopy[T >: Update.Copy](from: Fragment): Diffing[T] =
-      liftF[DiffingOperation, T](hasher => Update.Copy(from)(hasher))
+      liftF[DiffingOperation, T](() => Update.Copy(from))
 
     /**
      * Creates a differ that returns a replace operation.
@@ -128,7 +127,7 @@ package object diffing_data {
      * @return A differ that returns a replace operation.
      */
     final protected def createReplace[T >: Update.Replace](from: Fragment, to: Fragment): Diffing[T] =
-      liftF[DiffingOperation, T](hasher => Update.Replace(from, to)(hasher))
+      liftF[DiffingOperation, T](() => Update.Replace(from, to))
 
     /**
      * Creates a differ that returns a modify operation.
@@ -139,7 +138,7 @@ package object diffing_data {
      * @return A differ that returns a modify operation.
      */
     final protected def createModify[T >: Update.Modify](from: Table, toChanges: Seq[(Value, Change)]): Diffing[T] =
-      liftF[DiffingOperation, T](hasher => Update.Modify(from, toChanges: _*)(hasher))
+      liftF[DiffingOperation, T](() => Update.Modify(from, toChanges: _*))
 
     /**
      * Creates a differ that returns a revise operation.
@@ -150,7 +149,7 @@ package object diffing_data {
      * @return A differ that returns a revise operation.
      */
     final protected def createRevise(from: Document, toTitle: String, toUpdate: Update): Diffing[Difference.Revise] =
-      liftF[DiffingOperation, Difference.Revise](hasher => Difference.Revise(from, toTitle, toUpdate)(hasher))
+      liftF[DiffingOperation, Difference.Revise](() => Difference.Revise(from, toTitle, toUpdate))
 
   }
 
@@ -162,12 +161,11 @@ package object diffing_data {
   trait DiffingOperation[R] {
 
     /**
-     * Applies this operation using the specified hasher.
+     * Applies this operation.
      *
-     * @param hasher The hasher to use while diffing.
      * @return The result of this diffing operation.
      */
-    def apply(hasher: Hasher): R
+    def apply(): R
 
   }
 
@@ -176,14 +174,9 @@ package object diffing_data {
    */
   object DiffingOperation {
 
-    /**
-     * Creates an interpreter for diffing operations.
-     *
-     * @param hasher The hasher to use while diffing.
-     * @return A new interpreter for diffing operations.
-     */
-    def apply(hasher: Hasher): DiffingOperation ~> Id = new (DiffingOperation ~> Id) {
-      override def apply[R](op: DiffingOperation[R]): Id[R] = op(hasher)
+    /** The interpreter for diffing operations. */
+    val interpereter: DiffingOperation ~> Id = new (DiffingOperation ~> Id) {
+      override def apply[R](op: DiffingOperation[R]): Id[R] = op()
     }
 
   }

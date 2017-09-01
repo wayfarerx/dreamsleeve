@@ -34,9 +34,9 @@ class TableSpec extends FlatSpec with Matchers {
       Value.Number(1) -> Value.String("1"),
       Value.Number(2) -> Value.String("2"),
       Value.Number(3) -> Value.String("3"))
-    e.hash shouldBe Hasher()(Table.Header, Iterable.empty[Hash])
-    o.hash shouldBe Hasher()(Table.Header, Seq(Value.Number(1).hash, Value.String("1").hash))
-    t.hash shouldBe Hasher()(Table.Header, Seq(
+    e.hash shouldBe TestHashing(Table.Header, Iterable.empty[Hash])
+    o.hash shouldBe TestHashing(Table.Header, Seq(Value.Number(1).hash, Value.String("1").hash))
+    t.hash shouldBe TestHashing(Table.Header, Seq(
       Value.Number(1).hash, Value.String("1").hash,
       Value.Number(2).hash, Value.String("2").hash,
       Value.Number(3).hash, Value.String("3").hash))
