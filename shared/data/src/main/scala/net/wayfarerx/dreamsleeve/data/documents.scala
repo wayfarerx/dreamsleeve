@@ -20,28 +20,37 @@ package net.wayfarerx.dreamsleeve.data
 
 import collection.immutable.{SortedMap, SortedSet}
 
+import cats.implicits._
+
 /**
  * Represents a data document.
  *
  * @param title   The title of the document.
  * @param content The content of the document.
  */
-case class Document(title: String, content: Fragment) extends Hashable {
+case class Document(title: String, content: Fragment) extends Data {
 
-  /* Generate the hash for this document. */
-  override protected def generateHash(): Hashing[Unit] = for {
-    c <- content.hashed
-    _ <- hashing(Document.Header)
-    _ <- hashing(title)
-    _ <- hashing(c)
-  } yield ()
+  /* Test for equality with this document. */
+  override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    d <- EqualsTask.ofType[Document](that)
+    t <- EqualsTask.areEqual(title, d.title)
+    c <- content.equalsOperation(d.content)
+  } yield t && c
+
+  /* Calculate the hash for this document. */
+  override protected def calculateHash(): HashOperation[Hash] = for {
+    c <- content.hashOperation
+    h <- HashTask.hash(Document.Header, title, c)
+  } yield h
 
 }
 
 /**
  * Declarations associated with documents.
  */
-object Document extends binary_data.Documents with textual_data.TextualDocuments.Documents {
+object Document extends
+  binary_data.Documents with
+  textual_data.TextualDocuments.Documents {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -51,12 +60,14 @@ object Document extends binary_data.Documents with textual_data.TextualDocuments
 /**
  * The base type of all document fragments.
  */
-sealed abstract class Fragment extends Hashable
+sealed abstract class Fragment extends Data
 
 /**
  * Extractor for fragment implementations.
  */
-object Fragment extends binary_data.Fragments with textual_data.TextualFragments.Fragments {
+object Fragment extends
+  binary_data.Fragments with
+  textual_data.TextualFragments.Fragments {
 
   /**
    * Extracts any fragment implementation.
@@ -77,7 +88,9 @@ sealed abstract class Value extends Fragment with Comparable[Value]
 /**
  * Implementations of the value types.
  */
-object Value extends binary_data.Values with textual_data.TextualValues.Values {
+object Value extends
+  binary_data.Values with
+  textual_data.TextualValues.Values {
 
   /**
    * Extracts any value implementation.
@@ -95,11 +108,16 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    */
   case class Boolean(value: scala.Boolean = false) extends Value {
 
-    /* Generate the hash for this boolean value. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(Boolean.Header)
-      _ <- hashing(value)
-    } yield ()
+    /* Test for equality with this boolean value. */
+    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+      b <- EqualsTask.ofType[Boolean](that)
+      v <- EqualsTask.areEqual(value, b.value)
+    } yield v
+
+    /* Calculate the hash for this boolean value. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(Boolean.Header, value)
+    } yield h
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -112,7 +130,9 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
   /**
    * Declarations associated with booleans.
    */
-  object Boolean extends binary_data.Booleans with textual_data.TextualValues.Booleans {
+  object Boolean extends
+    binary_data.Booleans with
+    textual_data.TextualValues.Booleans {
 
     /** The header for booleans. */
     val Header: Byte = 0xC3.toByte
@@ -126,11 +146,16 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    */
   case class Number(value: Double = 0.0) extends Value {
 
-    /* Generate the hash for this number value. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(Number.Header)
-      _ <- hashing(value)
-    } yield ()
+    /* Test for equality with this number value. */
+    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+      n <- EqualsTask.ofType[Number](that)
+      v <- EqualsTask.areEqual(value, n.value)
+    } yield v
+
+    /* Calculate the hash for this number value. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(Number.Header, value)
+    } yield h
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -144,7 +169,9 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
   /**
    * Declarations associated with numbers.
    */
-  object Number extends binary_data.Numbers with textual_data.TextualValues.Numbers {
+  object Number extends
+    binary_data.Numbers with
+    textual_data.TextualValues.Numbers {
 
     /** The header for numbers. */
     val Header: Byte = 0xB4.toByte
@@ -158,11 +185,16 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
    */
   case class String(value: java.lang.String = "") extends Value {
 
-    /* Generate the hash for this string value. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(String.Header)
-      _ <- hashing(value)
-    } yield ()
+    /* Test for equality with this string value. */
+    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+      s <- EqualsTask.ofType[String](that)
+      v <- EqualsTask.areEqual(value, s.value)
+    } yield v
+
+    /* Calculate the hash for this string value. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(String.Header, value)
+    } yield h
 
     /* Compare this value with another value. */
     override def compareTo(that: Value): Int = that match {
@@ -175,7 +207,9 @@ object Value extends binary_data.Values with textual_data.TextualValues.Values {
   /**
    * Declarations associated with strings.
    */
-  object String extends binary_data.Strings with textual_data.TextualValues.Strings {
+  object String extends
+    binary_data.Strings with
+    textual_data.TextualValues.Strings {
 
     /** The header for strings. */
     val Header: Byte = 0xA5.toByte
@@ -215,26 +249,40 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
   def get(key: Value): Option[Fragment] =
     entries get key
 
-  /* Generate the hash for this table. */
-  override protected def generateHash(): Hashing[Unit] = for {
-    e <- (hashed(Vector[Hash]()) /: entries) { (r, e) =>
+  /* Test for equality with this table. */
+  override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    t <- EqualsTask.ofType[Table](that)
+    e <- (EqualsTask.areEqual(entries.size, t.entries.size) /: entries.zip(t.entries)) { (r, e) =>
+      for {
+        rr <- r
+        ((k1, v1), (k2, v2)) = e
+        kk <- k1.equalsOperation(k2)
+        vv <- v1.equalsOperation(v2)
+      } yield rr && kk && vv
+    }
+  } yield e
+
+  /* Calculate the hash for this table. */
+  override protected def calculateHash(): HashOperation[Hash] = for {
+    ee <- (HashTask.pure(Vector[Hash]()) /: entries) { (r, e) =>
       for {
         rr <- r
         (k, v) = e
-        kk <- k.hashed
-        vv <- v.hashed
-      } yield rr ++ Vector(kk, vv)
+        kk <- k.hashOperation
+        vv <- v.hashOperation
+      } yield rr :+ kk :+ vv
     }
-    _ <- hashing(Table.Header)
-    _ <- hashing(e)
-  } yield ()
+    h <- HashTask.hash(Table.Header, ee)
+  } yield h
 
 }
 
 /**
  * Factory for tables.
  */
-object Table extends binary_data.Tables with textual_data.TextualTables.Tables {
+object Table extends
+  binary_data.Tables with
+  textual_data.TextualTables.Tables {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte

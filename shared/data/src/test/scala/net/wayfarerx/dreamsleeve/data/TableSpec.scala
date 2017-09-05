@@ -27,6 +27,8 @@ import scala.collection.immutable.{SortedMap, SortedSet}
  */
 class TableSpec extends FlatSpec with Matchers {
 
+  import Hashable.HashTask
+
   "A table" should "act as a hashable fragment that contains values and fragments" in {
     val e = Table()
     val o = Table(Value.Number(1) -> Value.String("1"))
@@ -34,12 +36,13 @@ class TableSpec extends FlatSpec with Matchers {
       Value.Number(1) -> Value.String("1"),
       Value.Number(2) -> Value.String("2"),
       Value.Number(3) -> Value.String("3"))
-    e.hash shouldBe TestHashing(Table.Header, Iterable.empty[Hash])
-    o.hash shouldBe TestHashing(Table.Header, Seq(Value.Number(1).hash, Value.String("1").hash))
-    t.hash shouldBe TestHashing(Table.Header, Seq(
+    e.hash shouldBe HashTask.hash(Table.Header, Iterable.empty[Hash]).foldMap(HashTask.interpreter())
+    o.hash shouldBe HashTask.hash(Table.Header, Seq(
+      Value.Number(1).hash, Value.String("1").hash)).foldMap(HashTask.interpreter())
+    t.hash shouldBe HashTask.hash(Table.Header, Seq(
       Value.Number(1).hash, Value.String("1").hash,
       Value.Number(2).hash, Value.String("2").hash,
-      Value.Number(3).hash, Value.String("3").hash))
+      Value.Number(3).hash, Value.String("3").hash)).foldMap(HashTask.interpreter())
     Table.unapply(o) shouldBe Some(SortedMap[Value, Fragment](Value.Number(1) -> Value.String("1")))
   }
 

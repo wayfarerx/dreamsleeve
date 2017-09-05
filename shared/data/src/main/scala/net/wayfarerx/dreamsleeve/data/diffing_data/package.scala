@@ -50,7 +50,7 @@ package object diffing_data {
      * @return An update collecting the differences between two fragments.
      */
     final def apply(from: D, to: D): R =
-      diffingSupport(from, to).foldMap(DiffingOperation.interpereter)
+      diffingSupport(from, to).foldMap(DiffingOperation.interpreter)
 
     /**
      * Returns the support interface for this factory.
@@ -175,7 +175,7 @@ package object diffing_data {
   object DiffingOperation {
 
     /** The interpreter for diffing operations. */
-    val interpereter: DiffingOperation ~> Id = new (DiffingOperation ~> Id) {
+    val interpreter: DiffingOperation ~> Id = new (DiffingOperation ~> Id) {
       override def apply[R](op: DiffingOperation[R]): Id[R] = op()
     }
 

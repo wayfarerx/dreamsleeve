@@ -25,11 +25,13 @@ import org.scalatest._
  */
 class DocumentSpec extends FlatSpec with Matchers {
 
+  import Hashable.HashTask
+
   "A document" should "act as a hashable root fragment container" in {
     val e = Document("e", Table())
     val o = Document("o", Table(Value.Number(1) -> Value.String("1")))
-    e.hash shouldBe TestHashing(Document.Header, "e", e.content.hash)
-    o.hash shouldBe TestHashing(Document.Header, "o", o.content.hash)
+    e.hash shouldBe HashTask.hash(Document.Header, "e", e.content.hash).foldMap(HashTask.interpreter())
+    o.hash shouldBe HashTask.hash(Document.Header, "o", o.content.hash).foldMap(HashTask.interpreter())
     Document.unapply(o) shouldBe Some((o.title, o.content))
   }
 

@@ -20,7 +20,6 @@ package net.wayfarerx.dreamsleeve.data
 
 import java.security.MessageDigest
 
-import cats.free.Free.liftF
 import org.scalatest._
 
 /**
@@ -28,43 +27,80 @@ import org.scalatest._
  */
 class HashableSpec extends FlatSpec with Matchers {
 
-  import Hashable._
-
-  "A hashable" should "always return the same hash from supported components" in {
+  "A hashable element" should "provide reliable hashing support" in {
     TestHashable.hash eq TestHashable.hash shouldBe true
     Hashable.toString
   }
 
   /**
-   * The hashable to test.
+   * The data to test.
    */
   object TestHashable extends Hashable {
 
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- validate(false)(hashing)
-      boolean <- validate(true)(hashing)
-      byte <- validate(0x7D.toByte)(hashing)
-      short <- validate(0x7D6C.toShort)(hashing)
-      char <- validate('x')(hashing)
-      int <- validate(0x7D6C5B4A)(hashing)
-      float <- validate(Math.PI.toFloat)(hashing)
-      long <- validate(0x7D6C5B4A39281706L)(hashing)
-      double <- validate(Math.PI)(hashing)
-      string <- validate("hello")(hashing)
-      collection <- validate(Seq(boolean, byte, short, char, int, float, long, double, string))(hashing)
-      hash <- validate(collection)(hashing)
-    } yield hashing(hash)
+    val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
 
-    private def validate[T: TestHashing.Component](c: T)(f: T => Hashing[Unit]): Hashing[Hash] = {
-      val x = for {
-        _ <- f(c)
-        h <- liftF[HashOperation, Hash](d => Hash.setInternalRepresentation(d.digest()))
-      } yield h
-      val h = x.foldMap(HashOperation(MessageDigest.getInstance("SHA-256")))
-      h shouldBe TestHashing(c)
-      hashed(h)
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      _ <- HashTask.hash(false)
+      boolean <- HashTask.hash(true)
+      byte <- HashTask.hash(0x7D.toByte)
+      long <- HashTask.hash(0x7D6C5B4A39281706L)
+      double <- HashTask.hash(Math.PI)
+      string <- HashTask.hash("hello")
+      two <- HashTask.hash(boolean, byte)
+      three <- HashTask.hash(boolean, byte, long)
+      four <- HashTask.hash(boolean, byte, long, double)
+      collection <- HashTask.hash(Seq(boolean, byte, long, double, string, two, three, four))
+      result <- HashTask.hash(collection)
+      none <- HashTask.pure(Hash("0000000000000000000000000000000000000000000000000000000000000000"))
+    } yield {
+      boolean shouldBe hashItem(true)
+      byte shouldBe hashItem(0x7D.toByte)
+      long shouldBe hashItem(0x7D6C5B4A39281706L)
+      double shouldBe hashItem(Math.PI)
+      string shouldBe hashItem("hello")
+      two shouldBe hashItem(Seq(boolean, byte))
+      three shouldBe hashItem(Seq(boolean, byte, long))
+      four shouldBe hashItem(Seq(boolean, byte, long, double))
+      collection shouldBe hashItem(Seq(boolean, byte, long, double, string, two, three, four))
+      result shouldBe hashItem(collection)
+      none shouldBe Hash("0000000000000000000000000000000000000000000000000000000000000000")
+      result
+    }
+
+    def hashItem(i: Boolean): Hash = {
+      if (i) digest.update(0xFF.toByte) else digest.update(0x00.toByte)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Byte): Hash = {
+      digest.update(i)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Long): Hash = {
+      for (j <- 0 to 7) digest.update((i >>> (7 - j) * 8 & 0x00000000000000FF).toByte)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Double): Hash =
+      hashItem(java.lang.Double.doubleToLongBits(i))
+
+    def hashItem(i: String): Hash = {
+      digest.update(i.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Hash): Hash = {
+      digest.update(Hash.getInternalRepresentation(i))
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Iterable[Hash]): Hash = {
+      for (ii <- i) digest.update(Hash.getInternalRepresentation(ii))
+      Hash.setInternalRepresentation(digest.digest())
     }
 
   }
+
 
 }

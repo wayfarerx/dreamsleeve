@@ -112,7 +112,7 @@ package object patching_data {
      * @param found    The hashable that was found.
      * @return A patcher that validates that two hashes are the same.
      */
-    final protected def validateHash(expected: Hash, found: Hashable): Patching[Unit] =
+    final protected def validateHash(expected: Hash, found: Data): Patching[Unit] =
       liftF[PatchingOperation, Unit] { () =>
         val foundHash = found.hash
         if (expected == foundHash) Right(())
@@ -148,7 +148,7 @@ package object patching_data {
      * @return The result of patching the supplied data with the underlying action.
      */
     def patch(data: D)(): PatchingResult[R] =
-      dataToPatching(data).foldMap(PatchingOperation.interpereter)
+      dataToPatching(data).foldMap(PatchingOperation.interpreter)
 
   }
 
@@ -174,7 +174,7 @@ package object patching_data {
   object PatchingOperation {
 
     /** The interpreter for patching operations. */
-    val interpereter: PatchingOperation ~> PatchingResult = new (PatchingOperation ~> PatchingResult) {
+    val interpreter: PatchingOperation ~> PatchingResult = new (PatchingOperation ~> PatchingResult) {
       override def apply[R](op: PatchingOperation[R]): PatchingResult[R] = op()
     }
 

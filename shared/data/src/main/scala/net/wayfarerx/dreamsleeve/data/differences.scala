@@ -20,10 +20,12 @@ package net.wayfarerx.dreamsleeve.data
 
 import collection.immutable.SortedMap
 
+import cats.implicits._
+
 /**
  * Base class for all differences between documents.
  */
-sealed abstract class Difference extends Hashable
+sealed abstract class Difference extends Data
 
 /**
  * Implementations of differences.
@@ -46,19 +48,25 @@ object Difference {
    */
   case class Create(document: Document) extends Difference {
 
-    /* Generate the hash for this create. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      h <- document.hashed
-      _ <- hashing(Create.Header)
-      _ <- hashing(h)
-    } yield ()
+    /* Test for equality with this create. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      c <- EqualsTask.ofType[Create](that)
+      d <- document.equalsOperation(c.document)
+    } yield d
+
+    /* Calculate the hash for this create. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      d <- document.hashOperation
+      h <- HashTask.hash(Create.Header, d)
+    } yield h
 
   }
 
   /**
    * Declarations associated with creates.
    */
-  object Create extends patching_data.PatchingCreate {
+  object Create extends
+    patching_data.PatchingCreate {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -74,21 +82,28 @@ object Difference {
    */
   case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
 
-    /* Generate the hash for this revise. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      h <- update.hashed
-      _ <- hashing(Revise.Header)
-      _ <- hashing(fromHash)
-      _ <- hashing(title)
-      _ <- hashing(h)
-    } yield ()
+    /* Test for equality with this revise. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      r <- EqualsTask.ofType[Revise](that)
+      f <- EqualsTask.areEqual(fromHash, r.fromHash)
+      t <- EqualsTask.areEqual(title, r.title)
+      d <- update.equalsOperation(r.update)
+    } yield f && t && d
+
+    /* Calculate the hash for this revise. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      u <- update.hashOperation
+      h <- HashTask.hash(Revise.Header, fromHash, title, u)
+    } yield h
 
   }
 
   /**
    * Factory for revises.
    */
-  object Revise extends diffing_data.DiffingRevise with patching_data.PatchingRevise {
+  object Revise extends
+    diffing_data.DiffingRevise with
+    patching_data.PatchingRevise {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -113,19 +128,25 @@ object Difference {
    */
   case class Delete(fromHash: Hash) extends Difference {
 
+    /* Test for equality with this create. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      d <- EqualsTask.ofType[Delete](that)
+      f <- EqualsTask.areEqual(fromHash, d.fromHash)
+    } yield f
 
-    /* Generate the hash for this delete. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(Delete.Header)
-      _ <- hashing(fromHash)
-    } yield ()
+
+    /* Calculate the hash for this delete. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(Delete.Header, fromHash)
+    } yield h
 
   }
 
   /**
    * Factory for deletes.
    */
-  object Delete extends patching_data.PatchingDelete {
+  object Delete extends
+    patching_data.PatchingDelete {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -146,7 +167,7 @@ object Difference {
 /**
  * Base type for all changes applied to fragments in a table or document.
  */
-sealed abstract class Change extends Hashable
+sealed abstract class Change extends Data
 
 /**
  * Implementations of changes.
@@ -169,19 +190,25 @@ object Change {
    */
   case class Add(toFragment: Fragment) extends Change {
 
-    /* Generate the hash for this add. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      h <- toFragment.hashed
-      _ <- hashing(Add.Header)
-      _ <- hashing(h)
-    } yield ()
+    /* Test for equality with this add. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      a <- EqualsTask.ofType[Add](that)
+      t <- toFragment.equalsOperation(a.toFragment)
+    } yield t
+
+    /* Calculate the hash for this add. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      t <- toFragment.hashOperation
+      h <- HashTask.hash(Add.Header, t)
+    } yield h
 
   }
 
   /**
    * Declarations associated with adds.
    */
-  object Add extends patching_data.PatchingAdd {
+  object Add extends
+    patching_data.PatchingAdd {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -195,18 +222,24 @@ object Change {
    */
   case class Remove(fromHash: Hash) extends Change {
 
-    /* Generate the hash for this remove. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(Remove.Header)
-      _ <- hashing(fromHash)
-    } yield ()
+    /* Test for equality with this remove. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      r <- EqualsTask.ofType[Remove](that)
+      f <- EqualsTask.areEqual(fromHash, r.fromHash)
+    } yield f
+
+    /* Calculate the hash for this remove. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(Remove.Header, fromHash)
+    } yield h
 
   }
 
   /**
    * Factory for removes.
    */
-  object Remove extends patching_data.PatchingRemove {
+  object Remove extends
+    patching_data.PatchingRemove {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -232,7 +265,9 @@ sealed abstract class Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpdate {
+object Update extends
+  diffing_data.DiffingUpdate with
+  patching_data.PatchingUpdate {
 
   /**
    * Extracts any update implementation.
@@ -250,18 +285,24 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    */
   case class Copy(theHash: Hash) extends Update {
 
+    /* Test for equality with this copy. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      c <- EqualsTask.ofType[Copy](that)
+      t <- EqualsTask.areEqual(theHash, c.theHash)
+    } yield t
+
     /* Generate the theHash for this copy. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      _ <- hashing(Copy.Header)
-      _ <- hashing(theHash)
-    } yield ()
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      h <- HashTask.hash(Copy.Header, theHash)
+    } yield h
 
   }
 
   /**
    * Factory for copies.
    */
-  object Copy extends patching_data.PatchingCopy {
+  object Copy extends
+    patching_data.PatchingCopy {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -285,20 +326,26 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    */
   case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
 
-    /* Generate the hash for this replace. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      h <- toFragment.hashed
-      _ <- hashing(Replace.Header)
-      _ <- hashing(fromHash)
-      _ <- hashing(h)
-    } yield ()
+    /* Test for equality with this replace. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      r <- EqualsTask.ofType[Replace](that)
+      f <- EqualsTask.areEqual(fromHash, r.fromHash)
+      t <- toFragment.equalsOperation(r.toFragment)
+    } yield f && t
+
+    /* Calculate the hash for this replace. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      t <- toFragment.hashOperation
+      h <- HashTask.hash(Replace.Header, fromHash, t)
+    } yield h
 
   }
 
   /**
    * Factory for replaces.
    */
-  object Replace extends patching_data.PatchingReplace {
+  object Replace extends
+    patching_data.PatchingReplace {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -323,27 +370,40 @@ object Update extends diffing_data.DiffingUpdate with patching_data.PatchingUpda
    */
   case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
-    /* Generate the hash for this modify. */
-    override protected def generateHash(): Hashing[Unit] = for {
-      e <- (hashed(Vector[Hash]()) /: changes) { (r, c) =>
+    /* Test for equality with this modify. */
+    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+      m <- EqualsTask.ofType[Modify](that)
+      f <- EqualsTask.areEqual(fromHash, m.fromHash)
+      e <- (EqualsTask.areEqual(changes.size, m.changes.size) /: changes.zip(m.changes)) { (r, e) =>
+        for {
+          rr <- r
+          ((k1, v1), (k2, v2)) = e
+          kk <- k1.equalsOperation(k2)
+          vv <- v1.equalsOperation(v2)
+        } yield rr && kk && vv
+      }
+    } yield f && e
+
+    /* Calculate the hash for this modify. */
+    override protected def calculateHash(): HashOperation[Hash] = for {
+      e <- (HashTask.pure(Vector[Hash]()) /: changes) { (r, c) =>
         for {
           rr <- r
           (k, v) = c
-          kk <- k.hashed
-          vv <- v.hashed
+          kk <- k.hashOperation
+          vv <- v.hashOperation
         } yield rr ++ Vector(kk, vv)
       }
-      _ <- hashing(Modify.Header)
-      _ <- hashing(fromHash)
-      _ <- hashing(e)
-    } yield ()
+      h <- HashTask.hash(Modify.Header, fromHash, e)
+    } yield h
 
   }
 
   /**
    * Factory for modifies.
    */
-  object Modify extends patching_data.PatchingModify {
+  object Modify extends
+    patching_data.PatchingModify {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

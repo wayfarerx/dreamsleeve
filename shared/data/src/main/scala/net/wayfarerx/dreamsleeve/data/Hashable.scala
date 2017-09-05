@@ -20,43 +20,40 @@ package net.wayfarerx.dreamsleeve.data
 
 import java.security.MessageDigest
 
-import cats.{Id, ~>}
-import cats.free.Free
+import cats._
+import free.Free
 import Free.liftF
 
 /**
- * Base type for data elements that can be hashed.
+ * Base type for hashable elements.
  */
 abstract class Hashable {
 
-  import Hashable._
+  /** Alias for the language that describes hashing operations. */
+  final type HashOperation[T] = Hashable.HashOperation[T]
 
-  /** The language that describes hashing operations. */
-  final type Hashing[T] = Hashable.Hashing[T]
+  /** Alias for the tasks that make up hashing operations. */
+  final protected type HashTask[T] = Hashable.HashTask[T]
 
-  /** The cached hash of this data element. */
+  /** The cached hash of this element. */
   private var _hash: Option[Hash] = None
 
   /**
-   * Returns the hash for this data element, generating it if necessary.
+   * Returns the hash for this element, generating it if necessary.
    *
-   * @return The hash for this data element.
+   * @return The hash for this element.
    */
   final def hash: Hash =
-    _hash getOrElse hashed.foldMap(HashOperation(MessageDigest.getInstance("SHA-256")))
+    _hash getOrElse hashOperation.foldMap(HashTask.interpreter())
 
   /**
-   * Creates an operation that can calculate the hash of this data element.
+   * Creates an operation that can calculate the hash of this element.
    *
-   * @return An operation that can calculate the hash of this data element.
+   * @return An operation that can calculate the hash of this element.
    */
-  final def hashed: Hashing[Hash] = for {
-    c <- liftF[HashOperation, Option[Hash]](_ => _hash)
-    r <- c map Free.pure[HashOperation, Hash] getOrElse {
-      for {
-        _ <- generateHash()
-        h <- liftF[HashOperation, Hash](d => Hash.setInternalRepresentation(d.digest()))
-      } yield {
+  final def hashOperation: HashOperation[Hash] = for {
+    r <- _hash map HashTask.pure getOrElse {
+      for (h <- calculateHash()) yield {
         _hash = Some(h)
         h
       }
@@ -64,183 +61,222 @@ abstract class Hashable {
   } yield r
 
   /**
-   * Generates the hash for this data element.
+   * Calculates the hash for this element.
    *
-   * @return The hash for this data element.
+   * @return The hash for this element.
    */
-  protected def generateHash(): Hashing[Unit]
+  protected def calculateHash(): HashOperation[Hash]
 
   /**
-   * Creates a hasher that returns the specified object.
+   * Alias for the hash task factory.
    *
-   * @param result The object to return.
-   * @tparam T The type of object to return.
-   * @return A hasher that returns the specified object.
+   * @return The alias for the hash task factory
    */
-  final protected def hashed[T](result: T): Hashing[T] =
-    Free.pure(result)
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Boolean): Hashing[Unit] =
-    liftF[HashOperation, Unit](_.update(if (v) 0xFF.toByte else 0x00.toByte))
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Byte): Hashing[Unit] =
-    liftF[HashOperation, Unit](_.update(v))
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Short): Hashing[Unit] =
-    liftF[HashOperation, Unit] { d =>
-      d.update((v >>> 8 & 0x00FF).toByte)
-      d.update((v & 0x00FF).toByte)
-    }
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Char): Hashing[Unit] =
-    liftF[HashOperation, Unit] { d =>
-      d.update((v >>> 8 & 0x00FF).toByte)
-      d.update((v & 0x00FF).toByte)
-    }
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Int): Hashing[Unit] =
-    liftF[HashOperation, Unit] { d =>
-      d.update((v >>> 24 & 0x000000FF).toByte)
-      d.update((v >>> 16 & 0x000000FF).toByte)
-      d.update((v >>> 8 & 0x000000FF).toByte)
-      d.update((v & 0x000000FF).toByte)
-    }
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Float): Hashing[Unit] = for {
-    r <- hashing(java.lang.Float.floatToIntBits(v))
-  } yield r
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Long): Hashing[Unit] =
-    liftF[HashOperation, Unit] { d =>
-      d.update((v >>> 56 & 0x00000000000000FF).toByte)
-      d.update((v >>> 48 & 0x00000000000000FF).toByte)
-      d.update((v >>> 40 & 0x00000000000000FF).toByte)
-      d.update((v >>> 32 & 0x00000000000000FF).toByte)
-      d.update((v >>> 24 & 0x00000000000000FF).toByte)
-      d.update((v >>> 16 & 0x00000000000000FF).toByte)
-      d.update((v >>> 8 & 0x00000000000000FF).toByte)
-      d.update((v & 0x00000000000000FF).toByte)
-    }
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Double): Hashing[Unit] = for {
-    r <- hashing(java.lang.Double.doubleToLongBits(v))
-  } yield r
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: String): Hashing[Unit] =
-    liftF[HashOperation, Unit](_.update(v.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Hash): Hashing[Unit] =
-    liftF[HashOperation, Unit](_.update(Hash.getInternalRepresentation(v)))
-
-  /**
-   * Creates a hasher for the specified component.
-   *
-   * @param v The component to create a hasher for.
-   * @return A hasher for the specified component.
-   */
-  final protected def hashing(v: Iterable[Hash]): Hashing[Unit] =
-    liftF[HashOperation, Unit](d => v foreach (h => d.update(Hash.getInternalRepresentation(h))))
+  final protected def HashTask: Hashable.HashTask.type = Hashable.HashTask
 
 }
 
 /**
- * Types associated with data elements that can be hashed.
+ * Types associated with hashable elements.
  */
 object Hashable {
 
   /** The language that describes hashing operations. */
-  type Hashing[T] = Free[HashOperation, T]
+  type HashOperation[T] = Free[HashTask, T]
 
   /**
-   * Base class for operation that hash data.
+   * Base class for tasks that hash data.
    *
-   * @tparam R The type returned by this operation.
+   * @tparam T The type returned by this task.
    */
-  trait HashOperation[R] {
+  sealed trait HashTask[T] {
 
     /**
-     * Applies this operation.
+     * Applies this task.
      *
      * @param digest The message digest to use.
-     * @return The result of this hashing operation.
+     * @return The result of this hashing task.
      */
-    def apply(digest: MessageDigest): R
+    def apply(digest: MessageDigest): T
 
   }
 
   /**
-   * Declarations associated with hashing operations.
+   * Declarations associated with hashing tasks.
    */
-  object HashOperation {
+  object HashTask {
 
     /**
-     * Creates an interpreter for patching operations.
+     * Creates a hasher that returns the specified object.
+     *
+     * @param result The object to return.
+     * @tparam T The type of object to return.
+     * @return A hasher that returns the specified object.
+     */
+    def pure[T](result: T): HashOperation[T] =
+      Free.pure[HashTask, T](result)
+
+    /**
+     * Generates a hash for one hash item.
+     *
+     * @param a The only item to hash.
+     * @tparam A The type of the only item to hash.
+     * @return The hash of the one item.
+     */
+    def hash[A: Item](a: A): HashOperation[Hash] =
+      liftF[HashTask, Hash](new HashTask[Hash] {
+        override def apply(digest: MessageDigest): Hash = {
+          implicitly[Item[A]].apply(a, digest)
+          Hash.setInternalRepresentation(digest.digest())
+        }
+      })
+
+    /**
+     * Generates a hash for two hash items.
+     *
+     * @param a The first item to hash.
+     * @param b The second item to hash.
+     * @tparam A The type of the first item to hash.
+     * @tparam B The type of the second item to hash.
+     * @return The hash of the two items.
+     */
+    def hash[A: Item, B: Item](a: A, b: B): HashOperation[Hash] =
+      liftF[HashTask, Hash](new HashTask[Hash] {
+        override def apply(digest: MessageDigest): Hash = {
+          implicitly[Item[A]].apply(a, digest)
+          implicitly[Item[B]].apply(b, digest)
+          Hash.setInternalRepresentation(digest.digest())
+        }
+      })
+
+    /**
+     * Generates a hash for three hash items.
+     *
+     * @param a The first item to hash.
+     * @param b The second item to hash.
+     * @param c The third item to hash.
+     * @tparam A The type of the first item to hash.
+     * @tparam B The type of the second item to hash.
+     * @tparam C The type of the third item to hash.
+     * @return The hash of the three items.
+     */
+    def hash[A: Item, B: Item, C: Item](a: A, b: B, c: C): HashOperation[Hash] =
+      liftF[HashTask, Hash](new HashTask[Hash] {
+        override def apply(digest: MessageDigest): Hash = {
+          implicitly[Item[A]].apply(a, digest)
+          implicitly[Item[B]].apply(b, digest)
+          implicitly[Item[C]].apply(c, digest)
+          Hash.setInternalRepresentation(digest.digest())
+        }
+      })
+
+    /**
+     * Generates a hash for four hash items.
+     *
+     * @param a The first item to hash.
+     * @param b The second item to hash.
+     * @param c The third item to hash.
+     * @param d The fourth item to hash.
+     * @tparam A The type of the first item to hash.
+     * @tparam B The type of the second item to hash.
+     * @tparam C The type of the third item to hash.
+     * @tparam D The type of the fourth item to hash.
+     * @return The hash of the four items.
+     */
+    def hash[A: Item, B: Item, C: Item, D: Item](a: A, b: B, c: C, d: D): HashOperation[Hash] =
+      liftF[HashTask, Hash](new HashTask[Hash] {
+        override def apply(digest: MessageDigest): Hash = {
+          implicitly[Item[A]].apply(a, digest)
+          implicitly[Item[B]].apply(b, digest)
+          implicitly[Item[C]].apply(c, digest)
+          implicitly[Item[D]].apply(d, digest)
+          Hash.setInternalRepresentation(digest.digest())
+        }
+      })
+
+    /**
+     * Creates an interpreter for hashing tasks.
      *
      * @param digest The message digest to use.
-     * @return An interpreter for patching operations.
+     * @return An interpreter for hashing tasks.
      */
-    def apply(digest: MessageDigest): HashOperation ~> Id = new (HashOperation ~> Id) {
-      override def apply[R](op: HashOperation[R]): Id[R] = op(digest)
+    def interpreter(digest: MessageDigest = MessageDigest.getInstance("SHA-256")): HashTask ~> Id =
+      new (HashTask ~> Id) {
+        override def apply[R](op: HashTask[R]): Id[R] = op(digest)
+      }
+
+  }
+
+  /**
+   * Base class for hash item type classes.
+   *
+   * @tparam T The type of the underlying hash item.
+   */
+  sealed trait Item[-T] {
+
+    /**
+     * Appends the specified hash item to a message digest.
+     *
+     * @param item   The hash item to append.
+     * @param digest The message digest to append to.
+     */
+    def apply(item: T, digest: MessageDigest): Unit
+
+  }
+
+  /**
+   * Implementations of the supported hash items.
+   */
+  object Item {
+
+    /** Support for booleans as hash items. */
+    implicit val Booleans: Item[Boolean] = new Item[Boolean] {
+      override def apply(i: Boolean, d: MessageDigest): Unit =
+        d.update(if (i) 0xFF.toByte else 0x00.toByte)
+    }
+
+    /** Support for bytes as hash items. */
+    implicit val Bytes: Item[Byte] = new Item[Byte] {
+      override def apply(i: Byte, d: MessageDigest): Unit =
+        d.update(i)
+    }
+
+    /** Support for longs as hash items. */
+    implicit val Longs: Item[Long] = new Item[Long] {
+      override def apply(i: Long, d: MessageDigest): Unit = {
+        d.update((i >>> 56 & 0x00000000000000FF).toByte)
+        d.update((i >>> 48 & 0x00000000000000FF).toByte)
+        d.update((i >>> 40 & 0x00000000000000FF).toByte)
+        d.update((i >>> 32 & 0x00000000000000FF).toByte)
+        d.update((i >>> 24 & 0x00000000000000FF).toByte)
+        d.update((i >>> 16 & 0x00000000000000FF).toByte)
+        d.update((i >>> 8 & 0x00000000000000FF).toByte)
+        d.update((i & 0x00000000000000FF).toByte)
+      }
+    }
+
+    /** Support for doubles as hash items. */
+    implicit val Doubles: Item[Double] = new Item[Double] {
+      override def apply(i: Double, d: MessageDigest): Unit =
+        Longs(java.lang.Double.doubleToLongBits(i), d)
+    }
+
+    /** Support for strings as hash items. */
+    implicit val Strings: Item[String] = new Item[String] {
+      override def apply(i: String, d: MessageDigest): Unit =
+        d.update(i.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+    }
+
+    /** Support for hashes as hash items. */
+    implicit val Hashes: Item[Hash] = new Item[Hash] {
+      override def apply(i: Hash, d: MessageDigest): Unit =
+        d.update(Hash.getInternalRepresentation(i))
+    }
+
+    /** Support for collections of hashes as hash items. */
+    implicit val MultipleHashes: Item[Iterable[Hash]] = new Item[Iterable[Hash]] {
+      override def apply(i: Iterable[Hash], d: MessageDigest): Unit =
+        for (i <- i) Hashes.apply(i, d)
     }
 
   }

@@ -70,6 +70,9 @@ final class Hash private(private val bytes: Array[Byte]) {
  */
 object Hash {
 
+  /** The implementation of equality for hashes. */
+  implicit val Eq: cats.Eq[Hash] = (x: Hash, y: Hash) => x == y
+
   /** The number of bytes in a hash. */
   val Size = 32
 
