@@ -31,18 +31,32 @@ class ChangeSpec extends FlatSpec with Matchers {
   "An add" should "act as a hashable addition of a fragment to a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Add(fa).hash shouldBe HashTask.hash(Add.Header, fa.hash).foldMap(HashTask.interpreter())
-    Add(fb).hash shouldBe HashTask.hash(Add.Header, fb.hash).foldMap(HashTask.interpreter())
-    Add.unapply(Add(fa)) shouldBe Some(fa)
-    Change.unapply(Add(fb)) shouldBe true
+    val a = Add(fa)
+    val b = Add(fb)
+    a == a shouldBe true
+    a == b shouldBe false
+    a == ("Hi": Any) shouldBe false
+    a.toString shouldBe "Add(String(a))"
+    b.toString shouldBe "Add(String(b))"
+    a.hash shouldBe HashTask.hash(Add.Header, fa.hash).foldMap(HashTask.interpreter())
+    b.hash shouldBe HashTask.hash(Add.Header, fb.hash).foldMap(HashTask.interpreter())
+    Add.unapply(a) shouldBe Some(fa)
+    Change.unapply(b) shouldBe true
   }
 
   "A remove" should "act as a hashable removal of a fragment from a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Remove(fa).hash shouldBe HashTask.hash(Remove.Header, fa.hash).foldMap(HashTask.interpreter())
-    Remove(fb.hash).hash shouldBe HashTask.hash(Remove.Header, fb.hash).foldMap(HashTask.interpreter())
-    Remove.unapply(Remove(fa)) shouldBe Some(fa.hash)
+    val a = Remove(fa)
+    val b = Remove(fb.hash)
+    a == a shouldBe true
+    a == b shouldBe false
+    a == ("Hi": Any) shouldBe false
+    a.toString shouldBe s"Remove(${fa.hash})"
+    b.toString shouldBe s"Remove(${fb.hash})"
+    a.hash shouldBe HashTask.hash(Remove.Header, fa.hash).foldMap(HashTask.interpreter())
+    b.hash shouldBe HashTask.hash(Remove.Header, fb.hash).foldMap(HashTask.interpreter())
+    Remove.unapply(a) shouldBe Some(fa.hash)
     Change.unapply(Remove(fb)) shouldBe true
   }
 

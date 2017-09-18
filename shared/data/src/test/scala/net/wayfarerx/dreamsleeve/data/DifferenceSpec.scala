@@ -29,32 +29,47 @@ class DifferenceSpec extends FlatSpec with Matchers {
   import Hashable.HashTask
 
   "A create" should "act as a hashable creation of a document" in {
-    val d = Document("e", Table())
-    Create(d) == Create(d) shouldBe true
-    Create(d) == Create(Document("f", Table())) shouldBe false
-    Create(d).hash shouldBe HashTask.hash(Create.Header, d.hash).foldMap(HashTask.interpreter())
-    Create.unapply(Create(d)) shouldBe Some(d)
-    Difference.unapply(Create(d)) shouldBe true
+    val da = Document("e", Table())
+    val db = Document("f", Table())
+    val a = Create(da)
+    val b = Create(db)
+    a == a shouldBe true
+    a == b shouldBe false
+    a.toString shouldBe s"Create($da)"
+    b.toString shouldBe s"Create($db)"
+    a.hash shouldBe HashTask.hash(Create.Header, da.hash).foldMap(HashTask.interpreter())
+    Create.unapply(a) shouldBe Some(da)
+    Difference.unapply(a) shouldBe true
   }
 
   "A revise" should "verify the hash of a document and apply a change" in {
-    val t1 = Table(Value.String("a") -> Value.Number(1))
-    val t2 = Table(Value.String("a") -> Value.Number(2))
-    val d1 = Document("e", t1)
-    val d2 = Document("g", t2)
-    val a = Revise(d1, d2.title, Update(t1, t2))
-    a.hash shouldBe HashTask.hash(Revise.Header, d1.hash, d2.title, a.update.hash).foldMap(HashTask.interpreter())
-    Revise.unapply(a) shouldBe Some((d1.hash, d2.title, a.update))
+    val ta = Table(Value.String("a") -> Value.Number(1))
+    val tb = Table(Value.String("a") -> Value.Number(2))
+    val da = Document("e", ta)
+    val db = Document("g", tb)
+    val a = Revise(da, db.title, Update(ta, tb))
+    val b = Revise(db, da.title, Update(tb, ta))
+    a == a shouldBe true
+    a == b shouldBe false
+    a.toString shouldBe s"Revise(${da.hash},${db.title},${Update(ta, tb)})"
+    b.toString shouldBe s"Revise(${db.hash},${da.title},${Update(tb, ta)})"
+    a.hash shouldBe HashTask.hash(Revise.Header, da.hash, db.title, a.update.hash).foldMap(HashTask.interpreter())
+    Revise.unapply(a) shouldBe Some((da.hash, db.title, a.update))
     Difference.unapply(a) shouldBe true
   }
 
   "A delete" should "verify the hash of a document" in {
-    val d = Document("e", Table())
-    Delete(d) == Delete(d) shouldBe true
-    Delete(d) == Delete(Document("f", Table())) shouldBe false
-    Delete(d).hash shouldBe HashTask.hash(Delete.Header, d.hash).foldMap(HashTask.interpreter())
-    Delete.unapply(Delete(d)) shouldBe Some(d.hash)
-    Difference.unapply(Delete(d)) shouldBe true
+    val da = Document("e", Table())
+    val db = Document("f", Table())
+    val a = Delete(da)
+    val b = Delete(db.hash)
+    a == a shouldBe true
+    a == b shouldBe false
+    a.toString shouldBe s"Delete(${da.hash})"
+    b.toString shouldBe s"Delete(${db.hash})"
+    a.hash shouldBe HashTask.hash(Delete.Header, da.hash).foldMap(HashTask.interpreter())
+    Delete.unapply(a) shouldBe Some(da.hash)
+    Difference.unapply(a) shouldBe true
   }
 
 }

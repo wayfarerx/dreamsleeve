@@ -34,29 +34,51 @@ class UpdateSpec extends FlatSpec with Matchers {
   "A copy" should "act as a hashable copy of a fragment between tables" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Copy(fa).hash shouldBe HashTask.hash(Update.Copy.Header, fa.hash).foldMap(HashTask.interpreter())
-    Copy(fb.hash).hash shouldBe HashTask.hash(Update.Copy.Header, fb.hash).foldMap(HashTask.interpreter())
-    Copy.unapply(Copy(fa)) shouldBe Some(fa.hash)
+    val a = Copy(fa)
+    val b = Copy(fb.hash)
+    a == a shouldBe true
+    a == b shouldBe false
+    a == ("Hi": Any) shouldBe false
+    a.toString shouldBe s"Copy(${fa.hash})"
+    b.toString shouldBe s"Copy(${fb.hash})"
+    a.hash shouldBe HashTask.hash(Update.Copy.Header, fa.hash).foldMap(HashTask.interpreter())
+    b.hash shouldBe HashTask.hash(Update.Copy.Header, fb.hash).foldMap(HashTask.interpreter())
+    Copy.unapply(a) shouldBe Some(fa.hash)
     Update.unapply(Copy(fb)) shouldBe true
   }
 
   "A replace" should "act as a hashable replacement of a fragment in a table" in {
     val fa: Fragment = Value.String("a")
     val fb: Fragment = Value.String("b")
-    Replace(fa, fb).hash shouldBe HashTask.hash(Update.Replace.Header, fa.hash, fb.hash).foldMap(HashTask.interpreter())
-    Replace(fb.hash, fa).hash shouldBe HashTask.hash(Update.Replace.Header, fb.hash, fa.hash).foldMap(HashTask.interpreter())
-    Replace.unapply(Replace(fa, fb)) shouldBe Some((fa.hash, fb))
-    Update.unapply(Replace(fb.hash, fa)) shouldBe true
+    val a = Replace(fa, fb)
+    val b = Replace(fb.hash, fa)
+    a == a shouldBe true
+    a == b shouldBe false
+    a == ("Hi": Any) shouldBe false
+    a.toString shouldBe s"Replace(${fa.hash},$fb)"
+    b.toString shouldBe s"Replace(${fb.hash},$fa)"
+    a.hash shouldBe HashTask.hash(Update.Replace.Header, fa.hash, fb.hash).foldMap(HashTask.interpreter())
+    b.hash shouldBe HashTask.hash(Update.Replace.Header, fb.hash, fa.hash).foldMap(HashTask.interpreter())
+    Replace.unapply(a) shouldBe Some((fa.hash, fb))
+    Update.unapply(b) shouldBe true
   }
 
   "A modify" should "act as a hashable modification to the entries in a table" in {
     val ft = Table(Value.String("a") -> Value.Number())
     val tt = Table(Value.String("a") -> Value.Number(1.1))
     val r = Replace(tt.values.head, ft.values.head)
-    Modify(tt.hash).hash shouldBe HashTask.hash(Update.Modify.Header, tt.hash, Iterable.empty[Hash]).foldMap(HashTask.interpreter())
-    Modify(ft, ft.keys.head -> r).hash shouldBe HashTask.hash(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash)).foldMap(HashTask.interpreter())
-    Modify.unapply(Modify(ft, ft.keys.head -> r)) shouldBe Some((ft.hash, SortedMap(ft.keys.head -> r)))
-    Update.unapply(Modify(tt.hash)) shouldBe true
+    val a = Modify(tt.hash)
+    val b = Modify(ft, ft.keys.head -> r)
+    b == b shouldBe true
+    a == b shouldBe false
+    a == ("Hi": Any) shouldBe false
+    b == Modify(ft, ft.keys.head -> Copy(Value.Number())) shouldBe false
+    a.toString shouldBe s"Modify(${tt.hash},{})"
+    b.toString shouldBe s"Modify(${ft.hash},{${ft.keys.head}=$r})"
+    a.hash shouldBe HashTask.hash(Update.Modify.Header, tt.hash, Iterable.empty[Hash]).foldMap(HashTask.interpreter())
+    b.hash shouldBe HashTask.hash(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash)).foldMap(HashTask.interpreter())
+    Modify.unapply(b) shouldBe Some((ft.hash, SortedMap(ft.keys.head -> r)))
+    Update.unapply(a) shouldBe true
   }
 
 }

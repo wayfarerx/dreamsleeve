@@ -49,10 +49,17 @@ object Difference {
   case class Create(document: Document) extends Difference {
 
     /* Test for equality with this create. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       c <- EqualsTask.ofType[Create](that)
-      d <- document.equalsOperation(c.document)
+      d <- document.calculateEquals(c.document)
     } yield d
+
+    /* Calculate the string for this create. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Create")
+      _ <- document.calculateToString()
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this create. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -83,12 +90,21 @@ object Difference {
   case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
 
     /* Test for equality with this revise. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       r <- EqualsTask.ofType[Revise](that)
       f <- EqualsTask.areEqual(fromHash, r.fromHash)
       t <- EqualsTask.areEqual(title, r.title)
-      d <- update.equalsOperation(r.update)
+      d <- update.calculateEquals(r.update)
     } yield f && t && d
+
+    /* Calculate the string for this revise. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Revise")
+      _ <- ToStringTask.emit(fromHash)
+      _ <- ToStringTask.emit(title)
+      _ <- update.calculateToString()
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this revise. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -128,11 +144,18 @@ object Difference {
    */
   case class Delete(fromHash: Hash) extends Difference {
 
-    /* Test for equality with this create. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    /* Test for equality with this delete. */
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       d <- EqualsTask.ofType[Delete](that)
       f <- EqualsTask.areEqual(fromHash, d.fromHash)
     } yield f
+
+    /* Calculate the string for this delete. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Delete")
+      _ <- ToStringTask.emit(fromHash)
+      _ <- ToStringTask.end()
+    } yield ()
 
 
     /* Calculate the hash for this delete. */
@@ -191,10 +214,17 @@ object Change {
   case class Add(toFragment: Fragment) extends Change {
 
     /* Test for equality with this add. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       a <- EqualsTask.ofType[Add](that)
-      t <- toFragment.equalsOperation(a.toFragment)
+      t <- toFragment.calculateEquals(a.toFragment)
     } yield t
+
+    /* Calculate the string for this add. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Add")
+      _ <- toFragment.calculateToString()
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this add. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -223,10 +253,17 @@ object Change {
   case class Remove(fromHash: Hash) extends Change {
 
     /* Test for equality with this remove. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       r <- EqualsTask.ofType[Remove](that)
       f <- EqualsTask.areEqual(fromHash, r.fromHash)
     } yield f
+
+    /* Calculate the string for this remove. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Remove")
+      _ <- ToStringTask.emit(fromHash)
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this remove. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -286,10 +323,17 @@ object Update extends
   case class Copy(theHash: Hash) extends Update {
 
     /* Test for equality with this copy. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       c <- EqualsTask.ofType[Copy](that)
       t <- EqualsTask.areEqual(theHash, c.theHash)
     } yield t
+
+    /* Calculate the string for this copy. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Copy")
+      _ <- ToStringTask.emit(theHash)
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Generate the theHash for this copy. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -327,11 +371,19 @@ object Update extends
   case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
 
     /* Test for equality with this replace. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       r <- EqualsTask.ofType[Replace](that)
       f <- EqualsTask.areEqual(fromHash, r.fromHash)
-      t <- toFragment.equalsOperation(r.toFragment)
+      t <- toFragment.calculateEquals(r.toFragment)
     } yield f && t
+
+    /* Calculate the string for this copy. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Replace")
+      _ <- ToStringTask.emit(fromHash)
+      _ <- toFragment.calculateToString()
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this replace. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -353,8 +405,8 @@ object Update extends
     /**
      * Creates a replace for the specified fragments.
      *
-     * @param from   The fragment that is being replaced
-     * @param to     The fragment that is doing the replacing.
+     * @param from The fragment that is being replaced
+     * @param to   The fragment that is doing the replacing.
      * @return A replace for the specified fragments.
      */
     def apply(from: Fragment, to: Fragment): Replace =
@@ -371,18 +423,37 @@ object Update extends
   case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
     /* Test for equality with this modify. */
-    override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
       m <- EqualsTask.ofType[Modify](that)
       f <- EqualsTask.areEqual(fromHash, m.fromHash)
       e <- (EqualsTask.areEqual(changes.size, m.changes.size) /: changes.zip(m.changes)) { (r, e) =>
         for {
           rr <- r
           ((k1, v1), (k2, v2)) = e
-          kk <- k1.equalsOperation(k2)
-          vv <- v1.equalsOperation(v2)
+          kk <- k1.calculateEquals(k2)
+          vv <- v1.calculateEquals(v2)
         } yield rr && kk && vv
       }
     } yield f && e
+
+    /* Calculate the string for this modify. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Modify")
+      _ <- ToStringTask.emit(fromHash)
+      _ <- ToStringTask.beginMap()
+      _ <- (ToStringTask.pure() /: changes) { (r, e) =>
+        for {
+          _ <- r
+          (k, v) = e
+          _ <- ToStringTask.beginEntry()
+          _ <- k.calculateToString()
+          _ <- v.calculateToString()
+          _ <- ToStringTask.endEntry()
+        } yield ()
+      }
+      _ <- ToStringTask.endMap()
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this modify. */
     override protected def calculateHash(): HashOperation[Hash] = for {

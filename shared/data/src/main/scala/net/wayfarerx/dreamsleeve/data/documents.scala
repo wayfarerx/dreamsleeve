@@ -31,11 +31,19 @@ import cats.implicits._
 case class Document(title: String, content: Fragment) extends Data {
 
   /* Test for equality with this document. */
-  override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+  override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
     d <- EqualsTask.ofType[Document](that)
     t <- EqualsTask.areEqual(title, d.title)
-    c <- content.equalsOperation(d.content)
+    c <- content.calculateEquals(d.content)
   } yield t && c
+
+  /* Calculate the string for this document. */
+  override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+    _ <- ToStringTask.begin("Document")
+    _ <- ToStringTask.emit(title)
+    _ <- content.calculateToString()
+    _ <- ToStringTask.end()
+  } yield ()
 
   /* Calculate the hash for this document. */
   override protected def calculateHash(): HashOperation[Hash] = for {
@@ -109,10 +117,17 @@ object Value extends
   case class Boolean(value: scala.Boolean = false) extends Value {
 
     /* Test for equality with this boolean value. */
-    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
       b <- EqualsTask.ofType[Boolean](that)
       v <- EqualsTask.areEqual(value, b.value)
     } yield v
+
+    /* Calculate the string for this boolean value. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Boolean")
+      _ <- ToStringTask.emit(value)
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this boolean value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -147,10 +162,17 @@ object Value extends
   case class Number(value: Double = 0.0) extends Value {
 
     /* Test for equality with this number value. */
-    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
       n <- EqualsTask.ofType[Number](that)
       v <- EqualsTask.areEqual(value, n.value)
     } yield v
+
+    /* Calculate the string for this number value. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("Number")
+      _ <- ToStringTask.emit(value)
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this number value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -186,10 +208,17 @@ object Value extends
   case class String(value: java.lang.String = "") extends Value {
 
     /* Test for equality with this string value. */
-    override protected def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
+    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
       s <- EqualsTask.ofType[String](that)
       v <- EqualsTask.areEqual(value, s.value)
     } yield v
+
+    /* Calculate the string for this string value. */
+    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+      _ <- ToStringTask.begin("String")
+      _ <- ToStringTask.emit(value)
+      _ <- ToStringTask.end()
+    } yield ()
 
     /* Calculate the hash for this string value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -250,17 +279,33 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
     entries get key
 
   /* Test for equality with this table. */
-  override protected def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
+  override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
     t <- EqualsTask.ofType[Table](that)
     e <- (EqualsTask.areEqual(entries.size, t.entries.size) /: entries.zip(t.entries)) { (r, e) =>
       for {
         rr <- r
         ((k1, v1), (k2, v2)) = e
-        kk <- k1.equalsOperation(k2)
-        vv <- v1.equalsOperation(v2)
+        kk <- k1.calculateEquals(k2)
+        vv <- v1.calculateEquals(v2)
       } yield rr && kk && vv
     }
   } yield e
+
+  /* Calculate the string for this table. */
+  override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
+    _ <- ToStringTask.begin("Table")
+    _ <- (ToStringTask.pure() /: entries) { (r, e) =>
+      for {
+        _ <- r
+        (k, v) = e
+        _ <- ToStringTask.beginEntry()
+        _ <- k.calculateToString()
+        _ <- v.calculateToString()
+        _ <- ToStringTask.endEntry()
+      } yield ()
+    }
+    _ <- ToStringTask.end()
+  } yield ()
 
   /* Calculate the hash for this table. */
   override protected def calculateHash(): HashOperation[Hash] = for {

@@ -36,6 +36,13 @@ class TableSpec extends FlatSpec with Matchers {
       Value.Number(1) -> Value.String("1"),
       Value.Number(2) -> Value.String("2"),
       Value.Number(3) -> Value.String("3"))
+    e == e shouldBe true
+    e == o shouldBe false
+    e == ("Hi": Any) shouldBe false
+    t == t.copy(entries = t.entries + (Value.Number(3) -> Value.String("4"))) shouldBe false
+    e.toString shouldBe "Table()"
+    o.toString shouldBe "Table(Number(1)=String(1))"
+    t.toString shouldBe "Table(Number(1)=String(1),Number(2)=String(2),Number(3)=String(3))"
     e.hash shouldBe HashTask.hash(Table.Header, Iterable.empty[Hash]).foldMap(HashTask.interpreter())
     o.hash shouldBe HashTask.hash(Table.Header, Seq(
       Value.Number(1).hash, Value.String("1").hash)).foldMap(HashTask.interpreter())

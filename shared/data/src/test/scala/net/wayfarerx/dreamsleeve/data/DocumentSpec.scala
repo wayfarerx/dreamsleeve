@@ -30,6 +30,11 @@ class DocumentSpec extends FlatSpec with Matchers {
   "A document" should "act as a hashable root fragment container" in {
     val e = Document("e", Table())
     val o = Document("o", Table(Value.Number(1) -> Value.String("1")))
+    e == e shouldBe true
+    e == o shouldBe false
+    e == ("Hi": Any) shouldBe false
+    e.toString shouldBe "Document(e,Table())"
+    o.toString shouldBe "Document(o,Table(Number(1)=String(1)))"
     e.hash shouldBe HashTask.hash(Document.Header, "e", e.content.hash).foldMap(HashTask.interpreter())
     o.hash shouldBe HashTask.hash(Document.Header, "o", o.content.hash).foldMap(HashTask.interpreter())
     Document.unapply(o) shouldBe Some((o.title, o.content))

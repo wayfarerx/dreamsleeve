@@ -30,6 +30,11 @@ class ValueSpec extends FlatSpec with Matchers {
   "A boolean value" should "act as a hashable, comparable value" in {
     val f = Value.Boolean()
     val t = Value.Boolean(true)
+    f == f shouldBe true
+    f == t shouldBe false
+    f == ("Hi": Any) shouldBe false
+    f.toString shouldBe "Boolean(false)"
+    t.toString shouldBe "Boolean(true)"
     f.hash shouldBe HashTask.hash(Value.Boolean.Header, false).foldMap(HashTask.interpreter())
     t.hash shouldBe HashTask.hash(Value.Boolean.Header, true).foldMap(HashTask.interpreter())
     f.compareTo(f) shouldBe 0
@@ -46,6 +51,12 @@ class ValueSpec extends FlatSpec with Matchers {
     val n = Value.Number(-1.0)
     val z = Value.Number()
     val p = Value.Number(Math.PI)
+    n == n shouldBe true
+    n == z shouldBe false
+    n == ("Hi": Any) shouldBe false
+    n.toString shouldBe "Number(-1)"
+    z.toString shouldBe "Number(0)"
+    p.toString shouldBe s"Number(${Math.PI.toString})"
     n.hash shouldBe HashTask.hash(Value.Number.Header, -1.0).foldMap(HashTask.interpreter())
     z.hash shouldBe HashTask.hash(Value.Number.Header, 0.0).foldMap(HashTask.interpreter())
     p.hash shouldBe HashTask.hash(Value.Number.Header, Math.PI).foldMap(HashTask.interpreter())
@@ -71,6 +82,12 @@ class ValueSpec extends FlatSpec with Matchers {
     val e = Value.String()
     val a = Value.String("a")
     val z = Value.String("z")
+    e == e shouldBe true
+    e == a shouldBe false
+    e == ("Hi": Any) shouldBe false
+    e.toString shouldBe "String()"
+    a.toString shouldBe "String(a)"
+    z.toString shouldBe "String(z)"
     e.hash shouldBe HashTask.hash(Value.String.Header, "").foldMap(HashTask.interpreter())
     a.hash shouldBe HashTask.hash(Value.String.Header, "a").foldMap(HashTask.interpreter())
     z.hash shouldBe HashTask.hash(Value.String.Header, "z").foldMap(HashTask.interpreter())
