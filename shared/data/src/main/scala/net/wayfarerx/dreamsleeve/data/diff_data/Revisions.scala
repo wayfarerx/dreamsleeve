@@ -1,5 +1,5 @@
 /*
- * DiffRevise.scala
+ * Revisions.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,21 +22,21 @@ package diff_data
 /**
  * Diffing support for the revise factory object.
  */
-trait DiffRevise extends DiffFactory[Document, Difference.Revise] {
+trait Revisions extends DiffFactory[Document, Difference.Revise] {
 
   /* Return the revise support object. */
-  final override protected def diffSupport: DiffSupport[Document, Difference.Revise] = DiffRevise
+  final override protected def diffSupport: DiffSupport[Document, Difference.Revise] = Revisions
 
 }
 
 /**
  * Support for revise patching.
  */
-object DiffRevise extends DiffSupport[Document, Difference.Revise] {
+object Revisions extends DiffSupport[Document, Difference.Revise] {
 
   /* Construct a differ for the specified original and resulting data. */
   override def diff(fromData: Document, toData: Document): DiffOperation[Difference.Revise] = for {
-    update <- DiffUpdate.diff(fromData.content, toData.content)
+    update <- Updates.diff(fromData.content, toData.content)
     result <- DiffTask.createRevise(fromData, toData.title, update)
   } yield result
 

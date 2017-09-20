@@ -1,5 +1,5 @@
 /*
- * DiffUpdate.scala
+ * Updates.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,17 +22,17 @@ package diff_data
 /**
  * Diffing support for the update factory object.
  */
-trait DiffUpdate extends DiffFactory[Fragment, Update] {
+trait Updates extends DiffFactory[Fragment, Update] {
 
   /* Return the update support object. */
-  final override protected def diffSupport: DiffSupport[Fragment, Update] = DiffUpdate
+  final override protected def diffSupport: DiffSupport[Fragment, Update] = Updates
 
 }
 
 /**
  * Support for update patching.
  */
-object DiffUpdate extends DiffSupport[Fragment, Update] {
+object Updates extends DiffSupport[Fragment, Update] {
 
   /* Construct a differ for the specified original and resulting data. */
   override def diff(fromData: Fragment, toData: Fragment): DiffOperation[Update] = (fromData, toData) match {

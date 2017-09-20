@@ -118,7 +118,7 @@ object Difference {
    * Factory for revises.
    */
   object Revise extends
-    diff_data.DiffRevise with
+    diff_data.Revisions with
     patch_data.PatchRevise {
 
     /** The header for revises. */
@@ -303,7 +303,7 @@ sealed abstract class Update extends Change
  * Factory for updates.
  */
 object Update extends
-  diff_data.DiffUpdate with
+  diff_data.Updates with
   patch_data.PatchUpdate {
 
   /**

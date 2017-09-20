@@ -1,5 +1,5 @@
 /*
- * DiffUpdateSpec.scala
+ * UpdatesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -24,7 +24,7 @@ import org.scalatest._
 /**
  * Test case for the update diffing implementation.
  */
-class DiffUpdateSpec extends FlatSpec with Matchers {
+class UpdatesSpec extends FlatSpec with Matchers {
 
   "Update" should "detect the differences between fragments" in {
     val b: Value = Value.Boolean(true)
