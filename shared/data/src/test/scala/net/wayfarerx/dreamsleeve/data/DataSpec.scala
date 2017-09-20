@@ -36,11 +36,6 @@ class DataSpec extends FlatSpec with Matchers {
         (Hash.getInternalRepresentation(TestData.hash)(2) & 0x000000FF) << 8 |
         Hash.getInternalRepresentation(TestData.hash)(3) & 0x000000FF
     Data.toString
-    Data.ToStringTask.BeginElement.toString
-    Data.ToStringTask.EmitBoolean.toString
-    Data.ToStringTask.EmitDouble.toString
-    Data.ToStringTask.EmitString.toString
-    Data.ToStringTask.EmitHash.toString
   }
 
   /**

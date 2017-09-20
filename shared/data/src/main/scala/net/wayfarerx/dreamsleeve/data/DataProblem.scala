@@ -21,7 +21,7 @@ package net.wayfarerx.dreamsleeve.data
 /**
  * Base class for all data problems.
  */
-trait DataProblem
+abstract class DataProblem private[data]
 
 /**
  * Concrete data problem implementations.

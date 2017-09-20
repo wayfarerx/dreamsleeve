@@ -187,99 +187,6 @@ object Data {
     private val SequenceSeparator = ','
 
     /**
-     * Creates a stringify operation that emits nothing.
-     *
-     * @return A stringify operation that emits nothing.
-     */
-    def pure(): ToStringOperation[Unit] =
-      Free.pure[ToStringTask, Unit]()
-
-    /**
-     * Creates a stringify operation that emits the beginning of an element's string.
-     *
-     * @param name The name of the element that is beginning.
-     * @return A stringify operation that emits the beginning of an element's string.
-     */
-    def begin(name: String): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](BeginElement(name))
-
-    /**
-     * Creates a stringify operation that emits the end of an element's string.
-     *
-     * @return A stringify operation that emits the end of an element's string.
-     */
-    def end(): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EndElement)
-
-    /**
-     * Creates a stringify operation that emits the beginning of a map's string.
-     *
-     * @return A stringify operation that emits the beginning of a map's string.
-     */
-    def beginMap(): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](BeginMap)
-
-    /**
-     * Creates a stringify operation that emits the end of a map's string.
-     *
-     * @return A stringify operation that emits the end of a map's string.
-     */
-    def endMap(): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EndMap)
-
-    /**
-     * Creates a stringify operation that emits the beginning of an entry's string.
-     *
-     * @return A stringify operation that emits the beginning of an entry's string.
-     */
-    def beginEntry(): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](BeginEntry)
-
-    /**
-     * Creates a stringify operation that emits the end of an entry's string.
-     *
-     * @return A stringify operation that emits the end of an entry's string.
-     */
-    def endEntry(): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EndEntry)
-
-    /**
-     * Creates a stringify operation that emits a boolean value.
-     *
-     * @param value The value of the boolean to emit.
-     * @return A stringify operation that emits a boolean value.
-     */
-    def emit(value: Boolean): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EmitBoolean(value))
-
-    /**
-     * Creates a stringify operation that emits a double value.
-     *
-     * @param value The value of the double to emit.
-     * @return A stringify operation that emits a double value.
-     */
-    def emit(value: Double): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EmitDouble(value))
-
-    /**
-     * Creates a stringify operation that emits a string value.
-     *
-     * @param value The value of the string to emit.
-     * @return A stringify operation that emits a string value.
-     */
-    def emit(value: String): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EmitString(value))
-
-    /**
-     * Creates a stringify operation that emits a hash value.
-     *
-     * @param value The value of the hash to emit.
-     * @return A stringify operation that emits a hash value.
-     */
-    def emit(value: Hash): ToStringOperation[Unit] =
-      liftF[ToStringTask, Unit](EmitHash(value))
-
-    /**
      * Creates an interpreter for stringify tasks.
      *
      * @param builder The string builder to append to.
@@ -306,6 +213,137 @@ object Data {
       }
 
     }
+
+    /**
+     * Creates a stringify operation that emits nothing.
+     *
+     * @return A stringify operation that emits nothing.
+     */
+    def pure(): ToStringOperation[Unit] =
+      Free.pure[ToStringTask, Unit]()
+
+    /**
+     * Creates a stringify operation that emits the beginning of an element's string.
+     *
+     * @param name The name of the element that is beginning.
+     * @return A stringify operation that emits the beginning of an element's string.
+     */
+    def begin(name: String): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new Begin[Unit] {
+        override def separator: Char = SequenceSeparator
+
+        override def apply(builder: StringBuilder): Unit = {
+          builder.append(name)
+          builder.append('(')
+        }
+      })
+
+    /**
+     * Creates a stringify operation that emits the end of an element's string.
+     *
+     * @return A stringify operation that emits the end of an element's string.
+     */
+    def end(): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new End[Unit] {
+        override def apply(builder: StringBuilder): Unit =
+          builder.append(')')
+      })
+
+    /**
+     * Creates a stringify operation that emits the beginning of a map's string.
+     *
+     * @return A stringify operation that emits the beginning of a map's string.
+     */
+    def beginMap(): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new Begin[Unit] {
+        override def separator: Char = SequenceSeparator
+
+        override def apply(builder: StringBuilder): Unit =
+          builder.append('{')
+      })
+
+    /**
+     * Creates a stringify operation that emits the end of a map's string.
+     *
+     * @return A stringify operation that emits the end of a map's string.
+     */
+    def endMap(): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new End[Unit] {
+        override def apply(builder: StringBuilder): Unit =
+          builder.append('}')
+      })
+
+    /**
+     * Creates a stringify operation that emits the beginning of an entry's string.
+     *
+     * @return A stringify operation that emits the beginning of an entry's string.
+     */
+    def beginEntry(): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new Begin[Unit] {
+        override def separator: Char = EntrySeparator
+
+        override def apply(builder: StringBuilder): Unit = ()
+      })
+
+    /**
+     * Creates a stringify operation that emits the end of an entry's string.
+     *
+     * @return A stringify operation that emits the end of an entry's string.
+     */
+    def endEntry(): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new End[Unit] {
+        override def apply(builder: StringBuilder): Unit = ()
+      })
+
+    /**
+     * Creates a stringify operation that emits a boolean value.
+     *
+     * @param value The value of the boolean to emit.
+     * @return A stringify operation that emits a boolean value.
+     */
+    def emit(value: Boolean): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new ToStringTask[Unit] {
+        override def apply(builder: StringBuilder): Unit =
+          builder.append(value)
+      })
+
+    /**
+     * Creates a stringify operation that emits a double value.
+     *
+     * @param value The value of the double to emit.
+     * @return A stringify operation that emits a double value.
+     */
+    def emit(value: Double): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new ToStringTask[Unit] {
+        override def apply(builder: StringBuilder): Unit = {
+          val floor = value.floor
+          if (value == floor) builder.append(floor.toLong) else builder.append(value)
+        }
+      })
+
+    /**
+     * Creates a stringify operation that emits a string value.
+     *
+     * @param value The value of the string to emit.
+     * @return A stringify operation that emits a string value.
+     */
+    def emit(value: String): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new ToStringTask[Unit] {
+        override def apply(builder: StringBuilder): Unit =
+          builder.append(value)
+      })
+
+    /**
+     * Creates a stringify operation that emits a hash value.
+     *
+     * @param value The value of the hash to emit.
+     * @return A stringify operation that emits a hash value.
+     */
+    def emit(value: Hash): ToStringOperation[Unit] =
+      liftF[ToStringTask, Unit](new ToStringTask[Unit] {
+        override def apply(builder: StringBuilder): Unit =
+          builder.append(value)
+      })
 
     /**
      * Base class for tasks that start a collection of items.
@@ -354,110 +392,6 @@ object Data {
        */
       def unapply(task: End[_]): Boolean = true
 
-    }
-
-    /**
-     * Task that marks the beginning of a named sequence of items.
-     *
-     * @param name The name of the sequence.
-     */
-    case class BeginElement(name: String) extends Begin[Unit] {
-      override def separator: Char = SequenceSeparator
-
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append(name)
-        builder.append('(')
-      }
-    }
-
-    /**
-     * Task that marks the end of a named sequence of items.
-     */
-    case object EndElement extends End[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append(')')
-      }
-    }
-
-    /**
-     * Task that marks the beginning of a sequence of entries.
-     */
-    case object BeginMap extends Begin[Unit] {
-      override def separator: Char = SequenceSeparator
-
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append('{')
-      }
-    }
-
-    /**
-     * Task that marks the end of a sequence of entries.
-     */
-    case object EndMap extends End[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append('}')
-      }
-    }
-
-    /**
-     * Task that marks the beginning of a single entry.
-     */
-    case object BeginEntry extends Begin[Unit] {
-      override def separator: Char = EntrySeparator
-
-      override def apply(builder: StringBuilder): Unit = ()
-    }
-
-    /**
-     * Task that marks the end of a single entry.
-     */
-    case object EndEntry extends End[Unit] {
-      override def apply(builder: StringBuilder): Unit = ()
-    }
-
-    /**
-     * Task that emits a single boolean value.
-     *
-     * @param value The value to emit.
-     */
-    case class EmitBoolean(value: Boolean) extends ToStringTask[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append(value)
-      }
-    }
-
-    /**
-     * Task that emits a single double value.
-     *
-     * @param value The value to emit.
-     */
-    case class EmitDouble(value: Double) extends ToStringTask[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        val floor = value.floor
-        if (value == floor) builder.append(floor.toLong) else builder.append(value)
-      }
-    }
-
-    /**
-     * Task that emits a single string value.
-     *
-     * @param value The value to emit.
-     */
-    case class EmitString(value: String) extends ToStringTask[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append(value)
-      }
-    }
-
-    /**
-     * Task that emits a single hash value.
-     *
-     * @param value The value to emit.
-     */
-    case class EmitHash(value: Hash) extends ToStringTask[Unit] {
-      override def apply(builder: StringBuilder): Unit = {
-        builder.append(value)
-      }
     }
 
   }
