@@ -42,8 +42,8 @@ package object diff_data {
     /**
      * Creates an update by collecting the differences between two fragments.
      *
-     * @param from   The fragment that is being updated.
-     * @param to     The fragment that is a result of the update.
+     * @param from The fragment that is being updated.
+     * @param to   The fragment that is a result of the update.
      * @return An update collecting the differences between two fragments.
      */
     final def apply(from: I, to: I): O =
@@ -82,7 +82,7 @@ package object diff_data {
    *
    * @tparam T The type returned by this task.
    */
-  trait DiffTask[T] {
+  sealed trait DiffTask[T] {
 
     /**
      * Applies this task.
@@ -111,7 +111,9 @@ package object diff_data {
      * @return A differ that returns the specified result.
      */
     def pure[T](result: T): DiffOperation[T] =
-      liftF[DiffTask, T](() => result)
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = result
+      })
 
     /**
      * Creates a differ that returns an add operation.
@@ -121,7 +123,9 @@ package object diff_data {
      * @return A differ that returns an add operation.
      */
     def createAdd[T >: Change.Add](to: Fragment): DiffOperation[T] =
-      liftF[DiffTask, T](() => Change.Add(to))
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = Change.Add(to)
+      })
 
     /**
      * Creates a differ that returns a remove operation.
@@ -131,7 +135,9 @@ package object diff_data {
      * @return A differ that returns a remove operation.
      */
     def createRemove[T >: Change.Remove](from: Fragment): DiffOperation[T] =
-      liftF[DiffTask, T](() => Change.Remove(from))
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = Change.Remove(from)
+      })
 
     /**
      * Creates a differ that returns a copy operation.
@@ -141,7 +147,9 @@ package object diff_data {
      * @return A differ that returns a copy operation.
      */
     def createCopy[T >: Update.Copy](from: Fragment): DiffOperation[T] =
-      liftF[DiffTask, T](() => Update.Copy(from))
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = Update.Copy(from)
+      })
 
     /**
      * Creates a differ that returns a replace operation.
@@ -152,7 +160,9 @@ package object diff_data {
      * @return A differ that returns a replace operation.
      */
     def createReplace[T >: Update.Replace](from: Fragment, to: Fragment): DiffOperation[T] =
-      liftF[DiffTask, T](() => Update.Replace(from, to))
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = Update.Replace(from, to)
+      })
 
     /**
      * Creates a differ that returns a modify operation.
@@ -163,7 +173,9 @@ package object diff_data {
      * @return A differ that returns a modify operation.
      */
     def createModify[T >: Update.Modify](from: Table, toChanges: Seq[(Value, Change)]): DiffOperation[T] =
-      liftF[DiffTask, T](() => Update.Modify(from, toChanges: _*))
+      liftF[DiffTask, T](new DiffTask[T] {
+        override def apply(): T = Update.Modify(from, toChanges: _*)
+      })
 
     /**
      * Creates a differ that returns a revise operation.
@@ -174,7 +186,9 @@ package object diff_data {
      * @return A differ that returns a revise operation.
      */
     def createRevise(from: Document, toTitle: String, toUpdate: Update): DiffOperation[Difference.Revise] =
-      liftF[DiffTask, Difference.Revise](() => Difference.Revise(from, toTitle, toUpdate))
+      liftF[DiffTask, Difference.Revise](new DiffTask[Difference.Revise] {
+        override def apply(): Difference.Revise = Difference.Revise(from, toTitle, toUpdate)
+      })
 
   }
 
