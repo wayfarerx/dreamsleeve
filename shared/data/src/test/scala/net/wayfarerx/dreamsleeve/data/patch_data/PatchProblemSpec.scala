@@ -1,5 +1,5 @@
 /*
- * PatchingProblemSpec.scala
+ * PatchProblemSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import org.scalatest._
 
@@ -26,9 +26,9 @@ import scala.collection.immutable.SortedSet
 /**
  * Test case for the patching problem implementations.
  */
-class PatchingProblemSpec extends FlatSpec with Matchers {
+class PatchProblemSpec extends FlatSpec with Matchers {
 
-  import PatchingProblem._
+  import PatchProblem._
 
   "Patching problems" should "construct and extract correctly" in {
     val v1: Value = Value.String("a")
@@ -38,7 +38,7 @@ class PatchingProblemSpec extends FlatSpec with Matchers {
     UnexpectedEntry.unapply(UnexpectedEntry(v1)) shouldBe Some(v1)
     MissingEntry.unapply(MissingEntry(v1)) shouldBe Some(v1)
     MismatchedEntries.unapply(MismatchedEntries(SortedSet(v1, v2))) shouldBe Some(SortedSet(v1, v2))
-    PatchingProblem.toString
+    PatchProblem.toString
   }
 
 }

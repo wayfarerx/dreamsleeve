@@ -1,5 +1,5 @@
 /*
- * PatchingReviseSpec.scala
+ * PatchReviseSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,14 +17,14 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import org.scalatest._
 
 /**
  * Test case for the revise patching implementation.
  */
-class PatchingReviseSpec extends FlatSpec with Matchers {
+class PatchReviseSpec extends FlatSpec with Matchers {
 
   "A revise" should "patch a revision of a document" in {
     val d1 = Document("e", Table(Value.String("a") -> Value.Number(1)))
@@ -32,8 +32,8 @@ class PatchingReviseSpec extends FlatSpec with Matchers {
     val d3 = Document("g", Table(Value.String("a") -> Value.Number(2)))
     val d4 = Document("h", Table(Value.String("a") -> Value.Number(3)))
     Difference.Revise(d1, d3).patch(d1) shouldBe Right(d3)
-    Difference.Revise(d1, d2).patch(d2) shouldBe Left(PatchingProblem.HashMismatch(d1.hash, d2.hash))
-    Difference.Revise(d1, d3).patch(d4) shouldBe Left(PatchingProblem.HashMismatch(d1.hash, d4.hash))
+    Difference.Revise(d1, d2).patch(d2) shouldBe Left(PatchProblem.HashMismatch(d1.hash, d2.hash))
+    Difference.Revise(d1, d3).patch(d4) shouldBe Left(PatchProblem.HashMismatch(d1.hash, d4.hash))
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * PatchingAdd.scala
+ * PatchCreateSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,25 +17,18 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
+
+import org.scalatest._
 
 /**
- * Support for the add factory object.
+ * Test case for the create patching implementation.
  */
-trait PatchingAdd extends PatchingFactory[Change.Add, Unit, Fragment] {
+class PatchCreateSpec extends FlatSpec with Matchers {
 
-  /* Return the add support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingAdd
-
-}
-
-/**
- * Definitions associated with add patching.
- */
-object PatchingAdd extends PatchingSupport[Change.Add, Unit, Fragment] {
-
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Change.Add, data: Unit): Patching[Fragment] =
-    pure(action.toFragment)
+  "A create" should "patch the addition of a document" in {
+    val d = Document("e", Table())
+    Difference.Create(d).patch() shouldBe Right(d)
+  }
 
 }

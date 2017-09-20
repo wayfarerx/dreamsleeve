@@ -1,5 +1,5 @@
 /*
- * PatchingReplaceSpec.scala
+ * PatchReplaceSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,14 +17,14 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import org.scalatest._
 
 /**
  * Test case for the replace patching implementation.
  */
-class PatchingReplaceSpec extends FlatSpec with Matchers {
+class PatchReplaceSpec extends FlatSpec with Matchers {
 
   "A replace" should "patch a replacement of a fragment in a table" in {
     val fa: Fragment = Value.String("a")
@@ -32,8 +32,8 @@ class PatchingReplaceSpec extends FlatSpec with Matchers {
     val a = Update.Replace(fa, fb)
     val b = Update.Replace(fb.hash, fa)
     a.patch(fa) shouldBe Right(fb)
-    a.patch(fb) shouldBe Left(PatchingProblem.HashMismatch(fa.hash, fb.hash))
-    b.patch(fa) shouldBe Left(PatchingProblem.HashMismatch(fb.hash, fa.hash))
+    a.patch(fb) shouldBe Left(PatchProblem.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(PatchProblem.HashMismatch(fb.hash, fa.hash))
     b.patch(fb) shouldBe Right(fa)
   }
 

@@ -1,5 +1,5 @@
 /*
- * PatchingCreate.scala
+ * PatchDeleteSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,25 +17,20 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
+
+import org.scalatest._
 
 /**
- * Patching support for the create factory object.
+ * Test case for the delete patching implementation.
  */
-trait PatchingCreate extends PatchingFactory[Difference.Create, Unit, Document] {
+class PatchDeleteSpec extends FlatSpec with Matchers {
 
-  /* Return the create support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingCreate
-
-}
-
-/**
- * Definitions associated with create patching.
- */
-object PatchingCreate extends PatchingSupport[Difference.Create, Unit, Document] {
-
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Difference.Create, data: Unit): Patching[Document] =
-    pure(action.document)
+  "A delete" should "patch the removal of a document" in {
+    val d = Document("e", Table())
+    Difference.Delete(d).patch(d) shouldBe Right(())
+    Difference.Delete(d).patch(Document("f", Table())) shouldBe
+      Left(PatchProblem.HashMismatch(d.hash, Document("f", Table()).hash))
+  }
 
 }

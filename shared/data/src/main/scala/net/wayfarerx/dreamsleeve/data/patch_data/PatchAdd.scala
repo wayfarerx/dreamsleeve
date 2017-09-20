@@ -1,5 +1,5 @@
 /*
- * PatchingAddSpec.scala
+ * PatchAdd.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,22 +17,25 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
-
-import org.scalatest._
+package patch_data
 
 /**
- * Test case for the add patching implementation.
+ * Patching support for the add factory object.
  */
-class PatchingAddSpec extends FlatSpec with Matchers {
+trait PatchAdd extends PatchFactory[Change.Add, Unit, Fragment] {
 
-  "An add" should "patch the addition of a fragment to a table" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    val a = Change.Add(fa)
-    val b = Change.Add(fb)
-    a.patch() shouldBe Right(fa)
-    b.patch() shouldBe Right(fb)
-  }
+  /* Return the add support object. */
+  final override protected def patchSupport: PatchSupport[Change.Add, Unit, Fragment] = PatchAdd
+
+}
+
+/**
+ * Support for add patching.
+ */
+object PatchAdd extends PatchSupport[Change.Add, Unit, Fragment] {
+
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Change.Add, data: Unit): PatchOperation[Fragment] =
+    PatchTask.pure(action.toFragment)
 
 }

@@ -1,5 +1,5 @@
 /*
- * PatchingProblem.scala
+ * PatchProblem.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,26 +17,26 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import collection.immutable.SortedSet
 
 /**
  * Base class for problems that occur while patching differences or changes.
  */
-sealed trait PatchingProblem extends DataProblem
+sealed trait PatchProblem extends DataProblem
 
 /**
  * Concrete problem implementations.
  */
-object PatchingProblem {
+object PatchProblem {
 
   /**
    * Problem returned when a fragment expected to be a table is a value instead.
    *
    * @param found The value that was found where a table was expected.
    */
-  case class TypeMismatch(found: Value) extends PatchingProblem
+  case class TypeMismatch(found: Value) extends PatchProblem
 
   /**
    * Problem returned when hashes that are expected to match do not.
@@ -44,27 +44,27 @@ object PatchingProblem {
    * @param expected The value of the expected hash.
    * @param found    The value of the hash that was encountered.
    */
-  case class HashMismatch(expected: Hash, found: Hash) extends PatchingProblem
+  case class HashMismatch(expected: Hash, found: Hash) extends PatchProblem
 
   /**
    * Problem returned when a key in an add operation already has a matching entry in a table.
    *
    * @param key The key in the add operation that already has a matching entry in a table.
    */
-  case class UnexpectedEntry(key: Value) extends PatchingProblem
+  case class UnexpectedEntry(key: Value) extends PatchProblem
 
   /**
    * Problem returned when a key in a remove operation has no matching entry in a table.
    *
    * @param key The key in the remove operation that has no matching entry in a table.
    */
-  case class MissingEntry(key: Value) extends PatchingProblem
+  case class MissingEntry(key: Value) extends PatchProblem
 
   /**
    * Problem returned when keys in a table have no matching keys in a modify operation.
    *
    * @param keys The keys in the table that did not have matching keys in a modify operation.
    */
-  case class MismatchedEntries(keys: SortedSet[Value]) extends PatchingProblem
+  case class MismatchedEntries(keys: SortedSet[Value]) extends PatchProblem
 
 }

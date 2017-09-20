@@ -1,5 +1,5 @@
 /*
- * PatchingUpdateSpec.scala
+ * PatchCopy.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,24 +17,26 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
-
-import org.scalatest._
+package patch_data
 
 /**
- * Test case for the update patching implementation.
+ * Patching support for the copy factory object.
  */
-class PatchingUpdateSpec extends FlatSpec with Matchers {
+trait PatchCopy extends PatchFactory[Update.Copy, Fragment, Fragment] {
 
-  "An update" should "patch as the concrete type does" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Table(Value.String("a") -> Value.Number())
-    val a = Update.Copy(fa)
-    val b = Update.Replace(fa.hash, fb)
-    val c = Update.Modify(fb.hash, Value.String("a") -> Update.Replace(Value.Number(), Value.Number(1)))
-    (a: Update).patch(fa) shouldBe a.patch(fa)
-    (b: Update).patch(fa) shouldBe b.patch(fa)
-    (c: Update).patch(fb) shouldBe c.patch(fb)
-  }
+  /* Return the copy support object. */
+  final override protected def patchSupport: PatchSupport[Update.Copy, Fragment, Fragment] = PatchCopy
+
+}
+
+/**
+ * Support for copy patching.
+ */
+object PatchCopy extends PatchSupport[Update.Copy, Fragment, Fragment] {
+
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Update.Copy, data: Fragment): PatchOperation[Fragment] = for {
+    _ <- PatchTask.validateHash(action.theHash, data)
+  } yield data
 
 }

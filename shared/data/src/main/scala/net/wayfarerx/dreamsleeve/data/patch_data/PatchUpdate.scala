@@ -1,5 +1,5 @@
 /*
- * PatchingUpdate.scala
+ * PatchUpdate.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,28 +17,28 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 /**
  * Patching support for the update factory object.
  */
-trait PatchingUpdate extends PatchingFactory[Update, Fragment, Fragment] {
+trait PatchUpdate extends PatchFactory[Update, Fragment, Fragment] {
 
   /* Return the update support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingUpdate
+  final override protected def patchSupport: PatchSupport[Update, Fragment, Fragment] = PatchUpdate
 
 }
 
 /**
- * Definitions associated with update patching.
+ * Support for update patching.
  */
-object PatchingUpdate extends PatchingSupport[Update, Fragment, Fragment] {
+object PatchUpdate extends PatchSupport[Update, Fragment, Fragment] {
 
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Update, data: Fragment): Patching[Fragment] = action match {
-    case c@Update.Copy(_) => PatchingCopy(c, data)
-    case r@Update.Replace(_, _) => PatchingReplace(r, data)
-    case m@Update.Modify(_, _) => PatchingModify(m, data) map (t => t: Fragment)
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Update, data: Fragment): PatchOperation[Fragment] = action match {
+    case c@Update.Copy(_) => PatchCopy.patch(c, data)
+    case r@Update.Replace(_, _) => PatchReplace.patch(r, data)
+    case m@Update.Modify(_, _) => PatchModify.patch(m, data) map (t => t: Fragment)
   }
 
 }

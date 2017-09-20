@@ -1,5 +1,5 @@
 /*
- * PatchingCreateSpec.scala
+ * PatchRemoveSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,18 +17,24 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import org.scalatest._
 
 /**
- * Test case for the create patching implementation.
+ * Test case for the remove patching implementation.
  */
-class PatchingCreateSpec extends FlatSpec with Matchers {
+class PatchRemoveSpec extends FlatSpec with Matchers {
 
-  "A create" should "patch the addition of a document" in {
-    val d = Document("e", Table())
-    Difference.Create(d).patch() shouldBe Right(d)
+  "A remove" should "patch the removal of a fragment from a table" in {
+    val fa: Fragment = Value.String("a")
+    val fb: Fragment = Value.String("b")
+    val a = Change.Remove(fa)
+    val b = Change.Remove(fb.hash)
+    a.patch(fa) shouldBe Right(())
+    a.patch(fb) shouldBe Left(PatchProblem.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(PatchProblem.HashMismatch(fb.hash, fa.hash))
+    b.patch(fb) shouldBe Right(())
   }
 
 }

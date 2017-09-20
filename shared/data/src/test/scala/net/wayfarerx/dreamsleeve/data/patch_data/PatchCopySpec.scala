@@ -1,5 +1,5 @@
 /*
- * PatchingDelete.scala
+ * PatchCopySpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,26 +17,24 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
+
+import org.scalatest._
 
 /**
- * Patching support for the delete factory object.
+ * Test case for the copy patching implementation.
  */
-trait PatchingDelete extends PatchingFactory[Difference.Delete, Document, Unit] {
+class PatchCopySpec extends FlatSpec with Matchers {
 
-  /* Return the delete support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingDelete
+  "A copy" should "patch a copy of a fragment between tables" in {
+    val fa: Fragment = Value.String("a")
+    val fb: Fragment = Value.String("b")
+    val a = Update.Copy(fa)
+    val b = Update.Copy(fb.hash)
+    a.patch(fa) shouldBe Right(fa)
+    a.patch(fb) shouldBe Left(PatchProblem.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(PatchProblem.HashMismatch(fb.hash, fa.hash))
+    b.patch(fb) shouldBe Right(fb)
+  }
 
 }
-
-/**
- * Definitions associated with delete patching.
- */
-object PatchingDelete extends PatchingSupport[Difference.Delete, Document, Unit] {
-
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Difference.Delete, data: Document): Patching[Unit] =
-    validateHash(action.fromHash, data)
-
-}
-

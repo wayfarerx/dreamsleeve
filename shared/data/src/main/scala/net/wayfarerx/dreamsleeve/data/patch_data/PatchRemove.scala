@@ -1,5 +1,5 @@
 /*
- * PatchingDeleteSpec.scala
+ * PatchRemove.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,20 +17,25 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
-
-import org.scalatest._
+package patch_data
 
 /**
- * Test case for the delete patching implementation.
+ * Patching support for the remove factory object.
  */
-class PatchingDeleteSpec extends FlatSpec with Matchers {
+trait PatchRemove extends PatchFactory[Change.Remove, Fragment, Unit] {
 
-  "A delete" should "patch the removal of a document" in {
-    val d = Document("e", Table())
-    Difference.Delete(d).patch(d) shouldBe Right(())
-    Difference.Delete(d).patch(Document("f", Table())) shouldBe
-      Left(PatchingProblem.HashMismatch(d.hash, Document("f", Table()).hash))
-  }
+  /* Return the remove support object. */
+  final override protected def patchSupport: PatchSupport[Change.Remove, Fragment, Unit] = PatchRemove
+
+}
+
+/**
+ * Support for remove patching.
+ */
+object PatchRemove extends PatchSupport[Change.Remove, Fragment, Unit] {
+
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Change.Remove, data: Fragment): PatchOperation[Unit] =
+    PatchTask.validateHash(action.fromHash, data)
 
 }

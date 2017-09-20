@@ -1,5 +1,5 @@
 /*
- * PatchingModifySpec.scala
+ * PatchModifySpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,7 +17,7 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 import collection.immutable.SortedSet
 
@@ -26,34 +26,34 @@ import org.scalatest._
 /**
  * Test case for the modify patching implementation.
  */
-class PatchingModifySpec extends FlatSpec with Matchers {
+class PatchModifySpec extends FlatSpec with Matchers {
 
   "A modify" should "patch a modification to the entries in a table" in {
     // Hash mismatch
     val ft = Table(Value.String("a") -> Value.Number())
     val tt = Table(Value.String("a") -> Value.Number(1.1))
     val a = Update.Modify(ft, ft.keys.head -> Update.Replace(tt.values.head, ft.values.head))
-    a.patch(tt) shouldBe Left(PatchingProblem.HashMismatch(ft.hash, tt.hash))
+    a.patch(tt) shouldBe Left(PatchProblem.HashMismatch(ft.hash, tt.hash))
     // Type mismatch
     val fv = Value.String("a")
     val b = Update.Modify(fv.hash)
-    b.patch(fv) shouldBe Left(PatchingProblem.TypeMismatch(fv))
+    b.patch(fv) shouldBe Left(PatchProblem.TypeMismatch(fv))
     // Hash & type mismatch
     val c = Update.Modify(ft.hash)
-    c.patch(fv) shouldBe Left(PatchingProblem.HashMismatch(ft.hash, fv.hash))
+    c.patch(fv) shouldBe Left(PatchProblem.HashMismatch(ft.hash, fv.hash))
     // Missing change keys
     val et = Table()
     val d = Update.Modify(ft)
-    d.patch(ft) shouldBe Left(PatchingProblem.MismatchedEntries(SortedSet(ft.keys.head)))
+    d.patch(ft) shouldBe Left(PatchProblem.MismatchedEntries(SortedSet(ft.keys.head)))
     // Unexpected entry
     val e = Update.Modify(ft, ft.keys.head -> Change.Add(tt.values.head))
-    e.patch(ft) shouldBe Left(PatchingProblem.UnexpectedEntry(ft.keys.head))
+    e.patch(ft) shouldBe Left(PatchProblem.UnexpectedEntry(ft.keys.head))
     // Add an entry
     val f = Update.Modify(et, tt.keys.head -> Change.Add(tt.values.head))
     f.patch(et) shouldBe Right(tt)
     // Missing entry
     val g = Update.Modify(et, tt.keys.head -> Change.Remove(tt.values.head))
-    g.patch(et) shouldBe Left(PatchingProblem.MissingEntry(tt.keys.head))
+    g.patch(et) shouldBe Left(PatchProblem.MissingEntry(tt.keys.head))
     // Remove an entry
     val h = Update.Modify(ft, ft.keys.head -> Change.Remove(ft.values.head))
     h.patch(ft) shouldBe Right(et)
@@ -74,7 +74,7 @@ class PatchingModifySpec extends FlatSpec with Matchers {
     val l = Update.Modify(et.hash,
       Value.String("a") -> Change.Add(ft.values.head),
       Value.String("b") -> Change.Remove(ft.values.head))
-    l.patch(ft2) shouldBe Left(PatchingProblem.HashMismatch(et.hash, ft2.hash))
+    l.patch(ft2) shouldBe Left(PatchProblem.HashMismatch(et.hash, ft2.hash))
   }
 
 }

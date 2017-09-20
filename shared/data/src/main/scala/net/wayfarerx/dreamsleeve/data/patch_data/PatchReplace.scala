@@ -1,5 +1,5 @@
 /*
- * PatchingCopy.scala
+ * PatchReplace.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,26 +17,26 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patching_data
+package patch_data
 
 /**
- * Support for the copies factory object.
+ * Patching support for the replace factory object.
  */
-trait PatchingCopy extends PatchingFactory[Update.Copy, Fragment, Fragment] {
+trait PatchReplace extends PatchFactory[Update.Replace, Fragment, Fragment] {
 
-  /* Return the copy support object. */
-  final override protected def patchingSupport: PatchingSupport = PatchingCopy
+  /* Return the replace support object. */
+  final override protected def patchSupport: PatchSupport[Update.Replace, Fragment, Fragment] = PatchReplace
 
 }
 
 /**
- * Definitions associated with copy patching.
+ * Support for replace patching.
  */
-object PatchingCopy extends PatchingSupport[Update.Copy, Fragment, Fragment] {
+object PatchReplace extends PatchSupport[Update.Replace, Fragment, Fragment] {
 
-  /* Construct a patcher for the specified action and data. */
-  override def apply(action: Update.Copy, data: Fragment): Patching[Fragment] = for {
-    _ <- validateHash(action.theHash, data)
-  } yield data
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Update.Replace, data: Fragment): PatchOperation[Fragment] = for {
+    _ <- PatchTask.validateHash(action.fromHash, data)
+  } yield action.toFragment
 
 }

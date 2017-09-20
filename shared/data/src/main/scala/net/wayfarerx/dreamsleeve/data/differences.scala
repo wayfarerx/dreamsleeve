@@ -73,7 +73,7 @@ object Difference {
    * Declarations associated with creates.
    */
   object Create extends
-    patching_data.PatchingCreate {
+    patch_data.PatchCreate {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -119,7 +119,7 @@ object Difference {
    */
   object Revise extends
     diff_data.DiffRevise with
-    patching_data.PatchingRevise {
+    patch_data.PatchRevise {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -169,7 +169,7 @@ object Difference {
    * Factory for deletes.
    */
   object Delete extends
-    patching_data.PatchingDelete {
+    patch_data.PatchDelete {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -238,7 +238,7 @@ object Change {
    * Declarations associated with adds.
    */
   object Add extends
-    patching_data.PatchingAdd {
+    patch_data.PatchAdd {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -276,7 +276,7 @@ object Change {
    * Factory for removes.
    */
   object Remove extends
-    patching_data.PatchingRemove {
+    patch_data.PatchRemove {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -304,7 +304,7 @@ sealed abstract class Update extends Change
  */
 object Update extends
   diff_data.DiffUpdate with
-  patching_data.PatchingUpdate {
+  patch_data.PatchUpdate {
 
   /**
    * Extracts any update implementation.
@@ -346,7 +346,7 @@ object Update extends
    * Factory for copies.
    */
   object Copy extends
-    patching_data.PatchingCopy {
+    patch_data.PatchCopy {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -397,7 +397,7 @@ object Update extends
    * Factory for replaces.
    */
   object Replace extends
-    patching_data.PatchingReplace {
+    patch_data.PatchReplace {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -474,7 +474,7 @@ object Update extends
    * Factory for modifies.
    */
   object Modify extends
-    patching_data.PatchingModify {
+    patch_data.PatchModify {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

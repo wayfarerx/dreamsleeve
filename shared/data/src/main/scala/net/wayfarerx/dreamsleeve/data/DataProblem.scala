@@ -29,10 +29,10 @@ abstract class DataProblem private[data]
 object DataProblem {
 
   /** The base class of patching problems. */
-  type Patching = patching_data.PatchingProblem
+  type Patch = patch_data.PatchProblem
 
   /** The factory for patching problems. */
-  val Patching: patching_data.PatchingProblem.type = patching_data.PatchingProblem
+  val Patch: patch_data.PatchProblem.type = patch_data.PatchProblem
 
   /** The base class of textual problems. */
   type Binary = binary_data.Problems
