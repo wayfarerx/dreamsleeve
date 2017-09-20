@@ -30,7 +30,7 @@ trait DiffRevise extends DiffFactory[Document, Difference.Revise] {
 }
 
 /**
- * Definitions associated with revise diffing.
+ * Support for revise patching.
  */
 object DiffRevise extends DiffSupport[Document, Difference.Revise] {
 

@@ -30,7 +30,7 @@ trait DiffUpdate extends DiffFactory[Fragment, Update] {
 }
 
 /**
- * Definitions associated with update diffing.
+ * Support for update patching.
  */
 object DiffUpdate extends DiffSupport[Fragment, Update] {
 
