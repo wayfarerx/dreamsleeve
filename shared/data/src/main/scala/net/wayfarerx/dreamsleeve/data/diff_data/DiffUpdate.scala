@@ -1,5 +1,5 @@
 /*
- * DiffingUpdate.scala
+ * DiffUpdate.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,39 +17,39 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package diffing_data
+package diff_data
 
 /**
  * Diffing support for the update factory object.
  */
-trait DiffingUpdate extends DiffingFactory[Fragment, Update] {
+trait DiffUpdate extends DiffFactory[Fragment, Update] {
 
   /* Return the update support object. */
-  final override protected def diffingSupport: DiffingSupport = DiffingUpdate
+  final override protected def diffSupport: DiffSupport[Fragment, Update] = DiffUpdate
 
 }
 
 /**
  * Definitions associated with update diffing.
  */
-object DiffingUpdate extends DiffingSupport[Fragment, Update] {
+object DiffUpdate extends DiffSupport[Fragment, Update] {
 
   /* Construct a differ for the specified original and resulting data. */
-  override def apply(fromData: Fragment, toData: Fragment): Diffing[Update] = (fromData, toData) match {
-    case (f, t) if f == t => createCopy[Update](f)
-    case ((Value(), _) | (_, Value())) => createReplace[Update](fromData, toData)
+  override def diff(fromData: Fragment, toData: Fragment): DiffOperation[Update] = (fromData, toData) match {
+    case (f, t) if f == t => DiffTask.createCopy[Update](f)
+    case ((Value(), _) | (_, Value())) => DiffTask.createReplace[Update](fromData, toData)
     case (fromTable@Table(_), toTable@Table(_)) => for {
-      changes <- (pure(Vector[(Value, Change)]()) /: (fromTable.keys ++ toTable.keys).toVector) { (r, k) =>
+      changes <- (DiffTask.pure(Vector[(Value, Change)]()) /: (fromTable.keys ++ toTable.keys).toVector) { (r, k) =>
         for {
           e <- r
           c <- (fromTable get k, toTable get k) match {
-            case (Some(fv), None) => createRemove[Change](fv)
-            case (None, Some(tv)) => createAdd[Change](tv)
-            case _ => apply(fromTable(k), toTable(k))
+            case (Some(fv), None) => DiffTask.createRemove[Change](fv)
+            case (None, Some(tv)) => DiffTask.createAdd[Change](tv)
+            case _ => diff(fromTable(k), toTable(k))
           }
         } yield e :+ (k, c)
       }
-      result <- createModify[Update](fromTable, changes)
+      result <- DiffTask.createModify[Update](fromTable, changes)
     } yield result
   }
 

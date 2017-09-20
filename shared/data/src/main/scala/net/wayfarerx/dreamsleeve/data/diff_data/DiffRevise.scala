@@ -1,5 +1,5 @@
 /*
- * DiffingRevise.scala
+ * DiffRevise.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,27 +17,27 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package diffing_data
+package diff_data
 
 /**
  * Diffing support for the revise factory object.
  */
-trait DiffingRevise extends DiffingFactory[Document, Difference.Revise] {
+trait DiffRevise extends DiffFactory[Document, Difference.Revise] {
 
   /* Return the revise support object. */
-  final override protected def diffingSupport: DiffingSupport = DiffingRevise
+  final override protected def diffSupport: DiffSupport[Document, Difference.Revise] = DiffRevise
 
 }
 
 /**
  * Definitions associated with revise diffing.
  */
-object DiffingRevise extends DiffingSupport[Document, Difference.Revise] {
+object DiffRevise extends DiffSupport[Document, Difference.Revise] {
 
   /* Construct a differ for the specified original and resulting data. */
-  override def apply(fromData: Document, toData: Document): Diffing[Difference.Revise] = for {
-    update <- DiffingUpdate(fromData.content, toData.content)
-    result <- createRevise(fromData, toData.title, update)
+  override def diff(fromData: Document, toData: Document): DiffOperation[Difference.Revise] = for {
+    update <- DiffUpdate.diff(fromData.content, toData.content)
+    result <- DiffTask.createRevise(fromData, toData.title, update)
   } yield result
 
 }

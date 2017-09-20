@@ -1,5 +1,5 @@
 /*
- * DiffingReviseSpec.scala
+ * DiffReviseSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,14 +17,14 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package diffing_data
+package diff_data
 
 import org.scalatest._
 
 /**
  * Test case for the revise diffing implementation.
  */
-class DiffingReviseSpec extends FlatSpec with Matchers {
+class DiffReviseSpec extends FlatSpec with Matchers {
 
   "Revise" should "detect the differences between tables" in {
     val t1 = Table(Value.String("a") -> Value.Number(1))
