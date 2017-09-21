@@ -1,5 +1,5 @@
 /*
- * PatchAdd.scala
+ * Copies.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -20,22 +20,23 @@ package net.wayfarerx.dreamsleeve.data
 package patch_data
 
 /**
- * Patching support for the add factory object.
+ * Patching support for the copy factory object.
  */
-trait PatchAdd extends PatchFactory[Change.Add, Unit, Fragment] {
+trait Copies extends PatchFactory[Update.Copy, Fragment, Fragment] {
 
-  /* Return the add support object. */
-  final override protected def patchSupport: PatchSupport[Change.Add, Unit, Fragment] = PatchAdd
+  /* Return the copy support object. */
+  final override protected def patchSupport: PatchSupport[Update.Copy, Fragment, Fragment] = Copies
 
 }
 
 /**
- * Support for add patching.
+ * Support for copy patching.
  */
-object PatchAdd extends PatchSupport[Change.Add, Unit, Fragment] {
+object Copies extends PatchSupport[Update.Copy, Fragment, Fragment] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Change.Add, data: Unit): PatchOperation[Fragment] =
-    PatchTask.pure(action.toFragment)
+  override def patch(action: Update.Copy, data: Fragment): PatchOperation[Fragment] = for {
+    _ <- PatchTask.validateHash(action.theHash, data)
+  } yield data
 
 }

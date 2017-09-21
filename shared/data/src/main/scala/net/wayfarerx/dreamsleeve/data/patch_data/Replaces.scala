@@ -1,5 +1,5 @@
 /*
- * PatchCreateSpec.scala
+ * Replaces.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -19,16 +19,24 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
-import org.scalatest._
+/**
+ * Patching support for the replace factory object.
+ */
+trait Replaces extends PatchFactory[Update.Replace, Fragment, Fragment] {
+
+  /* Return the replace support object. */
+  final override protected def patchSupport: PatchSupport[Update.Replace, Fragment, Fragment] = Replaces
+
+}
 
 /**
- * Test case for the create patching implementation.
+ * Support for replace patching.
  */
-class PatchCreateSpec extends FlatSpec with Matchers {
+object Replaces extends PatchSupport[Update.Replace, Fragment, Fragment] {
 
-  "A create" should "patch the addition of a document" in {
-    val d = Document("e", Table())
-    Difference.Create(d).patch() shouldBe Right(d)
-  }
+  /* Construct a patch operation for the specified action and data. */
+  override def patch(action: Update.Replace, data: Fragment): PatchOperation[Fragment] = for {
+    _ <- PatchTask.validateHash(action.fromHash, data)
+  } yield action.toFragment
 
 }

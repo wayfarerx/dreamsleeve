@@ -1,5 +1,5 @@
 /*
- * PatchRevise.scala
+ * Updates.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -20,25 +20,25 @@ package net.wayfarerx.dreamsleeve.data
 package patch_data
 
 /**
- * Patching support for the revise factory object.
+ * Patching support for the update factory object.
  */
-trait PatchRevise extends PatchFactory[Difference.Revise, Document, Document] {
+trait Updates extends PatchFactory[Update, Fragment, Fragment] {
 
-  /* Return the revise support object. */
-  final override protected def patchSupport: PatchSupport[Difference.Revise, Document, Document] = PatchRevise
+  /* Return the update support object. */
+  final override protected def patchSupport: PatchSupport[Update, Fragment, Fragment] = Updates
 
 }
 
 /**
- * Support for revise patching.
+ * Support for update patching.
  */
-object PatchRevise extends PatchSupport[Difference.Revise, Document, Document] {
+object Updates extends PatchSupport[Update, Fragment, Fragment] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Difference.Revise, data: Document): PatchOperation[Document] = for {
-    _ <- PatchTask.validateHash(action.fromHash, data)
-    content <- PatchUpdate.patch(action.update, data.content)
-  } yield Document(action.title, content)
+  override def patch(action: Update, data: Fragment): PatchOperation[Fragment] = action match {
+    case c@Update.Copy(_) => Copies.patch(c, data)
+    case r@Update.Replace(_, _) => Replaces.patch(r, data)
+    case m@Update.Modify(_, _) => Modifies.patch(m, data) map (t => t: Fragment)
+  }
 
 }
-

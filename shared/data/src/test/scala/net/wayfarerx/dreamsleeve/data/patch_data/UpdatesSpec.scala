@@ -1,5 +1,5 @@
 /*
- * PatchDeleteSpec.scala
+ * UpdatesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,15 +22,19 @@ package patch_data
 import org.scalatest._
 
 /**
- * Test case for the delete patching implementation.
+ * Test case for the update patching implementation.
  */
-class PatchDeleteSpec extends FlatSpec with Matchers {
+class UpdatesSpec extends FlatSpec with Matchers {
 
-  "A delete" should "patch the removal of a document" in {
-    val d = Document("e", Table())
-    Difference.Delete(d).patch(d) shouldBe Right(())
-    Difference.Delete(d).patch(Document("f", Table())) shouldBe
-      Left(PatchProblem.HashMismatch(d.hash, Document("f", Table()).hash))
+  "An update" should "patch as the concrete type does" in {
+    val fa: Fragment = Value.String("a")
+    val fb: Fragment = Table(Value.String("a") -> Value.Number())
+    val a = Update.Copy(fa)
+    val b = Update.Replace(fa.hash, fb)
+    val c = Update.Modify(fb.hash, Value.String("a") -> Update.Replace(Value.Number(), Value.Number(1)))
+    (a: Update).patch(fa) shouldBe a.patch(fa)
+    (b: Update).patch(fa) shouldBe b.patch(fa)
+    (c: Update).patch(fb) shouldBe c.patch(fb)
   }
 
 }

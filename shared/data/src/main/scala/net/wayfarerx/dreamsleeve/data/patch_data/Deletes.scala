@@ -1,5 +1,5 @@
 /*
- * PatchDelete.scala
+ * Deletes.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,17 +22,17 @@ package patch_data
 /**
  * Patching support for the delete factory object.
  */
-trait PatchDelete extends PatchFactory[Difference.Delete, Document, Unit] {
+trait Deletes extends PatchFactory[Difference.Delete, Document, Unit] {
 
   /* Return the delete support object. */
-  final override protected def patchSupport: PatchSupport[Difference.Delete, Document, Unit] = PatchDelete
+  final override protected def patchSupport: PatchSupport[Difference.Delete, Document, Unit] = Deletes
 
 }
 
 /**
  * Support for delete patching.
  */
-object PatchDelete extends PatchSupport[Difference.Delete, Document, Unit] {
+object Deletes extends PatchSupport[Difference.Delete, Document, Unit] {
 
   /* Construct a patch operation for the specified action and data. */
   override def patch(action: Difference.Delete, data: Document): PatchOperation[Unit] =

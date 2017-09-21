@@ -1,5 +1,5 @@
 /*
- * PatchReviseSpec.scala
+ * RevisesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -24,7 +24,7 @@ import org.scalatest._
 /**
  * Test case for the revise patching implementation.
  */
-class PatchReviseSpec extends FlatSpec with Matchers {
+class RevisesSpec extends FlatSpec with Matchers {
 
   "A revise" should "patch a revision of a document" in {
     val d1 = Document("e", Table(Value.String("a") -> Value.Number(1)))

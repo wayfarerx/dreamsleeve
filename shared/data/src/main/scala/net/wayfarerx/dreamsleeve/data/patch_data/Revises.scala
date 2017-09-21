@@ -1,5 +1,5 @@
 /*
- * PatchCreate.scala
+ * Revises.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -20,22 +20,25 @@ package net.wayfarerx.dreamsleeve.data
 package patch_data
 
 /**
- * Patching support for the create factory object.
+ * Patching support for the revise factory object.
  */
-trait PatchCreate extends PatchFactory[Difference.Create, Unit, Document] {
+trait Revises extends PatchFactory[Difference.Revise, Document, Document] {
 
-  /* Return the create support object. */
-  final override protected def patchSupport: PatchSupport[Difference.Create, Unit, Document] = PatchCreate
+  /* Return the revise support object. */
+  final override protected def patchSupport: PatchSupport[Difference.Revise, Document, Document] = Revises
 
 }
 
 /**
- * Support for create patching.
+ * Support for revise patching.
  */
-object PatchCreate extends PatchSupport[Difference.Create, Unit, Document] {
+object Revises extends PatchSupport[Difference.Revise, Document, Document] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Difference.Create, data: Unit): PatchOperation[Document] =
-    PatchTask.pure(action.document)
+  override def patch(action: Difference.Revise, data: Document): PatchOperation[Document] = for {
+    _ <- PatchTask.validateHash(action.fromHash, data)
+    content <- Updates.patch(action.update, data.content)
+  } yield Document(action.title, content)
 
 }
+

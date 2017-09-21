@@ -1,5 +1,5 @@
 /*
- * PatchModify.scala
+ * Modifies.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,17 +22,17 @@ package patch_data
 /**
  * Patching support for the modify factory object.
  */
-trait PatchModify extends PatchFactory[Update.Modify, Fragment, Table] {
+trait Modifies extends PatchFactory[Update.Modify, Fragment, Table] {
 
   /* Return the modify support object. */
-  final override protected def patchSupport: PatchSupport[Update.Modify, Fragment, Table] = PatchModify
+  final override protected def patchSupport: PatchSupport[Update.Modify, Fragment, Table] = Modifies
 
 }
 
 /**
  * Support for modify patching.
  */
-object PatchModify extends PatchSupport[Update.Modify, Fragment, Table] {
+object Modifies extends PatchSupport[Update.Modify, Fragment, Table] {
 
   /* Construct a patch operation for the specified action and data. */
   override def patch(action: Update.Modify, data: Fragment): PatchOperation[Table] = for {
@@ -47,10 +47,10 @@ object PatchModify extends PatchSupport[Update.Modify, Fragment, Table] {
             e <- r
             i <- v match {
               case Change.Add(_) if fromTable.get(k).nonEmpty => PatchTask.report(PatchProblem.UnexpectedEntry(k))
-              case a@Change.Add(_) => PatchAdd.patch(a, ()) map (v => Vector(k -> v))
+              case a@Change.Add(_) => Adds.patch(a, ()) map (v => Vector(k -> v))
               case _ if fromTable.get(k).isEmpty => PatchTask.report(PatchProblem.MissingEntry(k))
-              case r@Change.Remove(_) => PatchRemove.patch(r, fromTable(k)) map (_ => Vector())
-              case u@Update() => PatchUpdate.patch(u, fromTable(k)) map (v => Vector(k -> v))
+              case r@Change.Remove(_) => Removes.patch(r, fromTable(k)) map (_ => Vector())
+              case u@Update() => Updates.patch(u, fromTable(k)) map (v => Vector(k -> v))
             }
           } yield e ++ i
         } map (e => Table(e: _*))

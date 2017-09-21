@@ -1,5 +1,5 @@
 /*
- * PatchReplace.scala
+ * AddsSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -19,24 +19,20 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
-/**
- * Patching support for the replace factory object.
- */
-trait PatchReplace extends PatchFactory[Update.Replace, Fragment, Fragment] {
-
-  /* Return the replace support object. */
-  final override protected def patchSupport: PatchSupport[Update.Replace, Fragment, Fragment] = PatchReplace
-
-}
+import org.scalatest._
 
 /**
- * Support for replace patching.
+ * Test case for the add patching implementation.
  */
-object PatchReplace extends PatchSupport[Update.Replace, Fragment, Fragment] {
+class AddsSpec extends FlatSpec with Matchers {
 
-  /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Update.Replace, data: Fragment): PatchOperation[Fragment] = for {
-    _ <- PatchTask.validateHash(action.fromHash, data)
-  } yield action.toFragment
+  "An add" should "patch the addition of a fragment to a table" in {
+    val fa: Fragment = Value.String("a")
+    val fb: Fragment = Value.String("b")
+    val a = Change.Add(fa)
+    val b = Change.Add(fb)
+    a.patch() shouldBe Right(fa)
+    b.patch() shouldBe Right(fb)
+  }
 
 }

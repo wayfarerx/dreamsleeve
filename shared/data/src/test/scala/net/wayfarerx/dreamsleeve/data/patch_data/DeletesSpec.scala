@@ -1,5 +1,5 @@
 /*
- * PatchCopySpec.scala
+ * DeletesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,19 +22,15 @@ package patch_data
 import org.scalatest._
 
 /**
- * Test case for the copy patching implementation.
+ * Test case for the delete patching implementation.
  */
-class PatchCopySpec extends FlatSpec with Matchers {
+class DeletesSpec extends FlatSpec with Matchers {
 
-  "A copy" should "patch a copy of a fragment between tables" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    val a = Update.Copy(fa)
-    val b = Update.Copy(fb.hash)
-    a.patch(fa) shouldBe Right(fa)
-    a.patch(fb) shouldBe Left(PatchProblem.HashMismatch(fa.hash, fb.hash))
-    b.patch(fa) shouldBe Left(PatchProblem.HashMismatch(fb.hash, fa.hash))
-    b.patch(fb) shouldBe Right(fb)
+  "A delete" should "patch the removal of a document" in {
+    val d = Document("e", Table())
+    Difference.Delete(d).patch(d) shouldBe Right(())
+    Difference.Delete(d).patch(Document("f", Table())) shouldBe
+      Left(PatchProblem.HashMismatch(d.hash, Document("f", Table()).hash))
   }
 
 }

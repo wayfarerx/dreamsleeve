@@ -1,5 +1,5 @@
 /*
- * PatchCopy.scala
+ * CreatesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -19,24 +19,16 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
-/**
- * Patching support for the copy factory object.
- */
-trait PatchCopy extends PatchFactory[Update.Copy, Fragment, Fragment] {
-
-  /* Return the copy support object. */
-  final override protected def patchSupport: PatchSupport[Update.Copy, Fragment, Fragment] = PatchCopy
-
-}
+import org.scalatest._
 
 /**
- * Support for copy patching.
+ * Test case for the create patching implementation.
  */
-object PatchCopy extends PatchSupport[Update.Copy, Fragment, Fragment] {
+class CreatesSpec extends FlatSpec with Matchers {
 
-  /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Update.Copy, data: Fragment): PatchOperation[Fragment] = for {
-    _ <- PatchTask.validateHash(action.theHash, data)
-  } yield data
+  "A create" should "patch the addition of a document" in {
+    val d = Document("e", Table())
+    Difference.Create(d).patch() shouldBe Right(d)
+  }
 
 }

@@ -1,5 +1,5 @@
 /*
- * PatchModifySpec.scala
+ * ModifiesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -26,7 +26,7 @@ import org.scalatest._
 /**
  * Test case for the modify patching implementation.
  */
-class PatchModifySpec extends FlatSpec with Matchers {
+class ModifiesSpec extends FlatSpec with Matchers {
 
   "A modify" should "patch a modification to the entries in a table" in {
     // Hash mismatch

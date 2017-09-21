@@ -1,5 +1,5 @@
 /*
- * PatchRemove.scala
+ * Creates.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -20,22 +20,22 @@ package net.wayfarerx.dreamsleeve.data
 package patch_data
 
 /**
- * Patching support for the remove factory object.
+ * Patching support for the create factory object.
  */
-trait PatchRemove extends PatchFactory[Change.Remove, Fragment, Unit] {
+trait Creates extends PatchFactory[Difference.Create, Unit, Document] {
 
-  /* Return the remove support object. */
-  final override protected def patchSupport: PatchSupport[Change.Remove, Fragment, Unit] = PatchRemove
+  /* Return the create support object. */
+  final override protected def patchSupport: PatchSupport[Difference.Create, Unit, Document] = Creates
 
 }
 
 /**
- * Support for remove patching.
+ * Support for create patching.
  */
-object PatchRemove extends PatchSupport[Change.Remove, Fragment, Unit] {
+object Creates extends PatchSupport[Difference.Create, Unit, Document] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Change.Remove, data: Fragment): PatchOperation[Unit] =
-    PatchTask.validateHash(action.fromHash, data)
+  override def patch(action: Difference.Create, data: Unit): PatchOperation[Document] =
+    PatchTask.pure(action.document)
 
 }

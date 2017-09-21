@@ -73,7 +73,7 @@ object Difference {
    * Declarations associated with creates.
    */
   object Create extends
-    patch_data.PatchCreate {
+    patch_data.Creates {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -119,7 +119,7 @@ object Difference {
    */
   object Revise extends
     diff_data.Revisions with
-    patch_data.PatchRevise {
+    patch_data.Revises {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -169,7 +169,7 @@ object Difference {
    * Factory for deletes.
    */
   object Delete extends
-    patch_data.PatchDelete {
+    patch_data.Deletes {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -238,7 +238,7 @@ object Change {
    * Declarations associated with adds.
    */
   object Add extends
-    patch_data.PatchAdd {
+    patch_data.Adds {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -276,7 +276,7 @@ object Change {
    * Factory for removes.
    */
   object Remove extends
-    patch_data.PatchRemove {
+    patch_data.Removes {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -304,7 +304,7 @@ sealed abstract class Update extends Change
  */
 object Update extends
   diff_data.Updates with
-  patch_data.PatchUpdate {
+  patch_data.Updates {
 
   /**
    * Extracts any update implementation.
@@ -346,7 +346,7 @@ object Update extends
    * Factory for copies.
    */
   object Copy extends
-    patch_data.PatchCopy {
+    patch_data.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -397,7 +397,7 @@ object Update extends
    * Factory for replaces.
    */
   object Replace extends
-    patch_data.PatchReplace {
+    patch_data.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -474,7 +474,7 @@ object Update extends
    * Factory for modifies.
    */
   object Modify extends
-    patch_data.PatchModify {
+    patch_data.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

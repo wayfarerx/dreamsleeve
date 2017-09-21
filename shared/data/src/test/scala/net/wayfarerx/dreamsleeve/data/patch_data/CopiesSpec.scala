@@ -1,5 +1,5 @@
 /*
- * PatchUpdateSpec.scala
+ * CopiesSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -22,19 +22,19 @@ package patch_data
 import org.scalatest._
 
 /**
- * Test case for the update patching implementation.
+ * Test case for the copy patching implementation.
  */
-class PatchUpdateSpec extends FlatSpec with Matchers {
+class CopiesSpec extends FlatSpec with Matchers {
 
-  "An update" should "patch as the concrete type does" in {
+  "A copy" should "patch a copy of a fragment between tables" in {
     val fa: Fragment = Value.String("a")
-    val fb: Fragment = Table(Value.String("a") -> Value.Number())
+    val fb: Fragment = Value.String("b")
     val a = Update.Copy(fa)
-    val b = Update.Replace(fa.hash, fb)
-    val c = Update.Modify(fb.hash, Value.String("a") -> Update.Replace(Value.Number(), Value.Number(1)))
-    (a: Update).patch(fa) shouldBe a.patch(fa)
-    (b: Update).patch(fa) shouldBe b.patch(fa)
-    (c: Update).patch(fb) shouldBe c.patch(fb)
+    val b = Update.Copy(fb.hash)
+    a.patch(fa) shouldBe Right(fa)
+    a.patch(fb) shouldBe Left(PatchProblem.HashMismatch(fa.hash, fb.hash))
+    b.patch(fa) shouldBe Left(PatchProblem.HashMismatch(fb.hash, fa.hash))
+    b.patch(fb) shouldBe Right(fb)
   }
 
 }
