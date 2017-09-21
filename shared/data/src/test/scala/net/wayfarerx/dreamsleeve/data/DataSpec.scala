@@ -18,7 +18,7 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import cats._
+import cats.Eval
 
 import org.scalatest._
 
@@ -29,13 +29,12 @@ class DataSpec extends FlatSpec with Matchers {
 
   "A data element" should "consistently implement equals, toString and hashCode" in {
     TestData.equals(TestData: Any) shouldBe true
-    TestData.toString shouldBe "TestData()"
+    TestData.toString shouldBe "TestData"
     TestData.hashCode() shouldBe
       (Hash.getInternalRepresentation(TestData.hash)(0) & 0x000000FF) << 24 |
         (Hash.getInternalRepresentation(TestData.hash)(1) & 0x000000FF) << 16 |
         (Hash.getInternalRepresentation(TestData.hash)(2) & 0x000000FF) << 8 |
         Hash.getInternalRepresentation(TestData.hash)(3) & 0x000000FF
-    Data.toString
   }
 
   /**
@@ -45,15 +44,13 @@ class DataSpec extends FlatSpec with Matchers {
 
     /* Test for equality with this test. */
     override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
-      case _: TestData.type => True
-      case _ => False
+      case _: TestData.type => Eval.now(true)
+      case _ => Eval.now(false)
     }
 
     /* Calculate the string for this test. */
-    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-      _ <- ToStringTask.begin("TestData")
-      _ <- ToStringTask.end()
-    } yield ()
+    override protected[data] def calculateToString(): Eval[String] =
+      Eval.now("TestData")
 
     /* Calculate the hash for this test. */
     override protected def calculateHash(): HashOperation[Hash] = for {

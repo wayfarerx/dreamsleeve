@@ -19,8 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 
 import collection.immutable.{SortedMap, SortedSet}
-import cats._
-import cats.implicits._
+
+import cats.Eval
 
 /**
  * Represents a data document.
@@ -31,18 +31,14 @@ import cats.implicits._
 case class Document(title: String, content: Fragment) extends Data {
 
   /* Test for equality with this document. */
-  override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
-    case Document(thatTitle, thatContent) if thatTitle == title => Eval.later(thatContent == content)
-    case _ => False
+  override protected def calculateEquals(that: Any): Eval[Boolean] = that match {
+    case Document(thatTitle, thatContent) if thatTitle == title => Eval.always(thatContent == content)
+    case _ => Eval.now(false)
   }
 
   /* Calculate the string for this document. */
-  override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-    _ <- ToStringTask.begin("Document")
-    _ <- ToStringTask.emit(title)
-    _ <- content.calculateToString()
-    _ <- ToStringTask.end()
-  } yield ()
+  override protected def calculateToString(): Eval[String] =
+    for (c <- Eval.always(content.toString)) yield s"Document($title,$c)"
 
   /* Calculate the hash for this document. */
   override protected def calculateHash(): HashOperation[Hash] = for {
@@ -80,7 +76,7 @@ object Fragment extends
    * Extracts any fragment implementation.
    *
    * @param fragment The fragment to extract.
-   * @return True for every fragment.
+   * @return Eval.now(true) for every fragment.
    */
   def unapply(fragment: Fragment): Boolean =
     true
@@ -103,7 +99,7 @@ object Value extends
    * Extracts any value implementation.
    *
    * @param value The value to extract.
-   * @return True for every value.
+   * @return Eval.now(true) for every value.
    */
   def unapply(value: Value): scala.Boolean =
     true
@@ -116,17 +112,14 @@ object Value extends
   case class Boolean(value: scala.Boolean = false) extends Value {
 
     /* Test for equality with this boolean value. */
-    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
-      case Boolean(v) if v == value => True
-      case _ => False
+    override protected def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case Boolean(v) if v == value => Eval.now(true)
+      case _ => Eval.now(false)
     }
 
     /* Calculate the string for this boolean value. */
-    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-      _ <- ToStringTask.begin("Boolean")
-      _ <- ToStringTask.emit(value)
-      _ <- ToStringTask.end()
-    } yield ()
+    override protected def calculateToString(): Eval[java.lang.String] =
+      Eval.now(s"Boolean($value)")
 
     /* Calculate the hash for this boolean value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -161,17 +154,17 @@ object Value extends
   case class Number(value: Double = 0.0) extends Value {
 
     /* Test for equality with this number value. */
-    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
-      case Number(v) if v == value => True
-      case _ => False
+    override protected def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case Number(v) if v == value => Eval.now(true)
+      case _ => Eval.now(false)
     }
 
     /* Calculate the string for this number value. */
-    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-      _ <- ToStringTask.begin("Number")
-      _ <- ToStringTask.emit(value)
-      _ <- ToStringTask.end()
-    } yield ()
+    override protected def calculateToString(): Eval[java.lang.String] = {
+      val floor = value.floor
+      if (floor == value) Eval.now(s"Number(${value.toLong})")
+      else Eval.now(s"Number($value)")
+    }
 
     /* Calculate the hash for this number value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -207,17 +200,14 @@ object Value extends
   case class String(value: java.lang.String = "") extends Value {
 
     /* Test for equality with this string value. */
-    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
-      case String(v) if v == value => True
-      case _ => False
+    override protected def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case String(v) if v == value => Eval.now(true)
+      case _ => Eval.now(false)
     }
 
     /* Calculate the string for this string value. */
-    override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-      _ <- ToStringTask.begin("String")
-      _ <- ToStringTask.emit(value)
-      _ <- ToStringTask.end()
-    } yield ()
+    override protected def calculateToString(): Eval[java.lang.String] =
+      Eval.now(s"String($value)")
 
     /* Calculate the hash for this string value. */
     override protected def calculateHash(): HashOperation[Hash] = for {
@@ -278,26 +268,14 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
     entries get key
 
   /* Test for equality with this table. */
-  override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
-    case Table(thatEntries) => Eval.later(thatEntries == entries)
-    case _ => False
+  override protected def calculateEquals(that: Any): Eval[Boolean] = that match {
+    case Table(thatEntries) => Eval.always(thatEntries == entries)
+    case _ => Eval.now(false)
   }
 
   /* Calculate the string for this table. */
-  override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
-    _ <- ToStringTask.begin("Table")
-    _ <- (ToStringTask.pure() /: entries) { (r, e) =>
-      for {
-        _ <- r
-        (k, v) = e
-        _ <- ToStringTask.beginEntry()
-        _ <- k.calculateToString()
-        _ <- v.calculateToString()
-        _ <- ToStringTask.endEntry()
-      } yield ()
-    }
-    _ <- ToStringTask.end()
-  } yield ()
+  override protected def calculateToString(): Eval[String] =
+    for (e <- Eval.always(entries.map(e => s"${e._1}=${e._2}").mkString(","))) yield s"Table($e)"
 
   /* Calculate the hash for this table. */
   override protected def calculateHash(): HashOperation[Hash] = for {
