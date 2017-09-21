@@ -23,28 +23,21 @@ import reflect.ClassTag
 import cats._
 import free.Free
 import Free.liftF
-import cats.implicits._
 
 /**
  * Base type for data elements.
  */
 abstract class Data private[data] extends Hashable {
 
-  /** Alias for the language that describes equality operations. */
-  final protected type EqualsOperation[T] = Data.EqualsOperation[T]
-
   /** Alias for the language that describes stringify operations. */
   final protected type ToStringOperation[T] = Data.ToStringOperation[T]
-
-  /** Alias for the tasks that make up equality operations. */
-  final protected type EqualsTask[T] = Data.EqualsTask[T]
 
   /** Alias for the tasks that make up stringify operations. */
   final protected type ToStringTask[T] = Data.ToStringTask[T]
 
   /* Use the equality operation for comparisons. */
   final override def equals(that: Any): Boolean =
-    calculateEquals(that).foldMap(EqualsTask.Interpreter) getOrElse false
+    calculateEquals(that).value
 
   /* Derive the hash code from a prefix of the data hash. */
   final override def hashCode(): Int = {
@@ -65,7 +58,7 @@ abstract class Data private[data] extends Hashable {
    * @param that The instance to test against.
    * @return The equality operation for this data element.
    */
-  protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean]
+  protected[data] def calculateEquals(that: Any): Eval[Boolean]
 
   /**
    * Calculate the stringify operation for this data element.
@@ -75,18 +68,19 @@ abstract class Data private[data] extends Hashable {
   protected[data] def calculateToString(): ToStringOperation[Unit]
 
   /**
-   * Alias for the equals task factory.
-   *
-   * @return The alias for the equals task factory
-   */
-  final protected def EqualsTask: Data.EqualsTask.type = Data.EqualsTask
-
-  /**
    * Alias for the stringify task factory.
    *
    * @return The alias for the stringify task factory
    */
   final protected def ToStringTask: Data.ToStringTask.type = Data.ToStringTask
+
+  //
+  //
+  //
+
+  final protected def True: Eval[Boolean] = Data.True
+
+  final protected def False: Eval[Boolean] = Data.False
 
 }
 
@@ -95,68 +89,12 @@ abstract class Data private[data] extends Hashable {
  */
 object Data {
 
-  /** The language that describes equality operations. */
-  type EqualsOperation[T] = Free[EqualsTask, T]
-
   /** The language that describes stringify operations. */
   type ToStringOperation[T] = Free[ToStringTask, T]
 
-  /**
-   * Base class for equality tasks.
-   *
-   * @tparam T The type returned by this equality task.
-   */
-  sealed trait EqualsTask[T] {
+  private val True: Eval[Boolean] = Eval.now(true)
 
-    /**
-     * Applies this task.
-     *
-     * @return The result of this equality task.
-     */
-    def apply(): Option[T]
-
-  }
-
-  /**
-   * Declarations associated with equality tasks.
-   */
-  object EqualsTask {
-
-    /**
-     * Creates an interpreter for equality tasks.
-     *
-     * @return An interpreter for equality tasks.
-     */
-    val Interpreter: EqualsTask ~> Option = new (EqualsTask ~> Option) {
-      override def apply[T](op: EqualsTask[T]): Option[T] = op()
-    }
-
-    /**
-     * Creates an equality operation that returns the supplied instance if it is of the specified type.
-     *
-     * @param instance The instance to return.
-     * @tparam T The type of the instance to return.
-     * @return An equality operation that returns the supplied instance if it is of the specified type.
-     */
-    def ofType[T: ClassTag](instance: Any): EqualsOperation[T] =
-      liftF[EqualsTask, T](new EqualsTask[T] {
-        override def apply(): Option[T] = implicitly[ClassTag[T]].unapply(instance)
-      })
-
-    /**
-     * Creates an equality operation that returns true if the specified instances are equal and nothing otherwise.
-     *
-     * @param first  The first object to test.
-     * @param second The second object to test.
-     * @tparam T The types of the objects to test.
-     * @return An equality operation that returns true if the specified instances are equal and nothing otherwise.
-     */
-    def areEqual[T: Eq](first: T, second: T): EqualsOperation[Boolean] =
-      liftF[EqualsTask, Boolean](new EqualsTask[Boolean] {
-        override def apply(): Option[Boolean] = Some(implicitly[Eq[T]].eqv(first, second)) filter identity
-      })
-
-  }
+  private val False: Eval[Boolean] = Eval.now(false)
 
   /**
    * Base class for stringify tasks.

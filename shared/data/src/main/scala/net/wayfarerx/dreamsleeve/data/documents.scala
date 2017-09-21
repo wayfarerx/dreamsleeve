@@ -19,7 +19,7 @@
 package net.wayfarerx.dreamsleeve.data
 
 import collection.immutable.{SortedMap, SortedSet}
-
+import cats._
 import cats.implicits._
 
 /**
@@ -31,11 +31,10 @@ import cats.implicits._
 case class Document(title: String, content: Fragment) extends Data {
 
   /* Test for equality with this document. */
-  override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-    d <- EqualsTask.ofType[Document](that)
-    t <- EqualsTask.areEqual(title, d.title)
-    c <- content.calculateEquals(d.content)
-  } yield t && c
+  override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+    case Document(thatTitle, thatContent) if thatTitle == title => Eval.later(thatContent == content)
+    case _ => False
+  }
 
   /* Calculate the string for this document. */
   override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -117,10 +116,10 @@ object Value extends
   case class Boolean(value: scala.Boolean = false) extends Value {
 
     /* Test for equality with this boolean value. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
-      b <- EqualsTask.ofType[Boolean](that)
-      v <- EqualsTask.areEqual(value, b.value)
-    } yield v
+    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case Boolean(v) if v == value => True
+      case _ => False
+    }
 
     /* Calculate the string for this boolean value. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -162,10 +161,10 @@ object Value extends
   case class Number(value: Double = 0.0) extends Value {
 
     /* Test for equality with this number value. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
-      n <- EqualsTask.ofType[Number](that)
-      v <- EqualsTask.areEqual(value, n.value)
-    } yield v
+    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case Number(v) if v == value => True
+      case _ => False
+    }
 
     /* Calculate the string for this number value. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -208,10 +207,10 @@ object Value extends
   case class String(value: java.lang.String = "") extends Value {
 
     /* Test for equality with this string value. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[scala.Boolean] = for {
-      s <- EqualsTask.ofType[String](that)
-      v <- EqualsTask.areEqual(value, s.value)
-    } yield v
+    override protected[data] def calculateEquals(that: Any): Eval[scala.Boolean] = that match {
+      case String(v) if v == value => True
+      case _ => False
+    }
 
     /* Calculate the string for this string value. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -279,17 +278,10 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
     entries get key
 
   /* Test for equality with this table. */
-  override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-    t <- EqualsTask.ofType[Table](that)
-    e <- (EqualsTask.areEqual(entries.size, t.entries.size) /: entries.zip(t.entries)) { (r, e) =>
-      for {
-        rr <- r
-        ((k1, v1), (k2, v2)) = e
-        kk <- k1.calculateEquals(k2)
-        vv <- v1.calculateEquals(v2)
-      } yield rr && kk && vv
-    }
-  } yield e
+  override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+    case Table(thatEntries) => Eval.later(thatEntries == entries)
+    case _ => False
+  }
 
   /* Calculate the string for this table. */
   override protected[data] def calculateToString(): ToStringOperation[Unit] = for {

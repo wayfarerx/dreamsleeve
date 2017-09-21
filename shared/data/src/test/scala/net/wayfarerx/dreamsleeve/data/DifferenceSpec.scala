@@ -35,6 +35,7 @@ class DifferenceSpec extends FlatSpec with Matchers {
     val b = Create(db)
     a == a shouldBe true
     a == b shouldBe false
+    a == ("Hello": Any) shouldBe false
     a.toString shouldBe s"Create($da)"
     b.toString shouldBe s"Create($db)"
     a.hash shouldBe HashTask.hash(Create.Header, da.hash).foldMap(HashTask.interpreter())

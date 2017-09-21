@@ -20,7 +20,7 @@ package net.wayfarerx.dreamsleeve.data
 
 import collection.immutable.SortedMap
 
-import cats.implicits._
+import cats._
 
 /**
  * Base class for all differences between documents.
@@ -49,10 +49,10 @@ object Difference {
   case class Create(document: Document) extends Difference {
 
     /* Test for equality with this create. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      c <- EqualsTask.ofType[Create](that)
-      d <- document.calculateEquals(c.document)
-    } yield d
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Create(thatDocument) => Eval.later(thatDocument == document)
+      case _ => False
+    }
 
     /* Calculate the string for this create. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -90,12 +90,11 @@ object Difference {
   case class Revise(fromHash: Hash, title: String, update: Update) extends Difference {
 
     /* Test for equality with this revise. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      r <- EqualsTask.ofType[Revise](that)
-      f <- EqualsTask.areEqual(fromHash, r.fromHash)
-      t <- EqualsTask.areEqual(title, r.title)
-      d <- update.calculateEquals(r.update)
-    } yield f && t && d
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Revise(thatFromHash, thatTitle, thatUpdate) if thatFromHash == fromHash && thatTitle == title =>
+        Eval.later(thatUpdate == update)
+      case _ => False
+    }
 
     /* Calculate the string for this revise. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -145,10 +144,10 @@ object Difference {
   case class Delete(fromHash: Hash) extends Difference {
 
     /* Test for equality with this delete. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      d <- EqualsTask.ofType[Delete](that)
-      f <- EqualsTask.areEqual(fromHash, d.fromHash)
-    } yield f
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Delete(thatFromHash) if thatFromHash == fromHash => True
+      case _ => False
+    }
 
     /* Calculate the string for this delete. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -214,10 +213,10 @@ object Change {
   case class Add(toFragment: Fragment) extends Change {
 
     /* Test for equality with this add. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      a <- EqualsTask.ofType[Add](that)
-      t <- toFragment.calculateEquals(a.toFragment)
-    } yield t
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Add(thatToFragment) => Eval.later(thatToFragment == toFragment)
+      case _ => False
+    }
 
     /* Calculate the string for this add. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -253,10 +252,10 @@ object Change {
   case class Remove(fromHash: Hash) extends Change {
 
     /* Test for equality with this remove. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      r <- EqualsTask.ofType[Remove](that)
-      f <- EqualsTask.areEqual(fromHash, r.fromHash)
-    } yield f
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Remove(thatFromHash) if thatFromHash == fromHash => True
+      case _ => False
+    }
 
     /* Calculate the string for this remove. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -323,10 +322,10 @@ object Update extends
   case class Copy(theHash: Hash) extends Update {
 
     /* Test for equality with this copy. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      c <- EqualsTask.ofType[Copy](that)
-      t <- EqualsTask.areEqual(theHash, c.theHash)
-    } yield t
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Copy(thatTheHash) if thatTheHash == theHash => True
+      case _ => False
+    }
 
     /* Calculate the string for this copy. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -371,11 +370,10 @@ object Update extends
   case class Replace(fromHash: Hash, toFragment: Fragment) extends Update {
 
     /* Test for equality with this replace. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      r <- EqualsTask.ofType[Replace](that)
-      f <- EqualsTask.areEqual(fromHash, r.fromHash)
-      t <- toFragment.calculateEquals(r.toFragment)
-    } yield f && t
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Replace(thatFromHash, thatToFragment) if thatFromHash == fromHash => Eval.later(thatToFragment == toFragment)
+      case _ => False
+    }
 
     /* Calculate the string for this copy. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
@@ -423,18 +421,10 @@ object Update extends
   case class Modify(fromHash: Hash, changes: SortedMap[Value, Change]) extends Update {
 
     /* Test for equality with this modify. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      m <- EqualsTask.ofType[Modify](that)
-      f <- EqualsTask.areEqual(fromHash, m.fromHash)
-      e <- (EqualsTask.areEqual(changes.size, m.changes.size) /: changes.zip(m.changes)) { (r, e) =>
-        for {
-          rr <- r
-          ((k1, v1), (k2, v2)) = e
-          kk <- k1.calculateEquals(k2)
-          vv <- v1.calculateEquals(v2)
-        } yield rr && kk && vv
-      }
-    } yield f && e
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case Modify(thatFromHash, thatChanges) if thatFromHash == fromHash => Eval.later(thatChanges == changes)
+      case _ => False
+    }
 
     /* Calculate the string for this modify. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {

@@ -18,7 +18,7 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import cats.implicits._
+import cats._
 
 import org.scalatest._
 
@@ -43,18 +43,19 @@ class DataSpec extends FlatSpec with Matchers {
    */
   object TestData extends Data {
 
-    /* Test for equality with this revise. */
-    override protected[data] def calculateEquals(that: Any): EqualsOperation[Boolean] = for {
-      _ <- EqualsTask.ofType[TestData.type](that)
-      v <- EqualsTask.areEqual(true, true)
-    } yield v
+    /* Test for equality with this test. */
+    override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
+      case _: TestData.type => True
+      case _ => False
+    }
 
-    /* Calculate the string for this string value. */
+    /* Calculate the string for this test. */
     override protected[data] def calculateToString(): ToStringOperation[Unit] = for {
       _ <- ToStringTask.begin("TestData")
       _ <- ToStringTask.end()
     } yield ()
 
+    /* Calculate the hash for this test. */
     override protected def calculateHash(): HashOperation[Hash] = for {
       h <- HashTask.hash(false)
     } yield h
