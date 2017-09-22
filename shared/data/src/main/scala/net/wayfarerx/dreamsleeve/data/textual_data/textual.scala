@@ -784,7 +784,7 @@ object TextualSupport {
 
     /** The internal parser for tables. */
     private def TableParser: Rule1[Table] = rule {
-      LeftBrace ~ optional(Entries) ~ RightBrace ~> { t: Option[Seq[Entry]] => Table((t getOrElse Seq.empty): _*) }
+      LeftBrace ~ optional(Entries) ~ RightBrace ~> { t: Option[Seq[Entry]] => Table(t getOrElse Seq.empty: _*) }
     }
 
     /** The internal parser for single-quoted strings. */

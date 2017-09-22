@@ -51,14 +51,6 @@ abstract class Data private[data] {
     _hash map (_.value) getOrElse evalHash(Hash.Generator()).value
 
   /**
-   * Calculates the hash for this data.
-   *
-   * @param generator The hash generator to use.
-   * @return The hash for this data.
-   */
-  protected def calculateHash(generator: Hash.Generator): Eval[Hash]
-
-  /**
    * Calculate the equality operation for this data element.
    *
    * @param that The instance to test against.
@@ -72,6 +64,14 @@ abstract class Data private[data] {
    * @return The stringify operation for this data element.
    */
   protected[data] def calculateToString(): Eval[String]
+
+  /**
+   * Calculates the hash for this data.
+   *
+   * @param generator The hash generator to use.
+   * @return The hash for this data.
+   */
+  protected def calculateHash(generator: Hash.Generator): Eval[Hash]
 
   /**
    * Creates an operation that can calculate the hash of this element.

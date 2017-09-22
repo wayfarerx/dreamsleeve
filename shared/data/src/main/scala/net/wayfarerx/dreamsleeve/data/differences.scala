@@ -387,7 +387,7 @@ object Update extends
 
     /* Test for equality with this modify. */
     override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
-      case Modify(thatFromHash, thatChanges) if thatFromHash == fromHash =>
+      case Modify(thatFromHash, thatChanges) if thatFromHash == fromHash && thatChanges.size == changes.size =>
         (Eval.True /: changes.flatMap(e => Seq(e._1, e._2)).zip(thatChanges.flatMap(e => Seq(e._1, e._2)))) { (r, e) =>
           val (e1, e2) = e
           r flatMap { rr => if (rr) e1.calculateEquals(e2) else Eval.False }
@@ -397,13 +397,13 @@ object Update extends
 
     /* Calculate the hash for this modify. */
     override protected def calculateHash(generator: Hash.Generator): Eval[Hash] = for {
-      e <- (Eval.now(Vector[Hash]()) /: changes) { (r, c) =>
+      e <- (Eval.now(Vector[Hash]()) /: changes) { (r, e) =>
         for {
           rr <- r
-          (k, v) = c
+          (k, v) = e
           kk <- k.evalHash(generator)
           vv <- v.evalHash(generator)
-        } yield rr ++ Vector(kk, vv)
+        } yield rr :+ kk :+ vv
       }
     } yield generator.hash(Modify.Header, fromHash, e)
 
