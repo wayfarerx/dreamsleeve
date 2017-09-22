@@ -18,6 +18,8 @@
 
 package net.wayfarerx.dreamsleeve.data
 
+import java.security.MessageDigest
+
 import cats.Eval
 
 import org.scalatest._
@@ -30,6 +32,7 @@ class DataSpec extends FlatSpec with Matchers {
   "A data element" should "consistently implement equals, toString and hashCode" in {
     TestData.equals(TestData: Any) shouldBe true
     TestData.toString shouldBe "TestData"
+    TestData.hash eq TestData.hash shouldBe true
     TestData.hashCode() shouldBe
       (Hash.getInternalRepresentation(TestData.hash)(0) & 0x000000FF) << 24 |
         (Hash.getInternalRepresentation(TestData.hash)(1) & 0x000000FF) << 16 |
@@ -42,6 +45,8 @@ class DataSpec extends FlatSpec with Matchers {
    */
   object TestData extends Data {
 
+    val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
+
     /* Test for equality with this test. */
     override protected[data] def calculateEquals(that: Any): Eval[Boolean] = that match {
       case _: TestData.type => Eval.now(true)
@@ -52,10 +57,63 @@ class DataSpec extends FlatSpec with Matchers {
     override protected[data] def calculateToString(): Eval[String] =
       Eval.now("TestData")
 
-    /* Calculate the hash for this test. */
-    override protected def calculateHash(): HashOperation[Hash] = for {
-      h <- HashTask.hash(false)
-    } yield h
+    override protected def calculateHash(generator: Hash.Generator): Eval[Hash] = {
+      generator.hash(false)
+      val boolean = generator.hash(true)
+      val byte = generator.hash(0x7D.toByte)
+      val long = generator.hash(0x7D6C5B4A39281706L)
+      val double = generator.hash(Math.PI)
+      val string = generator.hash("hello")
+      val two = generator.hash(boolean, byte)
+      val three = generator.hash(boolean, byte, long)
+      val four = generator.hash(boolean, byte, long, double)
+      val collection = generator.hash(Seq(boolean, byte, long, double, string, two, three, four))
+      val result = generator.hash(collection)
+      boolean shouldBe hashItem(true)
+      byte shouldBe hashItem(0x7D.toByte)
+      long shouldBe hashItem(0x7D6C5B4A39281706L)
+      double shouldBe hashItem(Math.PI)
+      string shouldBe hashItem("hello")
+      two shouldBe hashItem(Seq(boolean, byte))
+      three shouldBe hashItem(Seq(boolean, byte, long))
+      four shouldBe hashItem(Seq(boolean, byte, long, double))
+      collection shouldBe hashItem(Seq(boolean, byte, long, double, string, two, three, four))
+      result shouldBe generator.hash(collection)
+      Eval.now(result)
+    }
+
+    def hashItem(i: Boolean): Hash = {
+      if (i) digest.update(0xFF.toByte) else digest.update(0x00.toByte)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Byte): Hash = {
+      digest.update(i)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Long): Hash = {
+      for (j <- 0 to 7) digest.update((i >>> (7 - j) * 8 & 0x00000000000000FF).toByte)
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Double): Hash =
+      hashItem(java.lang.Double.doubleToLongBits(i))
+
+    def hashItem(i: String): Hash = {
+      digest.update(i.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Hash): Hash = {
+      digest.update(Hash.getInternalRepresentation(i))
+      Hash.setInternalRepresentation(digest.digest())
+    }
+
+    def hashItem(i: Iterable[Hash]): Hash = {
+      for (ii <- i) digest.update(Hash.getInternalRepresentation(ii))
+      Hash.setInternalRepresentation(digest.digest())
+    }
 
   }
 

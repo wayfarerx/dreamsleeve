@@ -26,7 +26,8 @@ import org.scalatest._
 class DifferenceSpec extends FlatSpec with Matchers {
 
   import Difference._
-  import Hashable.HashTask
+
+  val generator = Hash.Generator()
 
   "A create" should "act as a hashable creation of a document" in {
     val da = Document("e", Table())
@@ -38,7 +39,7 @@ class DifferenceSpec extends FlatSpec with Matchers {
     a == ("Hello": Any) shouldBe false
     a.toString shouldBe s"Create($da)"
     b.toString shouldBe s"Create($db)"
-    a.hash shouldBe HashTask.hash(Create.Header, da.hash).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Create.Header, da.hash)
     Create.unapply(a) shouldBe Some(da)
     Difference.unapply(a) shouldBe true
   }
@@ -54,7 +55,7 @@ class DifferenceSpec extends FlatSpec with Matchers {
     a == b shouldBe false
     a.toString shouldBe s"Revise(${da.hash},${db.title},${Update(ta, tb)})"
     b.toString shouldBe s"Revise(${db.hash},${da.title},${Update(tb, ta)})"
-    a.hash shouldBe HashTask.hash(Revise.Header, da.hash, db.title, a.update.hash).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Revise.Header, da.hash, db.title, a.update.hash)
     Revise.unapply(a) shouldBe Some((da.hash, db.title, a.update))
     Difference.unapply(a) shouldBe true
   }
@@ -68,7 +69,7 @@ class DifferenceSpec extends FlatSpec with Matchers {
     a == b shouldBe false
     a.toString shouldBe s"Delete(${da.hash})"
     b.toString shouldBe s"Delete(${db.hash})"
-    a.hash shouldBe HashTask.hash(Delete.Header, da.hash).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Delete.Header, da.hash)
     Delete.unapply(a) shouldBe Some(da.hash)
     Difference.unapply(a) shouldBe true
   }

@@ -27,7 +27,7 @@ import scala.collection.immutable.SortedMap
  */
 class UpdateSpec extends FlatSpec with Matchers {
 
-  import Hashable.HashTask
+  val generator = Hash.Generator()
 
   import Update._
 
@@ -41,8 +41,8 @@ class UpdateSpec extends FlatSpec with Matchers {
     a == ("Hi": Any) shouldBe false
     a.toString shouldBe s"Copy(${fa.hash})"
     b.toString shouldBe s"Copy(${fb.hash})"
-    a.hash shouldBe HashTask.hash(Update.Copy.Header, fa.hash).foldMap(HashTask.interpreter())
-    b.hash shouldBe HashTask.hash(Update.Copy.Header, fb.hash).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Update.Copy.Header, fa.hash)
+    b.hash shouldBe generator.hash(Update.Copy.Header, fb.hash)
     Copy.unapply(a) shouldBe Some(fa.hash)
     Update.unapply(Copy(fb)) shouldBe true
   }
@@ -57,8 +57,8 @@ class UpdateSpec extends FlatSpec with Matchers {
     a == ("Hi": Any) shouldBe false
     a.toString shouldBe s"Replace(${fa.hash},$fb)"
     b.toString shouldBe s"Replace(${fb.hash},$fa)"
-    a.hash shouldBe HashTask.hash(Update.Replace.Header, fa.hash, fb.hash).foldMap(HashTask.interpreter())
-    b.hash shouldBe HashTask.hash(Update.Replace.Header, fb.hash, fa.hash).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Update.Replace.Header, fa.hash, fb.hash)
+    b.hash shouldBe generator.hash(Update.Replace.Header, fb.hash, fa.hash)
     Replace.unapply(a) shouldBe Some((fa.hash, fb))
     Update.unapply(b) shouldBe true
   }
@@ -75,8 +75,8 @@ class UpdateSpec extends FlatSpec with Matchers {
     b == Modify(ft, ft.keys.head -> Copy(Value.Number())) shouldBe false
     a.toString shouldBe s"Modify(${tt.hash},{})"
     b.toString shouldBe s"Modify(${ft.hash},{${ft.keys.head}=$r})"
-    a.hash shouldBe HashTask.hash(Update.Modify.Header, tt.hash, Iterable.empty[Hash]).foldMap(HashTask.interpreter())
-    b.hash shouldBe HashTask.hash(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash)).foldMap(HashTask.interpreter())
+    a.hash shouldBe generator.hash(Update.Modify.Header, tt.hash, Iterable.empty[Hash])
+    b.hash shouldBe generator.hash(Update.Modify.Header, ft.hash, Seq(ft.keys.head.hash, r.hash))
     Modify.unapply(b) shouldBe Some((ft.hash, SortedMap(ft.keys.head -> r)))
     Update.unapply(a) shouldBe true
   }

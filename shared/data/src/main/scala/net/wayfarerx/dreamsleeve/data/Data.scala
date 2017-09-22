@@ -23,7 +23,10 @@ import cats.Eval
 /**
  * Base type for data elements.
  */
-abstract class Data private[data] extends Hashable {
+abstract class Data private[data] {
+
+  /** The cached hash of this element. */
+  private var _hash: Option[Eval[Hash]] = None
 
   /* Use the equality operation for comparisons. */
   final override def equals(that: Any): Boolean =
@@ -40,18 +43,47 @@ abstract class Data private[data] extends Hashable {
     calculateToString().value
 
   /**
+   * Returns the hash for this element, generating it if necessary.
+   *
+   * @return The hash for this element.
+   */
+  final def hash: Hash =
+    _hash map (_.value) getOrElse evalHash(Hash.Generator()).value
+
+  /**
+   * Calculates the hash for this data.
+   *
+   * @param generator The hash generator to use.
+   * @return The hash for this data.
+   */
+  protected def calculateHash(generator: Hash.Generator): Eval[Hash]
+
+  /**
    * Calculate the equality operation for this data element.
    *
    * @param that The instance to test against.
    * @return The equality operation for this data element.
    */
-  protected def calculateEquals(that: Any): Eval[Boolean]
+  protected[data] def calculateEquals(that: Any): Eval[Boolean]
 
   /**
    * Calculate the stringify operation for this data element.
    *
    * @return The stringify operation for this data element.
    */
-  protected def calculateToString(): Eval[String]
+  protected[data] def calculateToString(): Eval[String]
+
+  /**
+   * Creates an operation that can calculate the hash of this element.
+   *
+   * @param generator The hash generator to use.
+   * @return An operation that can calculate the hash of this element.
+   */
+  final private[data] def evalHash(generator: Hash.Generator): Eval[Hash] =
+    _hash getOrElse {
+      val hash = calculateHash(generator).memoize
+      _hash = Some(hash)
+      hash
+    }
 
 }

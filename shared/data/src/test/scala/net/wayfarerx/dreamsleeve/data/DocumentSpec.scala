@@ -25,7 +25,7 @@ import org.scalatest._
  */
 class DocumentSpec extends FlatSpec with Matchers {
 
-  import Hashable.HashTask
+  val generator = Hash.Generator()
 
   "A document" should "act as a hashable root fragment container" in {
     val e = Document("e", Table())
@@ -35,8 +35,8 @@ class DocumentSpec extends FlatSpec with Matchers {
     e == ("Hi": Any) shouldBe false
     e.toString shouldBe "Document(e,Table())"
     o.toString shouldBe "Document(o,Table(Number(1)=String(1)))"
-    e.hash shouldBe HashTask.hash(Document.Header, "e", e.content.hash).foldMap(HashTask.interpreter())
-    o.hash shouldBe HashTask.hash(Document.Header, "o", o.content.hash).foldMap(HashTask.interpreter())
+    e.hash shouldBe generator.hash(Document.Header, "e", e.content.hash)
+    o.hash shouldBe generator.hash(Document.Header, "o", o.content.hash)
     Document.unapply(o) shouldBe Some((o.title, o.content))
   }
 
