@@ -45,13 +45,13 @@ abstract class Data private[data] extends Hashable {
    * @param that The instance to test against.
    * @return The equality operation for this data element.
    */
-  protected def calculateEquals(that: Any): Eval[Boolean]
+  protected[data] def calculateEquals(that: Any): Eval[Boolean]
 
   /**
    * Calculate the stringify operation for this data element.
    *
    * @return The stringify operation for this data element.
    */
-  protected def calculateToString(): Eval[String]
+  protected[data] def calculateToString(): Eval[String]
 
 }
