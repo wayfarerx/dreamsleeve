@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the add factory object.
  */
@@ -35,7 +37,7 @@ trait Adds extends PatchFactory[Change.Add, Unit, Fragment] {
 object Adds extends PatchSupport[Change.Add, Unit, Fragment] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Change.Add, data: Unit): PatchOperation[Fragment] =
-    PatchTask.pure(action.toFragment)
+  override def patch(action: Change.Add, data: Unit): Eval[PatchResult[Fragment]] =
+    Eval.now(Right(action.toFragment))
 
 }

@@ -75,6 +75,12 @@ class ModifiesSpec extends FlatSpec with Matchers {
       Value.String("a") -> Change.Add(ft.values.head),
       Value.String("b") -> Change.Remove(ft.values.head))
     l.patch(ft2) shouldBe Left(PatchProblem.HashMismatch(et.hash, ft2.hash))
+    // Short circuit on problems
+    val table = Table(Value.String("a") -> Value.Number(), Value.String("b") -> Value.Number(1))
+    val modify = Update.Modify(table.hash,
+      Value.String("a") -> Update.Copy(Value.Number(1)),
+      Value.String("b") -> Update.Copy(Value.Number(1)))
+    modify.patch(table) shouldBe Left(PatchProblem.HashMismatch(Value.Number(1).hash, Value.Number().hash))
   }
 
 }

@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the delete factory object.
  */
@@ -35,8 +37,9 @@ trait Deletes extends PatchFactory[Difference.Delete, Document, Unit] {
 object Deletes extends PatchSupport[Difference.Delete, Document, Unit] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Difference.Delete, data: Document): PatchOperation[Unit] =
-    PatchTask.validateHash(action.fromHash, data)
+  override def patch(action: Difference.Delete, data: Document): Eval[PatchResult[Unit]] =
+    if (action.fromHash == data.hash) Eval.now(Right(()))
+    else Eval.now(Left(PatchProblem.HashMismatch(action.fromHash, data.hash)))
 
 }
 

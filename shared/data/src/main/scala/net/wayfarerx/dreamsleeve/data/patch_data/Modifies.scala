@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the modify factory object.
  */
@@ -35,27 +37,44 @@ trait Modifies extends PatchFactory[Update.Modify, Fragment, Table] {
 object Modifies extends PatchSupport[Update.Modify, Fragment, Table] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Update.Modify, data: Fragment): PatchOperation[Table] = for {
-    _ <- PatchTask.validateHash(action.fromHash, data)
-    table <- data match {
-      case v@Value() => PatchTask.report(PatchProblem.TypeMismatch(v))
-      case fromTable@Table(_) => for {
-        _ <- PatchTask.validateKeys(action.changes.keySet, fromTable.keys)
-        table <- (PatchTask.pure(Vector[(Value, Fragment)]()) /: action.changes) { (r, c) =>
-          val (k, v) = c
-          for {
-            e <- r
-            i <- v match {
-              case Change.Add(_) if fromTable.get(k).nonEmpty => PatchTask.report(PatchProblem.UnexpectedEntry(k))
-              case a@Change.Add(_) => Adds.patch(a, ()) map (v => Vector(k -> v))
-              case _ if fromTable.get(k).isEmpty => PatchTask.report(PatchProblem.MissingEntry(k))
-              case r@Change.Remove(_) => Removes.patch(r, fromTable(k)) map (_ => Vector())
-              case u@Update() => Updates.patch(u, fromTable(k)) map (v => Vector(k -> v))
-            }
-          } yield e ++ i
-        } map (e => Table(e: _*))
-      } yield table
-    }
-  } yield table
+  override def patch(action: Update.Modify, data: Fragment): Eval[PatchResult[Table]] =
+    if (action.fromHash == data.hash) {
+      data match {
+        case v@Value() =>
+          Eval.now(Left(PatchProblem.TypeMismatch(v)))
+        case fromTable@Table(_) =>
+          val expected = action.changes.keySet
+          val found = fromTable.keys
+          if ((found -- expected).nonEmpty) Eval.now(Left(PatchProblem.MismatchedEntries(found -- expected)))
+          else {
+            val empty: PatchResult[Vector[(Value, Fragment)]] = Right(Vector())
+            (Eval.now(empty) /: action.changes) (patchEntry(fromTable)) map (_ map (r => Table(r: _*)))
+          }
+      }
+    } else Eval.now(Left(PatchProblem.HashMismatch(action.fromHash, data.hash)))
+
+  /**
+   * Patches a single entry in a table.
+   *
+   * @param table    The table to patch.
+   * @param previous The outcome of the previously patched entries.
+   * @param entry    The entry to patch.
+   * @return The previous outcome with the specified entry appended.
+   */
+  private def patchEntry(table: Table)(previous: Eval[PatchResult[Vector[(Value, Fragment)]]], entry: (Value, Change)) =
+    for {
+      p <- previous
+      (key, change) = entry
+      r <- p match {
+        case Right(list) => (change match {
+          case Change.Add(_) if table.get(key).nonEmpty => Eval.now(Left(PatchProblem.UnexpectedEntry(key)))
+          case a@Change.Add(_) => Adds.patch(a, ()) map (_ map (v => Vector(key -> v)))
+          case _ if table.get(key).isEmpty => Eval.now(Left(PatchProblem.MissingEntry(key)))
+          case r@Change.Remove(_) => Removes.patch(r, table(key)) map (_ map (_ => Vector()))
+          case u@Update() => Updates.patch(u, table(key)) map (_ map (v => Vector(key -> v)))
+        }) map (_ map (list ++ _))
+        case left => Eval.now(left)
+      }
+    } yield r
 
 }

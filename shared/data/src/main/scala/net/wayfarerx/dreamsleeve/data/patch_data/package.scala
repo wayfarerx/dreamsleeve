@@ -18,21 +18,14 @@
 
 package net.wayfarerx.dreamsleeve.data
 
-import collection.immutable.SortedSet
 import language.implicitConversions
 
-import cats.~>
-import cats.free.Free
-import Free.liftF
-import cats.implicits._
+import cats.Eval
 
 /**
  * Global definitions for the patching package.
  */
 package object patch_data {
-
-  /** The type of operations that apply patches to data. */
-  type PatchOperation[T] = Free[PatchTask, T]
 
   /** The type of result returned from patching operations. */
   type PatchResult[T] = Either[PatchProblem, T]
@@ -80,16 +73,18 @@ package object patch_data {
      * @param data   The data to be patched.
      * @return A patch operation for the specified action and data.
      */
-    def patch(action: T, data: I): PatchOperation[O]
+    def patch(action: T, data: I): Eval[PatchResult[O]]
 
   }
 
   /**
    * Extensions that add support for patching operations.
    *
+   * @tparam I The type of the data input.
+   * @tparam O The result type of the patching operation.
    * @param dataToPatch The function that returns a patch operation for the supplied data.
    */
-  final class PatchExtensions[D, R] private[patch_data](val dataToPatch: D => PatchOperation[R]) extends AnyVal {
+  final class PatchExtensions[I, O] private[patch_data](val dataToPatch: I => Eval[PatchResult[O]]) extends AnyVal {
 
     /**
      * Patches the supplied data with the underlying action.
@@ -97,91 +92,8 @@ package object patch_data {
      * @param data The data item to patch.
      * @return The result of patching the supplied data with the underlying action.
      */
-    def patch(data: D)(): PatchResult[R] =
-      dataToPatch(data).foldMap(PatchTask.Interpreter)
-
-  }
-
-  /**
-   * Base class for tasks that patch data.
-   *
-   * @tparam R The type returned by this task.
-   */
-  sealed trait PatchTask[R] {
-
-    /**
-     * Applies this task.
-     *
-     * @return The result of this patch task.
-     */
-    def apply(): PatchResult[R]
-
-  }
-
-  /**
-   * Declarations associated with patch tasks.
-   */
-  object PatchTask {
-
-    /** The interpreter for patch operations. */
-    val Interpreter: PatchTask ~> PatchResult = new (PatchTask ~> PatchResult) {
-      override def apply[R](op: PatchTask[R]): PatchResult[R] = op()
-    }
-
-    /**
-     * Creates a patch operation that returns the specified result.
-     *
-     * @param result The result to return.
-     * @tparam T The type of the expected result.
-     * @return A patch operation that returns the specified result.
-     */
-    def pure[T](result: T): PatchOperation[T] =
-      liftF[PatchTask, T](new PatchTask[T] {
-        override def apply(): PatchResult[T] = Right(result)
-      })
-
-    /**
-     * Creates a patch operation that fails with the specified problem.
-     *
-     * @param problem The problem to fail with.
-     * @tparam T The type of the expected result.
-     * @return A patch operation that fails with the specified problem.
-     */
-    def report[T](problem: PatchProblem): PatchOperation[T] =
-      liftF[PatchTask, T](new PatchTask[T] {
-        override def apply(): PatchResult[T] = Left(problem)
-      })
-
-    /**
-     * Creates a patch operation that validates that two hashes are the same.
-     *
-     * @param expected The hash that is expected.
-     * @param found    The hashable that was found.
-     * @return A patch operation that validates that two hashes are the same.
-     */
-    def validateHash(expected: Hash, found: Data): PatchOperation[Unit] =
-      liftF[PatchTask, Unit](new PatchTask[Unit] {
-        override def apply(): PatchResult[Unit] = {
-          val foundHash = found.hash
-          if (expected == foundHash) Right(())
-          else Left(PatchProblem.HashMismatch(expected, foundHash))
-        }
-      })
-
-    /**
-     * Creates a patch operation that validates that two collections of keys are the same.
-     *
-     * @param expected The collections of keys that is expected.
-     * @param found    The collections of keys that was found.
-     * @return A patch operation that validates that two collections of keys are the same.
-     */
-    def validateKeys(expected: SortedSet[Value], found: SortedSet[Value]): PatchOperation[Unit] =
-      liftF[PatchTask, Unit](new PatchTask[Unit] {
-        override def apply(): PatchResult[Unit] = {
-          if ((found -- expected).nonEmpty) Left(PatchProblem.MismatchedEntries(found -- expected))
-          else Right(())
-        }
-      })
+    def patch(data: I)(): PatchResult[O] =
+      dataToPatch(data).value
 
   }
 

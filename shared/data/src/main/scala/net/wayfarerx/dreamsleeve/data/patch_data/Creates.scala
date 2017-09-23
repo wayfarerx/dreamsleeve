@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the create factory object.
  */
@@ -35,7 +37,7 @@ trait Creates extends PatchFactory[Difference.Create, Unit, Document] {
 object Creates extends PatchSupport[Difference.Create, Unit, Document] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Difference.Create, data: Unit): PatchOperation[Document] =
-    PatchTask.pure(action.document)
+  override def patch(action: Difference.Create, data: Unit): Eval[PatchResult[Document]] =
+    Eval.now(Right(action.document))
 
 }

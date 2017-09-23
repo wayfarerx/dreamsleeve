@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the revise factory object.
  */
@@ -35,10 +37,11 @@ trait Revises extends PatchFactory[Difference.Revise, Document, Document] {
 object Revises extends PatchSupport[Difference.Revise, Document, Document] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Difference.Revise, data: Document): PatchOperation[Document] = for {
-    _ <- PatchTask.validateHash(action.fromHash, data)
-    content <- Updates.patch(action.update, data.content)
-  } yield Document(action.title, content)
+  override def patch(action: Difference.Revise, data: Document): Eval[PatchResult[Document]] =
+    if (action.fromHash == data.hash) for {
+      content <- Updates.patch(action.update, data.content)
+    } yield content map (Document(action.title, _))
+    else Eval.now(Left(PatchProblem.HashMismatch(action.fromHash, data.hash)))
 
 }
 

@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the replace factory object.
  */
@@ -35,8 +37,8 @@ trait Replaces extends PatchFactory[Update.Replace, Fragment, Fragment] {
 object Replaces extends PatchSupport[Update.Replace, Fragment, Fragment] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Update.Replace, data: Fragment): PatchOperation[Fragment] = for {
-    _ <- PatchTask.validateHash(action.fromHash, data)
-  } yield action.toFragment
+  override def patch(action: Update.Replace, data: Fragment): Eval[PatchResult[Fragment]] =
+    if (action.fromHash == data.hash) Eval.now(Right(action.toFragment))
+    else Eval.now(Left(PatchProblem.HashMismatch(action.fromHash, data.hash)))
 
 }

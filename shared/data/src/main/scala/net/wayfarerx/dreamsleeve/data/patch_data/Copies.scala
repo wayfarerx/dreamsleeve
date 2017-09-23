@@ -19,6 +19,8 @@
 package net.wayfarerx.dreamsleeve.data
 package patch_data
 
+import cats.Eval
+
 /**
  * Patching support for the copy factory object.
  */
@@ -35,8 +37,8 @@ trait Copies extends PatchFactory[Update.Copy, Fragment, Fragment] {
 object Copies extends PatchSupport[Update.Copy, Fragment, Fragment] {
 
   /* Construct a patch operation for the specified action and data. */
-  override def patch(action: Update.Copy, data: Fragment): PatchOperation[Fragment] = for {
-    _ <- PatchTask.validateHash(action.theHash, data)
-  } yield data
+  override def patch(action: Update.Copy, data: Fragment): Eval[PatchResult[Fragment]] =
+    if (action.theHash == data.hash) Eval.now(Right(data))
+    else Eval.now(Left(PatchProblem.HashMismatch(action.theHash, data.hash)))
 
 }

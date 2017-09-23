@@ -143,23 +143,13 @@ object Hash {
     import Generator._
 
     /**
-     * Returns the underlying message digest.
-     *
-     * @return The underlying message digest.
-     */
-    def digest: MessageDigest
-
-    /**
      * Generates a hash for one hash component.
      *
      * @param a The only component to hash.
      * @tparam A The type of the only component to hash.
      * @return The hash of the one component.
      */
-    def hash[A: Component](a: A): Hash = {
-      implicitly[Component[A]].apply(a, digest)
-      Hash.setInternalRepresentation(digest.digest())
-    }
+    def hash[A: Component](a: A): Hash
 
     /**
      * Generates a hash for two hash components.
@@ -170,11 +160,7 @@ object Hash {
      * @tparam B The type of the second component to hash.
      * @return The hash of the two components.
      */
-    def hash[A: Component, B: Component](a: A, b: B): Hash = {
-      implicitly[Component[A]].apply(a, digest)
-      implicitly[Component[B]].apply(b, digest)
-      Hash.setInternalRepresentation(digest.digest())
-    }
+    def hash[A: Component, B: Component](a: A, b: B): Hash
 
     /**
      * Generates a hash for three hash components.
@@ -187,12 +173,7 @@ object Hash {
      * @tparam C The type of the third component to hash.
      * @return The hash of the three components.
      */
-    def hash[A: Component, B: Component, C: Component](a: A, b: B, c: C): Hash = {
-      implicitly[Component[A]].apply(a, digest)
-      implicitly[Component[B]].apply(b, digest)
-      implicitly[Component[C]].apply(c, digest)
-      Hash.setInternalRepresentation(digest.digest())
-    }
+    def hash[A: Component, B: Component, C: Component](a: A, b: B, c: C): Hash
 
     /**
      * Generates a hash for four hash components.
@@ -207,13 +188,7 @@ object Hash {
      * @tparam D The type of the fourth component to hash.
      * @return The hash of the four components.
      */
-    def hash[A: Component, B: Component, C: Component, D: Component](a: A, b: B, c: C, d: D): Hash = {
-      implicitly[Component[A]].apply(a, digest)
-      implicitly[Component[B]].apply(b, digest)
-      implicitly[Component[C]].apply(c, digest)
-      implicitly[Component[D]].apply(d, digest)
-      Hash.setInternalRepresentation(digest.digest())
-    }
+    def hash[A: Component, B: Component, C: Component, D: Component](a: A, b: B, c: C, d: D): Hash
 
   }
 
@@ -228,10 +203,33 @@ object Hash {
      * @param digest The message digest to use.
      * @return A new hash generator for the specified message digest, defaulting to SHA-256.
      */
-    def apply(digest: MessageDigest = MessageDigest.getInstance("SHA-256")): Generator = {
-      val _digest = digest
-      new Generator {
-        override def digest: MessageDigest = _digest
+    def apply(digest: MessageDigest = MessageDigest.getInstance("SHA-256")): Generator = new Generator {
+      val f = digest.update(_: Byte)
+
+      override def hash[A: Component](a: A): Hash = {
+        implicitly[Component[A]].apply(a, f)
+        Hash.setInternalRepresentation(digest.digest())
+      }
+
+      override def hash[A: Component, B: Component](a: A, b: B): Hash = {
+        implicitly[Component[A]].apply(a, f)
+        implicitly[Component[B]].apply(b, f)
+        Hash.setInternalRepresentation(digest.digest())
+      }
+
+      override def hash[A: Component, B: Component, C: Component](a: A, b: B, c: C): Hash = {
+        implicitly[Component[A]].apply(a, f)
+        implicitly[Component[B]].apply(b, f)
+        implicitly[Component[C]].apply(c, f)
+        Hash.setInternalRepresentation(digest.digest())
+      }
+
+      override def hash[A: Component, B: Component, C: Component, D: Component](a: A, b: B, c: C, d: D): Hash = {
+        implicitly[Component[A]].apply(a, f)
+        implicitly[Component[B]].apply(b, f)
+        implicitly[Component[C]].apply(c, f)
+        implicitly[Component[D]].apply(d, f)
+        Hash.setInternalRepresentation(digest.digest())
       }
     }
 
@@ -243,12 +241,12 @@ object Hash {
     sealed trait Component[-T] {
 
       /**
-       * Appends the specified hash component to a message digest.
+       * Appends the specified hash component to a destination.
        *
        * @param component The hash component to append.
-       * @param digest    The message digest to append to.
+       * @param f         The destination to send bytes to.
        */
-      def apply(component: T, digest: MessageDigest): Unit
+      def apply(component: T, f: Byte => Unit): Unit
 
     }
 
@@ -259,52 +257,52 @@ object Hash {
 
       /** Support for booleans as hash components. */
       implicit val Booleans: Component[Boolean] = new Component[Boolean] {
-        override def apply(i: Boolean, d: MessageDigest): Unit =
-          d.update(if (i) 0xFF.toByte else 0x00.toByte)
+        override def apply(i: Boolean, f: Byte => Unit): Unit =
+          f(if (i) 0xFF.toByte else 0x00.toByte)
       }
 
       /** Support for bytes as hash components. */
       implicit val Bytes: Component[Byte] = new Component[Byte] {
-        override def apply(i: Byte, d: MessageDigest): Unit =
-          d.update(i)
+        override def apply(i: Byte, f: Byte => Unit): Unit =
+          f(i)
       }
 
       /** Support for longs as hash components. */
       implicit val Longs: Component[Long] = new Component[Long] {
-        override def apply(i: Long, d: MessageDigest): Unit = {
-          d.update((i >>> 56 & 0x00000000000000FF).toByte)
-          d.update((i >>> 48 & 0x00000000000000FF).toByte)
-          d.update((i >>> 40 & 0x00000000000000FF).toByte)
-          d.update((i >>> 32 & 0x00000000000000FF).toByte)
-          d.update((i >>> 24 & 0x00000000000000FF).toByte)
-          d.update((i >>> 16 & 0x00000000000000FF).toByte)
-          d.update((i >>> 8 & 0x00000000000000FF).toByte)
-          d.update((i & 0x00000000000000FF).toByte)
+        override def apply(i: Long, f: Byte => Unit): Unit = {
+          f((i >>> 56 & 0x00000000000000FF).toByte)
+          f((i >>> 48 & 0x00000000000000FF).toByte)
+          f((i >>> 40 & 0x00000000000000FF).toByte)
+          f((i >>> 32 & 0x00000000000000FF).toByte)
+          f((i >>> 24 & 0x00000000000000FF).toByte)
+          f((i >>> 16 & 0x00000000000000FF).toByte)
+          f((i >>> 8 & 0x00000000000000FF).toByte)
+          f((i & 0x00000000000000FF).toByte)
         }
       }
 
       /** Support for doubles as hash components. */
       implicit val Doubles: Component[Double] = new Component[Double] {
-        override def apply(i: Double, d: MessageDigest): Unit =
-          Longs(java.lang.Double.doubleToLongBits(i), d)
+        override def apply(i: Double, f: Byte => Unit): Unit =
+          Longs(java.lang.Double.doubleToLongBits(i), f)
       }
 
       /** Support for strings as hash components. */
       implicit val Strings: Component[String] = new Component[String] {
-        override def apply(i: String, d: MessageDigest): Unit =
-          d.update(i.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+        override def apply(i: String, f: Byte => Unit): Unit =
+          i.getBytes(java.nio.charset.StandardCharsets.UTF_8) foreach f
       }
 
       /** Support for hashes as hash components. */
       implicit val Hashes: Component[Hash] = new Component[Hash] {
-        override def apply(i: Hash, d: MessageDigest): Unit =
-          d.update(Hash.getInternalRepresentation(i))
+        override def apply(i: Hash, f: Byte => Unit): Unit =
+          Hash.getInternalRepresentation(i) foreach f
       }
 
       /** Support for collections of hashes as hash components. */
       implicit val MultipleHashes: Component[Iterable[Hash]] = new Component[Iterable[Hash]] {
-        override def apply(i: Iterable[Hash], d: MessageDigest): Unit =
-          for (i <- i) Hashes.apply(i, d)
+        override def apply(i: Iterable[Hash], f: Byte => Unit): Unit =
+          for (ii <- i) Hashes.apply(ii, f)
       }
 
     }
