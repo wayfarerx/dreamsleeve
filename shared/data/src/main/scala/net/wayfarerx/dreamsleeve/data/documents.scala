@@ -49,9 +49,8 @@ case class Document(title: String, content: Fragment) extends Data {
 /**
  * Declarations associated with documents.
  */
-object Document extends
-  binary_data.Documents with
-  textual_data.TextualDocuments.Documents {
+object Document
+  extends binary_data.Documents {
 
   /** The header for documents. */
   val Header: Byte = 0xE1.toByte
@@ -66,9 +65,8 @@ sealed abstract class Fragment extends Data
 /**
  * Extractor for fragment implementations.
  */
-object Fragment extends
-  binary_data.Fragments with
-  textual_data.TextualFragments.Fragments {
+object Fragment
+  extends binary_data.Fragments {
 
   /**
    * Extracts any fragment implementation.
@@ -89,9 +87,8 @@ sealed abstract class Value extends Fragment with Comparable[Value]
 /**
  * Implementations of the value types.
  */
-object Value extends
-  binary_data.Values with
-  textual_data.TextualValues.Values {
+object Value
+  extends binary_data.Values {
 
   /**
    * Extracts any value implementation.
@@ -134,9 +131,8 @@ object Value extends
   /**
    * Declarations associated with booleans.
    */
-  object Boolean extends
-    binary_data.Booleans with
-    textual_data.TextualValues.Booleans {
+  object Boolean
+    extends binary_data.Booleans {
 
     /** The header for booleans. */
     val Header: Byte = 0xC3.toByte
@@ -179,9 +175,8 @@ object Value extends
   /**
    * Declarations associated with numbers.
    */
-  object Number extends
-    binary_data.Numbers with
-    textual_data.TextualValues.Numbers {
+  object Number
+    extends binary_data.Numbers {
 
     /** The header for numbers. */
     val Header: Byte = 0xB4.toByte
@@ -220,9 +215,8 @@ object Value extends
   /**
    * Declarations associated with strings.
    */
-  object String extends
-    binary_data.Strings with
-    textual_data.TextualValues.Strings {
+  object String
+    extends binary_data.Strings {
 
     /** The header for strings. */
     val Header: Byte = 0xA5.toByte
@@ -301,9 +295,8 @@ case class Table(entries: SortedMap[Value, Fragment]) extends Fragment {
 /**
  * Factory for tables.
  */
-object Table extends
-  binary_data.Tables with
-  textual_data.TextualTables.Tables {
+object Table
+  extends binary_data.Tables {
 
   /** The header for tables. */
   val Header: Byte = 0xD2.toByte

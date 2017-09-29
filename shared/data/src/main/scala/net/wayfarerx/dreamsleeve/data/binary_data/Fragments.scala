@@ -19,40 +19,33 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the fragment factory that supports binary IO operations.
+ * Binary support for the fragment factory object.
  */
-trait Fragments extends Factory[Fragment] {
+trait Fragments {
 
-  /* Return the fragment binary support object. */
-  final override protected def binarySupport: Support[Fragment] = Fragments
+  /** The implicit marker denoting that fragment is discriminated. */
+  @inline
+  final implicit def binaryDiscriminated: Discriminated[Fragment, Int] = Fragments.Discriminated
+
+  /** The implicit fragment codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Fragment] = Fragments.Codec
 
 }
 
 /**
- * Definitions associated with the fragment binary IO operations.
+ * Support for binary fragment codecs.
  */
-object Fragments extends Support[Fragment] {
+object Fragments {
 
-  /* The monad for reading an entire fragment record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Fragment]] = for {
-    b <- readByte()
-    r <- b match {
-      case Value.Boolean.Header => Booleans.contentReader
-      case Value.Number.Header => Numbers.contentReader
-      case Value.String.Header => Strings.contentReader
-      case Table.Header => Tables.contentReader
-      case h => report(
-        Problems.InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header, Table.Header), h))
-    }
-  } yield r
+  /** The marker denoting that fragment is discriminated. */
+  val Discriminated: Discriminated[Fragment, Int] = scodec.codecs.Discriminated(uint2)
 
-  /* Create a monad for writing the entire record for the specified fragment. */
-  override def recordWriter(fragment: Fragment): BinaryWriter[Unit] = fragment match {
-    case v@Value() => Values.recordWriter(v)
-    case t@Table(_) => Tables.recordWriter(t)
-  }
+  /** The fragment codec. */
+  val Codec: Codec[Fragment] = (Booleans.Codec :+: Numbers.Codec :+: Strings.Codec :+: Tables.Codec).as[Fragment].auto
 
 }

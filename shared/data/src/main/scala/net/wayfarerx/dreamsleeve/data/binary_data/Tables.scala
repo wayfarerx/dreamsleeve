@@ -19,60 +19,34 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the table factory that supports binary IO operations.
+ * Binary support for the table factory object.
  */
-trait Tables extends Factory[Table] {
+trait Tables {
 
-  /* Return the fragment binary support object. */
-  final override protected def binarySupport: Support[Table] = Tables
+  /** The implicit fragment discriminator for tables. */
+  @inline
+  final implicit def binaryAsFragment: Discriminator[Fragment, Table, Int] = Tables.AsFragment
+
+  /** The implicit table codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Table] = Tables.Codec
 
 }
 
 /**
- * Definitions associated with the table binary IO operations.
+ * Support for binary table codecs.
  */
-object Tables extends Support[Table] {
+object Tables {
 
-  /** The monad for reading the content of a table record. */
-  val contentReader: BinaryReader[Either[Problems.Reading, Table]] = for {
-    c <- readInt()
-    e <- (reading(Vector[(Value, Fragment)]()) /: (0 until c)) { (r, _) =>
-      for {
-        i <- r
-        k <- Values.recordReader
-        v <- Fragments.recordReader
-      } yield for {
-        ii <- i
-        kk <- k
-        vv <- v
-      } yield ii :+ kk -> vv
-    }
-  } yield for (ee <- e) yield Table(ee: _*)
+  /** The fragment discriminator for tables. */
+  val AsFragment: Discriminator[Fragment, Table, Int] = Discriminator(3)
 
-  /* The monad for reading an entire table record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Table]] = for {
-    b <- readByte()
-    r <- b match {
-      case Table.Header => contentReader
-      case h => report(Problems.InvalidHeader(Vector(Table.Header), h))
-    }
-  } yield r
-
-  /* Create a monad for writing the entire record for the specified table. */
-  override def recordWriter(table: Table): BinaryWriter[Unit] = for {
-    _ <- writeByte(Table.Header)
-    _ <- writeInt(table.entries.size)
-    _ <- (writing /: table.entries) { (p, e) =>
-      val (k, v) = e
-      for {
-        _ <- p
-        _ <- Values.recordWriter(k)
-        _ <- Fragments.recordWriter(v)
-      } yield ()
-    }
-  } yield ()
+  /** The table codec. */
+  val Codec: Codec[Table] =
+    lazily(vectorOfN(uint16, Values.Codec ~ Fragments.Codec).xmap(Table(_: _*), _.entries.toVector))
 
 }

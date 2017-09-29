@@ -1,5 +1,5 @@
 /*
- * DataProblem.scala
+ * BooleansSpec.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,22 +17,25 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
+package binary_data
+
+import org.scalatest._
+import scodec.{Attempt, Codec, DecodeResult}
+import scodec.bits._
 
 /**
- * Base class for all data problems.
+ * Test case for the boolean binary codec.
  */
-abstract class DataProblem private[data]
+class BooleansSpec extends FlatSpec with Matchers {
 
-/**
- * Concrete data problem implementations.
- */
-object DataProblem {
-
-  /** The base class of patching problems. */
-  type Patch = patch_data.PatchProblem
-
-  /** The factory for patching problems. */
-  val Patch: patch_data.PatchProblem.type = patch_data.PatchProblem
+  "A boolean value" should "encode to and decode from binary" in {
+    val f = Value.Boolean()
+    val t = Value.Boolean(true)
+    val codec = Codec[Value.Boolean]
+    codec.encode(f) shouldBe Attempt.successful(bin"0")
+    codec.encode(t) shouldBe Attempt.successful(bin"1")
+    codec.decode(bin"0") shouldBe Attempt.successful(DecodeResult(f, BitVector.empty))
+    codec.decode(bin"1") shouldBe Attempt.successful(DecodeResult(t, BitVector.empty))
+  }
 
 }
-

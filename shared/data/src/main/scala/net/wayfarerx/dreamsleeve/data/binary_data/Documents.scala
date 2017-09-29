@@ -19,43 +19,26 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the document factory that supports binary IO operations.
+ * Binary support for the document factory object.
  */
-trait Documents extends Factory[Document] {
+trait Documents {
 
-  /* Return the fragment binary support object. */
-  final override protected def binarySupport: Support[Document] = Documents
+  /** The implicit document codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Document] = Documents.Codec
 
 }
 
 /**
- * Definitions associated with the document binary IO operations.
+ * Support for binary document codecs.
  */
-object Documents extends Support[Document] {
+object Documents {
 
-  /** The monad for reading the content of a document record. */
-  val contentReader: BinaryReader[Either[Problems.Reading, Document]] = for {
-    t <- readString()
-    c <- Fragments.recordReader
-  } yield for (cc <- c) yield Document(t.toString, cc)
-
-  /* The monad for reading an entire document record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Document]] = for {
-    b <- readByte()
-    r <- b match {
-      case Document.Header => contentReader
-      case h => report(Problems.InvalidHeader(Vector(Document.Header), h))
-    }
-  } yield r
-
-  /* Create a monad for writing the entire record for the specified document. */
-  override def recordWriter(document: Document): BinaryWriter[Unit] = for {
-    _ <- writeByte(Document.Header)
-    _ <- writeString(document.title)
-    _ <- Fragments.recordWriter(document.content)
-  } yield ()
+  /** The document codec. */
+  val Codec: Codec[Document] = (variableSizeBytes(uint16, utf8) :: Fragments.Codec).as[Document]
 
 }

@@ -19,40 +19,33 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the value factory that supports binary IO operations.
+ * Binary support for the value factory object.
  */
-trait Values extends Factory[Value] {
+trait Values {
 
-  /* Return the string value binary support object. */
-  final override protected def binarySupport: Support[Value] = Values
+  /** The implicit marker denoting that value is discriminated. */
+  @inline
+  final implicit def binaryDiscriminated: Discriminated[Value, Int] = Values.Discriminated
+
+  /** The implicit value codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Value] = Values.Codec
 
 }
 
 /**
- * Definitions associated with the value binary IO operations.
+ * Support for binary value codecs.
  */
-object Values extends Support[Value] {
+object Values {
 
-  /* The monad for reading an entire value record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Value]] = for {
-    b <- readByte()
-    r <- b match {
-      case Value.Boolean.Header => Booleans.contentReader
-      case Value.Number.Header => Numbers.contentReader
-      case Value.String.Header => Strings.contentReader
-      case h => report(
-        Problems.InvalidHeader(Vector(Value.Boolean.Header, Value.Number.Header, Value.String.Header), h))
-    }
-  } yield r
+  /** The marker denoting that value is discriminated. */
+  val Discriminated: Discriminated[Value, Int] = scodec.codecs.Discriminated(uint2)
 
-  /* Create a monad for writing the entire record for the specified value. */
-  override def recordWriter(value: Value): BinaryWriter[Unit] = value match {
-    case b@Value.Boolean(_) => Booleans.recordWriter(b)
-    case n@Value.Number(_) => Numbers.recordWriter(n)
-    case s@Value.String(_) => Strings.recordWriter(s)
-  }
+  /** The value codec. */
+  val Codec: Codec[Value] = (Booleans.Codec :+: Numbers.Codec :+: Strings.Codec).as[Value].auto
 
 }

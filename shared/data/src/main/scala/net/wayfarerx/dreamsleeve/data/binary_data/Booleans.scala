@@ -19,40 +19,40 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the boolean value factory that supports binary IO operations.
+ * Binary support for the boolean factory object.
  */
-trait Booleans extends Factory[Value.Boolean] {
+trait Booleans {
 
-  /* Return the boolean value binary support object. */
-  final override protected def binarySupport: Support[Value.Boolean] = Booleans
+  /** The implicit fragment discriminator for boolean values. */
+  @inline
+  final implicit def binaryAsFragment: Discriminator[Fragment, Value.Boolean, Int] = Booleans.AsFragment
+
+  /** The implicit value discriminator for boolean values. */
+  @inline
+  final implicit def binaryAsValue: Discriminator[Value, Value.Boolean, Int] = Booleans.AsValue
+
+  /** The implicit boolean codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Value.Boolean] = Booleans.Codec
 
 }
 
 /**
- * Definitions associated with the boolean value binary IO operations.
+ * Support for binary boolean codecs.
  */
-object Booleans extends Support[Value.Boolean] {
+object Booleans {
 
-  /** The monad for reading the content of a boolean value record. */
-  val contentReader: BinaryReader[Either[Problems.Reading, Value.Boolean]] =
-    for (b <- readByte()) yield Right(Value.Boolean(b != 0))
+  /** The fragment discriminator for boolean values. */
+  val AsFragment: Discriminator[Fragment, Value.Boolean, Int] = Discriminator(0)
 
-  /* The monad for reading an entire boolean value record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Value.Boolean]] = for {
-    b <- readByte()
-    r <- b match {
-      case Value.Boolean.Header => contentReader
-      case h => report(Problems.InvalidHeader(Vector(Value.Boolean.Header), h))
-    }
-  } yield r
+  /** The value discriminator for boolean values. */
+  val AsValue: Discriminator[Value, Value.Boolean, Int] = Discriminator(AsFragment.value)
 
-  /* Create a monad for writing the entire record for the specified boolean value. */
-  override def recordWriter(boolean: Value.Boolean): BinaryWriter[Unit] = for {
-    _ <- writeByte(Value.Boolean.Header)
-    _ <- writeByte(if (boolean.value) 1 else 0)
-  } yield ()
+  /** The boolean codec. */
+  val Codec: Codec[Value.Boolean] = bool.as[Value.Boolean]
 
 }

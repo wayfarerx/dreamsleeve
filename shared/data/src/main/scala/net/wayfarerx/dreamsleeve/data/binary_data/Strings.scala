@@ -19,40 +19,40 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the string value factory that supports binary IO operations.
+ * Binary support for the string factory object.
  */
-trait Strings extends Factory[Value.String] {
+trait Strings {
 
-  /* Return the string value binary support object. */
-  final override protected def binarySupport: Support[Value.String] = Strings
+  /** The implicit fragment discriminator for string values. */
+  @inline
+  final implicit def binaryAsFragment: Discriminator[Fragment, Value.String, Int] = Strings.AsFragment
+
+  /** The implicit value discriminator for string values. */
+  @inline
+  final implicit def binaryAsValue: Discriminator[Value, Value.String, Int] = Strings.AsValue
+
+  /** The implicit string codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Value.String] = Strings.Codec
 
 }
 
 /**
- * Definitions associated with the string value binary IO operations.
+ * Support for binary string codecs.
  */
-object Strings extends Support[Value.String] {
+object Strings {
 
-  /** The monad for reading the content of a string value record. */
-  val contentReader: BinaryReader[Either[Problems.Reading, Value.String]] =
-    for (s <- readString()) yield Right(Value.String(s.toString))
+  /** The fragment discriminator for string values. */
+  val AsFragment: Discriminator[Fragment, Value.String, Int] = Discriminator(2)
 
-  /* The monad for reading an entire string value record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Value.String]] = for {
-    b <- readByte()
-    r <- b match {
-      case Value.String.Header => contentReader
-      case h => report(Problems.InvalidHeader(Vector(Value.String.Header), h))
-    }
-  } yield r
+  /** The value discriminator for string values. */
+  val AsValue: Discriminator[Value, Value.String, Int] = Discriminator(AsFragment.value)
 
-  /* Create a monad for writing the entire record for the specified string value. */
-  override def recordWriter(string: Value.String): BinaryWriter[Unit] = for {
-    _ <- writeByte(Value.String.Header)
-    _ <- writeString(string.value)
-  } yield ()
+  /** The string codec. */
+  val Codec: Codec[Value.String] = variableSizeBytes(uint16, utf8).as[Value.String]
 
 }

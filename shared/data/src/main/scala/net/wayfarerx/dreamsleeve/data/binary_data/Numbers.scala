@@ -19,40 +19,59 @@
 package net.wayfarerx.dreamsleeve.data
 package binary_data
 
-import net.wayfarerx.dreamsleeve.io._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Mix in for the number value factory that supports binary IO operations.
+ * Binary support for the number factory object.
  */
-trait Numbers extends Factory[Value.Number] {
+trait Numbers {
 
-  /* Return the number value binary support object. */
-  final override protected def binarySupport: Support[Value.Number] = Numbers
+  /** The implicit fragment discriminator for number values. */
+  @inline
+  final implicit def binaryAsFragment: Discriminator[Fragment, Value.Number, Int] = Numbers.AsFragment
+
+  /** The implicit value discriminator for number values. */
+  @inline
+  final implicit def binaryAsValue: Discriminator[Value, Value.Number, Int] = Numbers.AsValue
+
+  /** The implicit number codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Value.Number] = Numbers.Codec
 
 }
 
 /**
- * Definitions associated with the number value binary IO operations.
+ * Support for binary number codecs.
  */
-object Numbers extends Support[Value.Number] {
+object Numbers {
 
-  /** The monad for reading the content of a number value record. */
-  val contentReader: BinaryReader[Either[Problems.Reading, Value.Number]] =
-    for (d <- readDouble()) yield Right(Value.Number(d))
+  /** The fragment discriminator for number values. */
+  val AsFragment: Discriminator[Fragment, Value.Number, Int] = Discriminator(1)
 
-  /* The monad for reading an entire number value record. */
-  override val recordReader: BinaryReader[Either[Problems.Reading, Value.Number]] = for {
-    b <- readByte()
-    r <- b match {
-      case Value.Number.Header => contentReader
-      case h => report(Problems.InvalidHeader(Vector(Value.Number.Header), h))
-    }
-  } yield r
+  /** The value discriminator for number values. */
+  val AsValue: Discriminator[Value, Value.Number, Int] = Discriminator(AsFragment.value)
 
-  /* Create a monad for writing the entire record for the specified number value. */
-  override def recordWriter(number: Value.Number): BinaryWriter[Unit] = for {
-    _ <- writeByte(Value.Number.Header)
-    _ <- writeDouble(number.value)
-  } yield ()
+  /** The transformation of a small positive whole number into a number. */
+  private val fromSmallPositiveWholeNumber: (Int => Value.Number) = Value.Number(_)
+
+  /** The transformation of a number into a small positive whole number. */
+  private val toSmallPositiveWholeNumber: PartialFunction[Value.Number, Int] = {
+    case n if n.value >= 0 && n.value == n.value.floor && n.value <= Int.MaxValue => n.value.toInt
+  }
+
+  /** The transformation of a small fractional number into a number. */
+  private val fromSmallFractionalNumber: (Float => Value.Number) = Value.Number(_)
+
+  /** The transformation of a number into a small fractional number. */
+  private val toSmallFractionalNumber: PartialFunction[Value.Number, Float] = {
+    case n if n.value == n.value.toFloat.toDouble => n.value.toFloat
+  }
+
+  /** The number codec. */
+  val Codec: Codec[Value.Number] = discriminated[Value.Number].by(uint2)
+    .|(0)(toSmallPositiveWholeNumber)(fromSmallPositiveWholeNumber)(vint)
+    .|(1)(toSmallFractionalNumber)(fromSmallFractionalNumber)(float)
+    .?(2)(Value.Number.unapply)(Value.Number.apply)(double)
 
 }
