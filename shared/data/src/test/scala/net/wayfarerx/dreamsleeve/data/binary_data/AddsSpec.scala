@@ -17,22 +17,28 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patch_data
+package binary_data
 
 import org.scalatest._
+import scodec.{Attempt, Codec, DecodeResult}
+import scodec.bits._
 
 /**
- * Test case for the add patching implementation.
+ * Test case for the add binary codec.
  */
 class AddsSpec extends FlatSpec with Matchers {
 
-  "An add" should "patch the addition of a fragment to a table" in {
-    val fa: Fragment = Value.String("a")
-    val fb: Fragment = Value.String("b")
-    val a = Change.Add(fa)
-    val b = Change.Add(fb)
-    a.patch(())() shouldBe Right(fa)
-    b.patch(())() shouldBe Right(fb)
+  "An add operation" should "encode to and decode from binary" in {
+    val f: Fragment = Value.Boolean()
+    val t: Fragment = Value.Boolean(true)
+    val fr = Change.Add(f)
+    val tr = Change.Add(t)
+    val codec = Codec[Change.Add]
+    val fragments = Codec[Fragment]
+    codec.encode(fr) shouldBe Attempt.successful(fragments.encode(f).require)
+    codec.encode(tr) shouldBe Attempt.successful(fragments.encode(t).require)
+    codec.decode(fragments.encode(f).require) shouldBe Attempt.successful(DecodeResult(fr, BitVector.empty))
+    codec.decode(fragments.encode(t).require) shouldBe Attempt.successful(DecodeResult(tr, BitVector.empty))
   }
 
 }

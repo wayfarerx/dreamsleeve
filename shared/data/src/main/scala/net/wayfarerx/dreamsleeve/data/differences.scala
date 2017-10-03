@@ -30,7 +30,8 @@ sealed abstract class Difference extends Data
 /**
  * Implementations of differences.
  */
-object Difference {
+object Difference
+  extends binary_data.Differences {
 
   /**
    * Extracts any difference implementation.
@@ -67,8 +68,9 @@ object Difference {
   /**
    * Declarations associated with creates.
    */
-  object Create extends
-    patch_data.Creates {
+  object Create
+    extends binary_data.Creates
+      with patch_data.Creates {
 
     /** The header for creates. */
     val Header: Byte = 0x96.toByte
@@ -104,9 +106,10 @@ object Difference {
   /**
    * Factory for revises.
    */
-  object Revise extends
-    diff_data.Revisions with
-    patch_data.Revises {
+  object Revise
+    extends binary_data.Revises
+      with diff_data.Revisions
+      with patch_data.Revises {
 
     /** The header for revises. */
     val Header: Byte = 0x87.toByte
@@ -150,8 +153,9 @@ object Difference {
   /**
    * Factory for deletes.
    */
-  object Delete extends
-    patch_data.Deletes {
+  object Delete
+    extends binary_data.Deletes
+      with patch_data.Deletes {
 
     /** The header for deletes. */
     val Header: Byte = 0x78.toByte
@@ -177,7 +181,8 @@ sealed abstract class Change extends Data
 /**
  * Implementations of changes.
  */
-object Change {
+object Change
+  extends binary_data.Changes {
 
   /**
    * Extracts any change implementation.
@@ -214,8 +219,9 @@ object Change {
   /**
    * Declarations associated with adds.
    */
-  object Add extends
-    patch_data.Adds {
+  object Add
+    extends binary_data.Adds
+      with patch_data.Adds {
 
     /** The header for adds. */
     val Header: Byte = 0x69.toByte
@@ -248,8 +254,9 @@ object Change {
   /**
    * Factory for removes.
    */
-  object Remove extends
-    patch_data.Removes {
+  object Remove
+    extends binary_data.Removes
+      with patch_data.Removes {
 
     /** The header for removes. */
     val Header: Byte = 0x5A.toByte
@@ -275,9 +282,10 @@ sealed abstract class Update extends Change
 /**
  * Factory for updates.
  */
-object Update extends
-  diff_data.Updates with
-  patch_data.Updates {
+object Update
+  extends binary_data.Updates
+    with diff_data.Updates
+    with patch_data.Updates {
 
   /**
    * Extracts any update implementation.
@@ -314,8 +322,9 @@ object Update extends
   /**
    * Factory for copies.
    */
-  object Copy extends
-    patch_data.Copies {
+  object Copy
+    extends binary_data.Copies
+      with patch_data.Copies {
 
     /** The header for copies. */
     val Header: Byte = 0x4B.toByte
@@ -359,8 +368,9 @@ object Update extends
   /**
    * Factory for replaces.
    */
-  object Replace extends
-    patch_data.Replaces {
+  object Replace
+    extends binary_data.Replaces
+      with patch_data.Replaces {
 
     /** The header for replaces. */
     val Header: Byte = 0x3C.toByte
@@ -424,8 +434,9 @@ object Update extends
   /**
    * Factory for modifies.
    */
-  object Modify extends
-    patch_data.Modifies {
+  object Modify
+    extends binary_data.Modifies
+      with patch_data.Modifies {
 
     /** The header for modifies. */
     val Header: Byte = 0x2D.toByte

@@ -1,5 +1,5 @@
 /*
- * CreatesSpec.scala
+ * Adds.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,18 +17,35 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patch_data
+package binary_data
 
-import org.scalatest._
+import scodec.Codec
+import scodec.codecs._
 
 /**
- * Test case for the create patching implementation.
+ * Binary support for the add factory object.
  */
-class CreatesSpec extends FlatSpec with Matchers {
+trait Adds {
 
-  "A create" should "patch the addition of a document" in {
-    val d = Document("e", Table())
-    Difference.Create(d).patch(())() shouldBe Right(d)
-  }
+  /** The implicit change discriminator for adds. */
+  @inline
+  final implicit def binaryAsChange: Discriminator[Change, Change.Add, Int] = Adds.AsChange
+
+  /** The implicit add codec. */
+  @inline
+  final implicit def binaryCodec: Codec[Change.Add] = Adds.Codec
+
+}
+
+/**
+ * Support for binary add codecs.
+ */
+object Adds {
+
+  /** The change discriminator for adds. */
+  val AsChange: Discriminator[Change, Change.Add, Int] = Discriminator(4)
+
+  /** The add codec. */
+  val Codec: Codec[Change.Add] = Fragments.Codec.as[Change.Add]
 
 }

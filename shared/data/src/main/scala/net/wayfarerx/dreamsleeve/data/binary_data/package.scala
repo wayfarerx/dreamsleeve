@@ -1,5 +1,5 @@
 /*
- * CreatesSpec.scala
+ * package.scala
  *
  * Copyright 2017 wayfarerx <x@wayfarerx.net> (@thewayfarerx)
  *
@@ -17,18 +17,20 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patch_data
 
-import org.scalatest._
+import scodec.Codec
+import scodec.bits.ByteVector
+import scodec.codecs._
 
 /**
- * Test case for the create patching implementation.
+ * Global definitions for the binary data package.
  */
-class CreatesSpec extends FlatSpec with Matchers {
+package object binary_data {
 
-  "A create" should "patch the addition of a document" in {
-    val d = Document("e", Table())
-    Difference.Create(d).patch(())() shouldBe Right(d)
-  }
+  /** The implicit hash codec. */
+  implicit val HashCodec: Codec[Hash] = bytes(Hash.Size).xmap(
+    b => Hash.setInternalRepresentation(b.toArray),
+    h => ByteVector(Hash.getInternalRepresentation(h))
+  )
 
 }

@@ -17,18 +17,24 @@
  */
 
 package net.wayfarerx.dreamsleeve.data
-package patch_data
+package binary_data
 
 import org.scalatest._
+import scodec.{Attempt, Codec, DecodeResult}
+import scodec.bits._
 
 /**
- * Test case for the create patching implementation.
+ * Test case for the create binary codec.
  */
 class CreatesSpec extends FlatSpec with Matchers {
 
-  "A create" should "patch the addition of a document" in {
-    val d = Document("e", Table())
-    Difference.Create(d).patch(())() shouldBe Right(d)
+  "A create operation" should "encode to and decode from binary" in {
+    val d = Document("hi", Value.Boolean())
+    val c = Difference.Create(d)
+    val codec = Codec[Difference.Create]
+    val documents = Codec[Document]
+    codec.encode(c) shouldBe Attempt.successful(documents.encode(d).require)
+    codec.decode(documents.encode(d).require) shouldBe Attempt.successful(DecodeResult(c, BitVector.empty))
   }
 
 }
