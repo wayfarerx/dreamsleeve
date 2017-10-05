@@ -83,4 +83,8 @@ class ModifiesSpec extends FlatSpec with Matchers {
     modify.patch(table) shouldBe Left(PatchProblem.HashMismatch(Value.Number(1).hash, Value.Number().hash))
   }
 
+  it should "enforce stack safety for all recursive operations" in {
+    StackSpec.StackOverflowModify1.patch(StackSpec.StackOverflowTable1) shouldBe a[Right[_, _]]
+  }
+
 }

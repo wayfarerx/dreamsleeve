@@ -65,4 +65,10 @@ class TableSpec extends FlatSpec with Matchers {
     t.get(Value.Number(4)) shouldBe None
   }
 
+  it should "enforce stack safety for all recursive operations" in {
+    StackSpec.StackOverflowTable1.equals(StackSpec.StackOverflowTable2) shouldBe false
+    StackSpec.StackOverflowTable1.hash shouldNot be(null)
+    StackSpec.StackOverflowTable1.toString shouldNot be(null)
+  }
+
 }

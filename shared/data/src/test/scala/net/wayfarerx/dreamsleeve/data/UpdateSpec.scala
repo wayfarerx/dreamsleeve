@@ -81,4 +81,10 @@ class UpdateSpec extends FlatSpec with Matchers {
     Update.unapply(a) shouldBe true
   }
 
+  it should "enforce stack safety for all recursive operations" in {
+    StackSpec.StackOverflowModify1.equals(StackSpec.StackOverflowModify2) shouldBe false
+    StackSpec.StackOverflowModify1.hash shouldNot be(null)
+    StackSpec.StackOverflowModify1.toString shouldNot be(null)
+  }
+
 }

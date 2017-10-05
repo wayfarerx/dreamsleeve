@@ -26,7 +26,7 @@ import cats.Eval
 abstract class Data private[data] {
 
   /** The cached hash of this element. */
-  private var _hash: Option[Eval[Hash]] = None
+  private var _hash: Option[Hash] = None
 
   /* Use the equality operation for comparisons. */
   final override def equals(that: Any): Boolean =
@@ -48,7 +48,7 @@ abstract class Data private[data] {
    * @return The hash for this element.
    */
   final def hash: Hash =
-    _hash map (_.value) getOrElse evalHash(Hash.Generator()).value
+    _hash getOrElse evalHash(Hash.Generator()).value
 
   /**
    * Calculate the equality operation for this data element.
@@ -80,10 +80,11 @@ abstract class Data private[data] {
    * @return An operation that can calculate the hash of this element.
    */
   final private[data] def evalHash(generator: Hash.Generator): Eval[Hash] =
-    _hash getOrElse {
-      val hash = calculateHash(generator).memoize
-      _hash = Some(hash)
-      hash
+    _hash map Eval.now getOrElse {
+      calculateHash(generator) map { hash =>
+        _hash = Some(hash)
+        hash
+      }
     }
 
 }
